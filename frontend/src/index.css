@@ -1,6 +1,23 @@
 /* 1. Importa Montserrat (con varios pesos) desde Google Fonts */
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
 @import "tailwindcss";
+
 @theme {
   --font-family-sans: 'Montserrat', theme(fontFamily.sans);
 }
+
+@theme {
+    --color-custom-dark-blue: #131048;
+    --color-custom-mid-dark-blue: #3a81dc;
+    --color-custom-blue: #4c99f7;
+    --color-custom-mid-light-blue: #8ac6fa;
+    --color-custom-light-blue: #b1d8fa;
+    
+    --color-custom-red: #e6536c;
+    --color-custom-orange: #f6bf80;
+    --color-custom-green: #75e653;
+    
+    --color-custom-gray: #676664;
+    --color-custom-mid-gray: #c5c4c4;
+    --color-custom-light-gray: #d9d9d9; 
+  }
