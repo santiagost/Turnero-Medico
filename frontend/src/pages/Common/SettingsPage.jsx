@@ -1,5 +1,6 @@
 import React from 'react';
 import { useAuth } from '../../hooks/useAuth';
+import AnimatedPage from '../../components/layout/AnimatedPage';
 
 const SettingsPage = () => {
   const { user } = useAuth();
@@ -22,12 +23,14 @@ const SettingsPage = () => {
   };
 
   return (
-    <div className="p-8">
-      <h1 className="text-3xl font-bold text-custom-dark-blue mb-6">
-        Configuración
-      </h1>
-      {renderSettings()}
-    </div>
+    <AnimatedPage>
+      <div className="p-8">
+        <h1 className="text-3xl font-bold text-custom-dark-blue mb-6">
+          Configuración
+        </h1>
+        {renderSettings()}
+      </div>
+    </AnimatedPage>
   );
 };
 

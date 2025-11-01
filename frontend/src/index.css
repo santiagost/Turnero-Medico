@@ -21,3 +21,24 @@
     --color-custom-mid-gray: #c5c4c4;
     --color-custom-light-gray: #d9d9d9; 
   }
+
+@layer utilities {
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    border-radius: 100vh;
+    background: #b1d8fa;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #4c99f7;
+    border-radius: 100vh;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #131048;
+  }
+}

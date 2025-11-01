@@ -55,7 +55,7 @@ const Sidebar = () => {
     const links = user ? navLinks[user.role] : { main: [], bottom: [] };
 
     return (
-        <div className='bg-transparent h-screen w-[6vw] flex flex-col my-20 justify-between items-start'>
+        <div className='bg-transparent h-screen w-[6vw] flex flex-col my-15'>
             <aside className="bg-custom-light-blue py-5 shadow-lg rounded-r-4xl w-full">
                 <nav
                     className="flex flex-col gap-4">
