@@ -1,33 +1,29 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
-import { useNavigate, useLocation } from 'react-router-dom'; // 1. Importar hooks
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const LoginPage = () => {
-    const { login } = useAuth();
+    const { login, user, logout } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
 
-    // 4. Ver si el usuario venía de otra página (ej. /mi-historial)
-    // Tu ProtectedRoute guarda la ruta original en 'location.state.from'
-    const from = location.state?.from || null;
-
     const handleLogin = (role) => {
-        login(role); // Simular login como el rol seleccionado
+        logout();
+        login(role);
+    };
 
-        // 5. NAVEGAR
-        if (from) {
-            // Si venía de una ruta protegida, lo mandamos de vuelta allí
-            navigate(from, { replace: true });
-        } else {
-            // Si no, lo mandamos a la "home" de su rol
+    useEffect(() => {
+        if (user) {
+
             const defaultPaths = {
                 'Patient': '/patient/home',
                 'Doctor': '/doctor/home',
                 'Admin': '/admin/home'
             };
-            navigate(defaultPaths[role] || '/', { replace: true });
+
+            navigate(defaultPaths[user.role] || '/', { replace: true });
         }
-    };
+    }, [user, navigate, location]);
 
     return (
         <div className='flex items-center justify-center flex-col min-h-screen'>

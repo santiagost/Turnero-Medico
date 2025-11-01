@@ -1,10 +1,33 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import ErrorDisplay from '../../components/ui/ErrorDisplay';
 
-const UnauthorizedPage = () => (
-  <div style={{ padding: '20px', textAlign: 'center', color: 'red' }}>
-    <h1>403 - Acceso Denegado</h1>
-    <p>No tienes permiso para ver esta página.</p>
-  </div>
-);
+const UnauthorizedPage = () => {
+  const navigate = useNavigate();
+
+  const handleGoHome = () => {
+    navigate('/');
+  }
+  
+  return (
+    <div>
+      <div className="flex flex-row gap-2 items-center ml-4">
+        <img
+          className="w-14 m-2 p-1 rounded-full shadow-2xl hover:scale-110 transition-transform duration-200 cursor-pointer"
+          src="/icono.png"
+          onClick={handleGoHome}
+          alt="Logo" />
+        <h1
+          className="font-black text-custom-dark-blue cursor-pointer"
+          onClick={handleGoHome}
+        >
+          VITALIS CENTRO MÉDICO
+        </h1>
+      </div>
+
+      <ErrorDisplay errorCode="403" title="Acceso Denegado" subtitle="No tienes autorización para acceder a esta página." />
+    </div>
+  );
+};
 
 export default UnauthorizedPage;
