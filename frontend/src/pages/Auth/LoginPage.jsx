@@ -94,12 +94,14 @@ const LoginPage = () => {
         const isValid = validateForm();
 
         if (isValid) {
-            console.log("Datos del formulario:", formData);
-            alert("¡Formulario enviado con éxito! (Revisa la consola)");
+            // --- ¡AQUÍ ESTÁ EL CAMBIO! ---
+            // En lugar de (o además de) los console.log y alerts:
+            // Llama a tu función de mockeo con el rol del formulario.
 
-            // Aquí iría tu lógica de 'fetch' o 'axios.post' a tu API
-            // Si el login es exitoso, llamas a:
-            // login(userDataFromApi); // (El 'login' de tu 'useAuth')
+            handleLogin(formData.role);
+
+            // Ya no necesitas el alert, porque el useEffect se encargará
+            // de la redirección automáticamente.
 
         } else {
             console.log("Formulario inválido:", errors);
@@ -156,25 +158,6 @@ const LoginPage = () => {
                     onBlur={handleBlur}
                     error={errors.role}
                 />
-
-                {/* <button
-                    onClick={() => handleLogin('Patient')}
-                    className='bg-custom-light-blue text-white py-2 px-4 rounded-lg shadow-md hover:shadow-lg transition duration-200'
-                >
-                    Iniciar Sesión como Paciente
-                </button>
-                <button
-                    onClick={() => handleLogin('Doctor')}
-                    className='bg-custom-light-blue text-white py-2 px-4 rounded-lg shadow-md hover:shadow-lg transition duration-200'
-                >
-                    Iniciar Sesión como Doctor
-                </button>
-                <button
-                    onClick={() => handleLogin('Admin')}
-                    className='bg-custom-light-blue text-white py-2 px-4 rounded-lg shadow-md hover:shadow-lg transition duration-200'
-                >
-                    Iniciar Sesión como Administrador
-                </button> */}
             </div>
             <div className='flex flex-row gap-10'>
                 <Button

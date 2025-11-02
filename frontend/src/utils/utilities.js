@@ -94,3 +94,11 @@ export const loginValidationSchema = {
     return null;
   }
 };
+
+export const forgotPasswordValidationSchema = {
+  email: (value) => {
+    if (!value) return "El correo es requerido.";
+    if (!REGEX.email.test(value)) return "Formato de correo inválido.";
+    return null;
+  }
+};

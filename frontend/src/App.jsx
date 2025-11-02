@@ -34,11 +34,8 @@ const router = createHashRouter([
     children: [
       { path: "/", element: <LoginPage />, },
       { path: "/register", element: <RegisterPage />, },
+      { path: "/forgot-password", element: <ForgotPassword />, },
     ],
-  },
-  {
-    path: "/forgot-password",
-    element: <ForgotPassword />,
   },
   {
     path: "/unauthorized",
