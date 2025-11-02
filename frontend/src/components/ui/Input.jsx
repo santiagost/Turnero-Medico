@@ -41,7 +41,7 @@ const Input = ({
     `;
 
     const variants = {
-        active: error ? "" : "focus-within:border-custom-dark-blue hover:border-custom-dark-blue/70",
+        active: error ? "bg-white" : "bg-white focus-within:border-custom-dark-blue hover:border-custom-dark-blue/70",
         disabled: "bg-custom-light-gray"
     };
 

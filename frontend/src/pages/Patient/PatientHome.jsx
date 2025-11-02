@@ -3,9 +3,11 @@ import AnimatedPage from '../../components/layout/AnimatedPage';
 
 const PatientHome = () => (
   <AnimatedPage>
-    <div style={{ padding: '10px', background: '#e0f7fa' }}>
-      <h3>Bienvenido, Paciente (Home)</h3>
-    </div>
+    <div className="px-8">
+        <h1 className="text-2xl font-bold text-custom-dark-blue mb-6">
+          Mis Proximos Turnos
+        </h1>
+      </div>
   </AnimatedPage>
 );
 

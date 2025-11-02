@@ -22,9 +22,19 @@ export const AuthProvider = ({ children }) => {
 
     const login = (role) => {
         const mockUserData = {
+            name: 'Lionel Andres',
+            lastname: 'Messi',
+            dni: '11222333',
             role: role,
-            name: 'Usuario de Prueba'
+            telephone: '3884665015',
+            birthDate: '24/06/1987',
+            email: 'leo.messi@gmail.com',
+            membershipNumber: '1111 2222 3333 4444',
+            socialWork: 'OSDE',
+            specialty: 'Traumatología y Ortopedia',
+            matricula: '[MP-12345]',
         };
+
         localStorage.setItem('user', JSON.stringify(mockUserData));
         setUser(mockUserData);
     };
