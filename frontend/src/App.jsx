@@ -9,6 +9,7 @@ import LoginPage from "./pages/Auth/LoginPage";
 import RegisterPage from "./pages/Auth/RegisterPage";
 import UnauthorizedPage from "./pages/Common/UnauthorizedPage";
 import NotFoundPage from "./pages/Common/NotFoundPage";
+import ForgotPassword from "./pages/Auth/ForgotPassword";
 
 import PatientHome from "./pages/Patient/PatientHome";
 import PatientSchedule from "./pages/Patient/PatientSchedule";
@@ -25,15 +26,19 @@ import AdminPatients from "./pages/Admin/AdminPatients";
 import AdminReports from "./pages/Admin/AdminReports";
 import AdminOthers from "./pages/Admin/AdminOthers";
 import SettingsPage from "./pages/Common/SettingsPage";
+import { AuthLayout } from "./components/layout/AuthLayout";
 
 const router = createHashRouter([
   {
-    path: "/",
-    element: <LoginPage />,
+    element: <AuthLayout />,
+    children: [
+      { path: "/", element: <LoginPage />, },
+      { path: "/register", element: <RegisterPage />, },
+    ],
   },
   {
-    path: "/register",
-    element: <RegisterPage />,
+    path: "/forgot-password",
+    element: <ForgotPassword />,
   },
   {
     path: "/unauthorized",
