@@ -4,4 +4,4 @@ const ROLES = {
         'Patient': 'Paciente'
     }
 
-export { ROLES };
+export default ROLES;

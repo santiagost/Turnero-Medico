@@ -26,8 +26,6 @@ import AdminReports from "./pages/Admin/AdminReports";
 import AdminOthers from "./pages/Admin/AdminOthers";
 import SettingsPage from "./pages/Common/SettingsPage";
 
-// --- Definición del Router (¡Tu código está perfecto!) ---
-// La lógica se ejecutará cuando el RouterProvider lo renderice
 const router = createHashRouter([
   {
     path: "/",
