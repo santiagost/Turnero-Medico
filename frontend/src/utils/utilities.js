@@ -239,3 +239,33 @@ export const estimateDate = (dateString) => {
     "0"
   )}/${year}`;
 };
+
+
+export const getFormattedDate = (isoString) => {
+    if (!isoString) return null;
+    try {
+        return isoString.split('T')[0];
+    } catch (error) {
+        console.error("Error al formatear la fecha:", error);
+        return null;
+    }
+};
+
+/**
+ * Extrae la hora en formato "hh:mm hs" (Argentina) de un string ISO.
+ * @param {string} isoString - (ej: "2025-11-03T09:30:00").
+ * @returns {string | null} - La hora "09:30 hs" o null.
+ */
+export const getFormattedTime = (isoString) => {
+    if (!isoString) return null;
+    try {
+        const dateObj = new Date(isoString);
+        return dateObj.toLocaleTimeString('es-AR', {
+            hour: '2-digit',
+            minute: '2-digit'
+        }) + ' hs';
+    } catch (error) {
+        console.error("Error al formatear la hora:", error);
+        return null;
+    }
+};

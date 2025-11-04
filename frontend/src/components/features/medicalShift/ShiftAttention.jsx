@@ -1,24 +1,37 @@
 import React, { useState } from "react"
-import IconButton from "../../ui/IconButton";
-import { calculateAge, medicationValidationSchema } from "../../../utils/utilities";
-
 import { IoIosAdd, IoIosClose, IoIosCheckmark } from "react-icons/io";
+
+// Utilities
+import { calculateAge, medicationValidationSchema, estimateDate, getFormattedDate, getFormattedTime } from "../../../utils/utilities";
+import { completedConsultationsMock } from "../../../utils/mockData";
+// Features
+import MedicationList from "../medication/MedicationList";
+import ConsultationCard from "../medicalHistory/ConsultationCard";
+// UI
+import IconButton from "../../ui/IconButton";
 import Button from "../../ui/Button";
 import Input from "../../ui/Input"
-import MedicationList from "../medication/MedicationList";
 
 const ShiftAttention = ({ shift, onSave, onDiscard }) => {
-    const [allComplete, setAllComplete] = useState(false);
-    const [showAddMedicationForm, setShowAddMedicationForm] = useState(false);
+    // ----- Estado Principal ----
     const [formData, setFormData] = useState({
         diagnosis: "",
         treatment: "",
         personalNotes: "",
         medications: [],
     });
+    const displayDate = getFormattedDate(shift.startTime);
+    const displayTime = getFormattedTime(shift.startTime);
+    
+    const [allComplete, setAllComplete] = useState(false);
+
+    // ----- Subformulario de Medicamentos ----
     const [medicationForm, setMedicationForm] = useState(null);
     const [medicationErrors, setMedicationErrors] = useState({});
-
+    
+    const [showAddMedicationForm, setShowAddMedicationForm] = useState(false);
+    
+    // --- Lógica del Formulario Principal (Consulta) ---
     const updateFormData = (e) => {
         const { name, value } = e.target;
         const nextFormData = {
@@ -37,7 +50,7 @@ const ShiftAttention = ({ shift, onSave, onDiscard }) => {
         }
     };
 
-
+    // --- Lógica del Sub-Formulario (Medicamentos) ---
     const updateMedicationForm = (e) => {
         const { name, value } = e.target;
         setMedicationForm(prev => ({
@@ -130,13 +143,6 @@ const ShiftAttention = ({ shift, onSave, onDiscard }) => {
     };
 
     const handleDiscard = () => {
-        // En el futuro, aquí puedes poner tu modal de confirmación
-        // const isConfirmed = window.confirm("¿Estás seguro de que quieres descartar esta consulta?");
-        // if (isConfirmed) {
-        //     onDiscard();
-        // }
-        
-        // Por ahora, solo llama a la función del padre
         onDiscard();
     }
 
@@ -150,8 +156,8 @@ const ShiftAttention = ({ shift, onSave, onDiscard }) => {
             onSubmit={handleSubmit}>
             <div className="w-full px-5 py-2">
                 <div className="flex flex-row items-center justify-between">
-                    <p className="font-bold text-xl">{shift.patient.lastname}, {shift.patient.name}</p>
-                    <p className="font-semibold">Fecha: <span className="font-normal">{shift.date}</span></p>
+                    <p className="font-bold text-xl">{shift.patient.lastName}, {shift.patient.firstName}</p>
+                    <p className="font-semibold">Fecha: <span className="font-normal">{estimateDate(displayDate)} - {displayTime}</span></p>
                 </div>
                 <div className="mx-2 my-1">
                     <p className="font-semibold">Motivo de Consulta: <span className="font-normal">{shift.reason}</span></p>
@@ -159,17 +165,21 @@ const ShiftAttention = ({ shift, onSave, onDiscard }) => {
                         <p className="font-semibold">Edad: <span className="font-normal">{calculateAge(shift.patient.birthDate)} años</span></p>
                         <p className="font-semibold">DNI: <span className="font-normal">{shift.patient.dni}</span></p>
                         <p className="font-semibold">Teléfono: <span className="font-normal">{shift.patient.telephone}</span></p>
-                        <p className="font-semibold">Obra Social: <span className="font-normal">{shift.patient.socialWork ? shift.patient.socialWork : "No Aplica"}</span></p>
-                        <p className="font-semibold">Número de Afiliado: <span className="font-normal">{shift.patient.membershipNumber ? shift.patient.membershipNumber : "No Aplica"}</span></p>
+                        <p className="font-semibold">Obra Social: <span className="font-normal">{shift.patient.socialWork?.name || "No Aplica"}</span></p>
+                        <p className="font-semibold">Número de Afiliado: <span className="font-normal">{shift.patient.membershipNumber || "No Aplica"}</span></p>
                     </div>
                 </div>
             </div>
             <div className="w-full px-5 py-2">
                 <p className="font-bold text-xl text-start">Ultimas Consultas</p>
                 <div className="mx-2 my-1">
-                    <li>Consulta 1</li>
-                    <li>Consulta 2</li>
-                    <li>Consulta 3</li>
+                    {completedConsultationsMock.map(consultation => (
+                        <ConsultationCard
+                            key={consultation.consultationId}
+                            consultation={consultation}
+                            type="Doctor"
+                        />
+                    ))}
                 </div>
             </div>
             <div className="w-full px-5 py-2">

@@ -1,134 +1,110 @@
 import React, { useState } from 'react';
 import AnimatedPage from '../../components/layout/AnimatedPage';
+// User Context
 import { useAuth } from '../../hooks/useAuth';
-
-import SectionCard from '../../components/ui/SectionCard'
+// Feature
 import ShiftList from '../../components/features/medicalShift/ShiftList';
 import ShiftAttention from '../../components/features/medicalShift/ShiftAttention';
+// UI
+import SectionCard from '../../components/ui/SectionCard'
+import PrincipalCard from '../../components/ui/PrincipalCard'
+import Modal from '../../components/ui/Modal';
+import Button from '../../components/ui/Button';
 
-const drSanchez = {
-  name: "Martin",
-  lastname: "Sanchez",
-  specialty: "Traumatología y Ortopedia",
-};
-
-const initialDoctorScheduleMock = [
-  {
-    id: 1,
-    doctor: drSanchez,
-    patient: {
-      name: "Emiliano",
-      lastname: 'García',
-      dni: '11222333',
-      telephone: '3884665015',
-      birthDate: '1987-06-24',
-      email: 'emi.garcia@gmail.com',
-      membershipNumber: '',
-      socialWork: '',
-    },
-    reason: "Dolor en el hombro derecho por mal movimiento.",
-    date: "2025-11-03",
-    time: "9:30 hs",
-    status: "Pendiente"
-  },
-  {
-    id: 2,
-    doctor: drSanchez,
-    patient: {
-      name: "Sofía",
-      lastname: "Martinez",
-      dni: '22333444',
-      telephone: '3511234567',
-      birthDate: '1995-08-15',
-      email: 'sofia.martinez@gmail.com',
-      membershipNumber: '9876 5432 1001',
-      socialWork: 'Swiss Medical',
-    },
-    reason: "Control post-cirugía de rodilla.",
-    date: "2025-11-03",
-    time: "10:15 hs",
-    status: "Pendiente"
-  },
-  {
-    id: 3,
-    doctor: drSanchez,
-    patient: {
-      name: "Agustín",
-      lastname: "Diaz",
-      dni: '33444555',
-      telephone: '3517654321',
-      birthDate: '2000-02-10',
-      email: 'agus.diaz@hotmail.com',
-      membershipNumber: 'A-123456-B',
-      socialWork: 'PAMI',
-    },
-    reason: "Revisión de yeso en muñeca.",
-    date: "2025-11-04",
-    time: "11:00 hs",
-    status: "Pendiente"
-  },
-  {
-    id: 4,
-    doctor: drSanchez,
-    patient: {
-      name: "Valentina",
-      lastname: "Gomez",
-      dni: '44555666',
-      telephone: '3512223333',
-      birthDate: '2003-11-20',
-      email: 'vale.gomez@yahoo.com',
-      membershipNumber: '777888999',
-      socialWork: 'OSDE',
-    },
-    reason: "Dolor lumbar agudo, posible pinzamiento.",
-    date: "2025-10-29",
-    time: "15:00 hs",
-    status: "Pendiente"
-  },
-  {
-    id: 5,
-    doctor: drSanchez,
-    patient: {
-      name: "Lionel",
-      lastname: "Messi",
-      dni: '30123456',
-      telephone: '3411010101',
-      birthDate: '1987-06-24',
-      email: 'lio.messi@gmail.com',
-      membershipNumber: '1010101010',
-      socialWork: 'AFA',
-    },
-    reason: "Consulta por lesión de rodilla.",
-    date: "2025-10-30",
-    time: "17:30 hs",
-    status: "Cancelado"
-  }
-];
+// Mock data
+import { doctorScheduleMock, mockShiftStatus } from '../../utils/mockData';
 
 const DoctorHome = () => {
   const { user } = useAuth();
+  const [doctorSchedule, setDoctorSchedule] = useState(doctorScheduleMock);
+
+  // Atencion de Turno
   const [attendingShift, setAttendingShift] = useState(false);
   const [selectedShift, setSelectedShift] = useState(null);
 
-  const [doctorSchedule, setDoctorSchedule] = useState(initialDoctorScheduleMock);
+  // Cancelar Turno
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [shiftToCancel, setShiftToCancel] = useState(null);
 
+  // Registrar Consulta
+  const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
+  const [dataToSave, setDataToSave] = useState(null);
+
+  // Descartar
+  const [isDiscardModalOpen, setIsDiscardModalOpen] = useState(false);
+
+
+  //  ----------------- Cancelar Turno ---------------
   const handleCancelShift = (id) => {
-    if (selectedShift && selectedShift.id === id) {
-      alert("No puedes cancelar un turno que estás atendiendo. \nPor favor, guarda o descarta los cambios primero.");
+    const shift = doctorSchedule.find(s => s.shiftId === id);
+    if (shift && (shift.status.name === "Atendido" || shift.status.name === "Cancelado")) {
+      alert(`Este turno ya ha sido ${shift.status.name.toLowerCase()} y no se puede modificar.`);
       return;
     }
-
-    alert(`Cancelar turno ID: ${id}`);
-    setDoctorSchedule(prevSchedule =>
-      prevSchedule.map(turno =>
-        turno.id === id ? { ...turno, status: "Cancelado" } : turno
-      )
-    );
+    if (selectedShift && selectedShift.shiftId === id) {
+      alert("No puedes cancelar un turno que estás atendiendo.");
+      return;
+    }
+    setShiftToCancel(id);
+    setIsCancelModalOpen(true);
   };
 
+  const confirmCancel = () => {
+    alert(`Cancelando turno ID: ${shiftToCancel}`);
+
+    setDoctorSchedule(prevSchedule =>
+      prevSchedule.map(shift =>
+        shift.shiftId === shiftToCancel
+          ? { ...shift, status: mockShiftStatus.cancelled }
+          : shift
+      )
+    );
+    setIsCancelModalOpen(false);
+    setShiftToCancel(null);
+  };
+
+  const closeCancelModal = () => {
+    setIsCancelModalOpen(false);
+    setShiftToCancel(null);
+  };
+
+  //  ----------------- Registrar Consulta ---------------
+  const handleSaveAttention = (attentionData) => {
+    console.log("Datos listos para guardar:", attentionData);
+    setDataToSave(attentionData);
+    setIsSaveModalOpen(true);
+  };
+
+  const confirmSave = () => {
+    console.log("Guardando datos...", dataToSave);
+
+    // --- AQUÍ VA TU LÓGICA DE BACKEND ---
+    // (Ej: axios.post(`/api/consultations`, { shiftId: selectedShift.id, ...dataToSave }))
+
+    setDoctorSchedule(prevSchedule =>
+      prevSchedule.map(shift =>
+        shift.shiftId === selectedShift.shiftId
+          ? { ...shift, status: mockShiftStatus.attended }
+          : shift
+      )
+    );
+
+    setAttendingShift(false);
+    setSelectedShift(null);
+    setIsSaveModalOpen(false);
+    setDataToSave(null);
+
+    alert("Consulta registrada con éxito.");
+  };
+
+  const closeSaveModal = () => {
+    setIsSaveModalOpen(false);
+    setDataToSave(null);
+  };
+
+  //  ----------------- Atender Turno ---------------
   const handleAttendShift = (id) => {
-    // Busca en el 'estado' (doctorSchedule), no en el 'mock'
-    const shiftToAttend = doctorSchedule.find(turno => turno.id === id);
+    const shiftToAttend = doctorSchedule.find(shift => shift.shiftId === id);
 
     if (shiftToAttend) {
       setAttendingShift(true);
@@ -138,33 +114,19 @@ const DoctorHome = () => {
     }
   };
 
-  const handleSaveAttention = (attentionData) => {
-    console.log("Datos de la consulta recibidos en DoctorHome:", attentionData);
-
-    // --- AQUÍ VA TU LÓGICA DE BACKEND ---
-    // (Ej: axios.post(`/api/consultations`, { shiftId: selectedShift.id, ...attentionData }))
-
-    // Simulamos la actualización del estado en el 'frontend'
-    setDoctorSchedule(prevSchedule =>
-      prevSchedule.map(turno =>
-        // Busca el turno que acabamos de atender
-        turno.id === selectedShift.id
-          // Y actualiza su estado
-          ? { ...turno, status: "Atendido" }
-          : turno
-      )
-    );
-
-    // --- 3. CIERRA EL COMPONENTE (como pediste) ---
-    setAttendingShift(false);
-    setSelectedShift(null);
-
-    alert("Consulta registrada con éxito.");
+  // --------------- Descartar Consulta ------------
+  const handleDiscardAttention = () => {
+    setIsDiscardModalOpen(true);
   };
 
-  const handleDiscardAttention = () => {
+  const confirmDiscard = () => {
     setAttendingShift(false);
     setSelectedShift(null);
+    setIsDiscardModalOpen(false);
+  };
+
+  const closeDiscardModal = () => {
+    setIsDiscardModalOpen(false);
   };
 
   return (
@@ -194,6 +156,62 @@ const DoctorHome = () => {
           />
         )}
       </div>
+
+      {/* Modal de Cancelación */}
+      <Modal isOpen={isCancelModalOpen} onClose={closeCancelModal}>
+        <PrincipalCard
+          title="Confirmar Cancelación"
+          content={
+            <div className="flex flex-col items-center gap-6 p-2">
+              <p className="text-center text-custom-dark-blue">
+                ¿Estás seguro de que deseas cancelar este turno?
+                Esta acción no se puede deshacer.
+              </p>
+              <div className="flex flex-row gap-10">
+                <Button text="Volver" variant="secondary" onClick={closeCancelModal} />
+                <Button text="Confirmar" variant="primary" onClick={confirmCancel} />
+              </div>
+            </div>
+          }
+        />
+      </Modal>
+
+      {/* Modal de Guardar Consulta */}
+      <Modal isOpen={isSaveModalOpen} onClose={closeSaveModal}>
+        <PrincipalCard
+          title="Registrar Consulta"
+          content={
+            <div className="flex flex-col items-center gap-6 p-4">
+              <p className="text-center text-custom-dark-blue">
+                ¿Estás seguro de que deseas registrar esta consulta?
+                Los datos se guardarán en el historial del paciente.
+              </p>
+              <div className="flex flex-row gap-10">
+                <Button text="Seguir Editando" variant="secondary" onClick={closeSaveModal} />
+                <Button text="Registrar" variant="primary" onClick={confirmSave} />
+              </div>
+            </div>
+          }
+        />
+      </Modal>
+
+      <Modal isOpen={isDiscardModalOpen} onClose={closeDiscardModal}>
+        <PrincipalCard
+          title="Descartar Cambios"
+          content={
+            <div className="flex flex-col items-center gap-6 p-4">
+              <p className="text-center text-custom-dark-blue">
+                ¿Estás seguro de que deseas descartar los cambios?
+                La información no se guardará.
+              </p>
+              <div className="flex flex-row gap-10">
+                <Button text="Seguir Editando" variant="secondary" onClick={closeDiscardModal} />
+                <Button text="Descartar" variant="primary" onClick={confirmDiscard} />
+              </div>
+            </div>
+          }
+        />
+      </Modal>
     </AnimatedPage>
   );
 }
