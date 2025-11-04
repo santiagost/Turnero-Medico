@@ -13,7 +13,7 @@ const TooltipDropdown = ({ text }) => {
 const Input = ({
     tittle, description, type, icon, useButton, disable = false,
     value, onChange, required, name, tooltip, tooltipText, size = "big",
-    error, onBlur }) => {
+    error, onBlur, multiline = false, rows = 4 }) => {
 
     const [isTooltipOpen, setIsTooltipOpen] = useState(false);
     const tooltipRef = useRef(null);
@@ -36,8 +36,11 @@ const Input = ({
         border-2 rounded-lg 
         flex flex-row justify-between items-center px-4
         transition-colors duration-200 ease-in-out
-        ${sizeVariants[size].container}
         ${error ? "border-custom-red" : "border-custom-blue"}
+        ${multiline
+            ? "items-start py-2"
+            : `${sizeVariants[size].container} items-center`
+        }
     `;
 
     const variants = {
@@ -47,8 +50,33 @@ const Input = ({
 
     const variantStyles = disable ? variants.disabled : variants.active;
 
+    const InputElement = multiline ? (
+        <textarea
+            className="text-custom-dark-blue bg-transparent outline-none w-full 
+                       resize-none" // resize-none previene que el usuario lo agrande
+            disabled={disable}
+            value={value}
+            onChange={onChange}
+            required={required}
+            name={name}
+            onBlur={onBlur}
+            rows={rows} // Usa la prop 'rows' para la altura
+        />
+    ) : (
+        <input
+            className="text-custom-dark-blue bg-transparent outline-none w-full"
+            type={type}
+            disabled={disable}
+            value={value}
+            onChange={onChange}
+            required={required}
+            name={name}
+            onBlur={onBlur}
+        />
+    );
+
     return (
-        <div className="flex flex-col gap-1 w-full text-custom-dark-blue">
+        <div className={`flex flex-col gap-1 w-full text-custom-dark-blue ${multiline ? 'h-full' : ''}`}>
             <div ref={tooltipRef} className="flex flex-row justify-between items-center relative">
                 <p className="text-custom-mid-dark-blue font-medium text-start">{tittle}</p>
                 {tooltip &&
@@ -66,23 +94,16 @@ const Input = ({
                 )}
             </div>
 
-            <div className={`${baseStyles} ${variantStyles}`}>
-                <input
-                    className="text-custom-dark-blue bg-transparent outline-none w-full"
-                    type={type}
-                    disabled={disable}
-                    value={value}
-                    onChange={onChange}
-                    required={required}
-                    name={name}
-                    onBlur={onBlur} />
-
+            <div className={`${baseStyles} ${variantStyles} ${multiline ? 'h-full flex-grow' : ''}`}>
+                {InputElement}
 
                 {icon &&
                     <button
                         type="button"
-                        className={`text-custom-mid-dark-blue ${sizeVariants[size].button} rounded-xl transition-all duration-200 ease-in-out
-                                hover:bg-custom-light-blue hover:scale-110 hover:text-white`}
+                        className={`text-custom-mid-dark-blue ${sizeVariants[size].button} rounded-xl 
+                                    transition-all duration-200 ease-in-out
+                                    hover:bg-custom-light-blue hover:scale-110 hover:text-white
+                                    ${multiline ? 'mt-1' : ''}`}
                         onClick={useButton}>
                         {icon}
                     </button>

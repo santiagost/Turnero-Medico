@@ -1,5 +1,5 @@
 import React from 'react';
-import ToggleSwitch from '../ui/ToggleSwitch';
+import ToggleSwitch from '../../ui/ToggleSwitch';
 
 const NotificationSettings = ({ user }) => {
     switch (user.role) {

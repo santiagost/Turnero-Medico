@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import Input from '../../components/ui/Input';
-import Select from '../../components/ui/Select';
-import Button from '../../components/ui/Button';
-import ROLES, { getEditValidationSchema } from '../../utils/utilities';
+import Input from '../../ui/Input';
+import Select from '../../ui/Select';
+import Button from '../../ui/Button';
+import ROLES, { getEditValidationSchema } from '../../../utils/utilities';
 
 const PersonalDataSettings = ({ user, socialWorks }) => {
     const [editMode, setEditMode] = useState(false);

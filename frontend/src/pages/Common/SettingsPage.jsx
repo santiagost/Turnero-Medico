@@ -3,9 +3,9 @@ import { useAuth } from '../../hooks/useAuth';
 import AnimatedPage from '../../components/layout/AnimatedPage';
 import SectionCard from '../../components/ui/SectionCard';
 
-import PersonalDataSettings from '../../components/features/PersonalDataSettings';
-import NotificationSettings from '../../components/features/NotificationSettings';
-import SecuritySettings from '../../components/features/SecuritySettings';
+import PersonalDataSettings from '../../components/features/setings/PersonalDataSettings';
+import NotificationSettings from '../../components/features/setings/NotificationSettings';
+import SecuritySettings from '../../components/features/setings/SecuritySettings';
 
 const SettingsPage = () => {
     const { user } = useAuth();

@@ -1,8 +1,21 @@
 import React from "react";
 
-const Button = ({ text, variant = "primary", onClick, disable = false, type }) => {
+const Button = ({ text, variant = "primary", onClick, disable = false, type, size = "big" }) => {
 
-    const baseStyles = "py-2 px-6 rounded-xl font-bold text-2xl transition-all duration-200 ease-in-out transform hover:scale-105 active:scale-100 flex justify-center items-center"
+    const sizeVariants = () => {
+        switch (size) {
+            case "big":
+                return "py-2 px-6 rounded-xl font-bold text-2xl"
+            case "medium":
+                return "py-2 px-4 rounded-xl font-bold text-lg"
+            case "small":
+                return "py-1 px-3 rounded-lg font-bold text-sm"
+            default:
+                return "py-2 px-6 rounded-xl font-bold text-2xl"
+        }
+    }
+    
+    const baseStyles = "transition-all duration-200 ease-in-out transform hover:scale-105 active:scale-100 flex justify-center items-center"
 
     const variants = {
         primary: "bg-custom-mid-dark-blue text-white hover:bg-custom-mid-light-blue active:bg-custom-mid-dark-blue",
@@ -16,7 +29,7 @@ const Button = ({ text, variant = "primary", onClick, disable = false, type }) =
 
     return (
         <button
-            className={`${baseStyles} ${variantStyles}`}
+            className={`${sizeVariants()} ${baseStyles} ${variantStyles}`}
             onClick={onClick}
             disabled={disable}
             type={type}

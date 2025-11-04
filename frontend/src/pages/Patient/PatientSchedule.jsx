@@ -3,8 +3,10 @@ import AnimatedPage from '../../components/layout/AnimatedPage';
 
 const PatientSchedule = () => (
   <AnimatedPage>
-    <div style={{ padding: '10px', background: '#e0f7fa' }}>
-      <h3>Bienvenido, Paciente (Agenda)</h3>
+    <div className="px-8">
+      <h1 className="text-2xl font-bold text-custom-dark-blue mb-6">
+        Mi Agenda de Turnos
+      </h1>
     </div>
   </AnimatedPage>
 );
