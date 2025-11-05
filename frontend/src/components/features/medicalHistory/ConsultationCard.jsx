@@ -29,7 +29,7 @@ const ConsultationCard = ({ consultation, type, onViewDetails }) => {
             <span className="font-semibold text-lg">
                 {new Date(consultation.shift.startTime).toLocaleDateString()}
             </span>
-            <span className="font-bold text-xl text-custom-dark-blue flex-grow text-center">
+            <span className="font-bold text-xl text-custom-dark-blue grow text-center">
                 {consultation.shift.doctor.specialty.name}
             </span>
             <span className="text-custom-dark-blue">
@@ -59,7 +59,7 @@ const ConsultationCard = ({ consultation, type, onViewDetails }) => {
             >
                 <div className="flex justify-between items-center w-full mb-4">
                     <span className="font-semibold text-lg">{new Date(consultation.consultationDate).toLocaleDateString()}</span>
-                    <span className="font-bold text-xl text-custom-dark-blue flex-grow text-center">{consultation.shift.doctor.specialty.name}</span>
+                    <span className="font-bold text-xl text-custom-dark-blue grow text-center">{consultation.shift.doctor.specialty.name}</span>
                     <span className="text-custom-dark-blue">Dr. {consultation.shift.doctor.firstName} {consultation.shift.doctor.lastName}</span>
 
                     <motion.div animate={{ rotate: 180 }}><IoIosArrowDown size={24} className="mx-2" /></motion.div>
@@ -99,7 +99,7 @@ const ConsultationCard = ({ consultation, type, onViewDetails }) => {
     const renderDoctorCompactView = () => (
         <motion.div key="compact-doctor" variants={contentVariants} initial="hidden" animate="visible" exit="hidden" className="flex justify-between items-center w-full">
             <span className="font-semibold text-lg">{new Date(consultation.consultationDate).toLocaleDateString()}</span>
-            <span className="font-bold text-xl text-custom-dark-blue flex-grow text-center">{consultation.shift.doctor.specialty.name}</span>
+            <span className="font-bold text-xl text-custom-dark-blue grow text-center">{consultation.shift.doctor.specialty.name}</span>
             <span className="text-custom-dark-blue">Dr. {consultation.shift.doctor.firstName} {consultation.shift.doctor.lastName}</span>
             <motion.div animate={{ rotate: 0 }}><IoIosArrowDown size={24} className="ml-2" /></motion.div>
         </motion.div>
@@ -109,7 +109,7 @@ const ConsultationCard = ({ consultation, type, onViewDetails }) => {
         <motion.div key="expanded-doctor" variants={contentVariants} initial="hidden" animate="visible" exit="hidden" className="flex flex-col w-full">
             <div className="flex justify-between items-center w-full mb-4">
                 <span className="font-semibold text-lg">{new Date(consultation.consultationDate).toLocaleDateString()}</span>
-                <span className="font-bold text-xl text-custom-dark-blue flex-grow text-center">{consultation.shift.doctor.specialty.name}</span>
+                <span className="font-bold text-xl text-custom-dark-blue grow text-center">{consultation.shift.doctor.specialty.name}</span>
                 <span className="text-custom-dark-blue">Dr. {consultation.shift.doctor.firstName} {consultation.shift.doctor.lastName}</span>
                 <div animate={{ rotate: 180 }}><IoIosArrowDown size={24} className="mx-2" /></div>
             </div>
@@ -147,7 +147,7 @@ const ConsultationCard = ({ consultation, type, onViewDetails }) => {
             return (
                 <div className="flex justify-between items-center w-full text-custom-dark-blue">
                     <span className="font-semibold">{consultation.shift.patient.dni}</span>
-                    <span className="font-bold text-lg flex-grow text-center">
+                    <span className="font-bold text-lg grow text-center">
                         {consultation.shift.patient.firstName} {consultation.shift.patient.lastName}
                     </span>
                     <span className="mr-4">{consultation.shift.patient.telephone}</span>
@@ -164,7 +164,7 @@ const ConsultationCard = ({ consultation, type, onViewDetails }) => {
             return (
                 <div className="flex justify-between items-center w-full text-custom-dark-blue">
                     <span className="font-semibold">{consultation.shift.doctor.licenseNumber}</span>
-                    <span className="font-bold text-lg flex-grow text-center">
+                    <span className="font-bold text-lg grow text-center">
                         Dr. {consultation.shift.doctor.firstName} {consultation.shift.doctor.lastName}
                     </span>
                     <span className="mr-4">{consultation.shift.doctor.telephone}</span>

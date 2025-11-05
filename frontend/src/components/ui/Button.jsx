@@ -1,6 +1,6 @@
 import React from "react";
 
-const Button = ({ text, variant = "primary", onClick, disable = false, type, size = "big" }) => {
+const Button = ({ text, variant = "primary", onClick, disable = false, type, size = "big", icon }) => {
 
     const sizeVariants = () => {
         switch (size) {
@@ -15,7 +15,7 @@ const Button = ({ text, variant = "primary", onClick, disable = false, type, siz
         }
     }
     
-    const baseStyles = "transition-all duration-200 ease-in-out transform hover:scale-105 active:scale-100 flex justify-center items-center"
+    const baseStyles = "transition-all duration-200 ease-in-out transform hover:scale-105 active:scale-100 flex flex-row items-center justify-center gap-2"
 
     const variants = {
         primary: "bg-custom-mid-dark-blue text-white hover:bg-custom-mid-light-blue active:bg-custom-mid-dark-blue",
@@ -34,6 +34,7 @@ const Button = ({ text, variant = "primary", onClick, disable = false, type, siz
             disabled={disable}
             type={type}
         >
+            {icon}
             {text}
         </button>
     );

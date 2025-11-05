@@ -94,7 +94,7 @@ const Input = ({
                 )}
             </div>
 
-            <div className={`${baseStyles} ${variantStyles} ${multiline ? 'h-full flex-grow' : ''}`}>
+            <div className={`${baseStyles} ${variantStyles} ${multiline ? 'h-full grow' : ''}`}>
                 {InputElement}
 
                 {icon &&

@@ -33,7 +33,7 @@ const Select = ({
     };
 
     const baseStyles = `
-        border-2 rounded-lg 
+        border-2 rounded-lg
         flex flex-row justify-between items-center pl-4 pr-6
         transition-colors duration-200 ease-in-out
         ${sizeVariants[size].container}
@@ -41,7 +41,7 @@ const Select = ({
     `;
 
     const variants = {
-        active: error ? "" : "focus-within:border-custom-dark-blue hover:border-custom-dark-blue/70",
+        active: error ? "bg-white" : "bg-white focus-within:border-custom-dark-blue hover:border-custom-dark-blue/70",
         disabled: "bg-custom-light-gray"
     };
 

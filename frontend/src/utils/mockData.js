@@ -43,6 +43,11 @@ export const mockSpecialties = [
     }
 ];
 
+export const specialtyOptions = mockSpecialties.map(specialty => ({
+    value: specialty.specialtyId,
+    label: specialty.name
+}));
+
 export const mockSocialWorks = [
     {
         socialWorkId: 1,
@@ -154,6 +159,19 @@ export const mockDoctor_Fernandez = {
     },
     specialty: mockSpecialties[3] // Clínica Médica
 };
+
+// Coleccion de Doctores
+export const mockDoctors = [
+    mockDoctor_Sanchez,
+    mockDoctor_Torres,
+    mockDoctor_Ruiz,
+    mockDoctor_Fernandez,
+]
+
+export const doctorOptions = mockDoctors.map(doctor => ({
+    value: doctor.doctorId,
+    label: `Dr/a. ${doctor.firstName} ${doctor.lastName}`
+}));
 
 // --- Pacientes (Patients) ---
 // (Combinan 'Usuario', 'Paciente' y 'ObraSocial')
