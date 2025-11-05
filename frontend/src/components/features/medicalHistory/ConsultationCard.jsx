@@ -17,10 +17,9 @@ const ConsultationCard = ({ consultation, type, onViewDetails }) => {
         visible: { opacity: 1, height: "auto", y: 0, transition: { duration: 0.3, delay: 0.1 } }
     };
 
-    // Funciones de ayuda para un código más limpio
     const renderPatientCompactView = () => (
         <motion.div
-            key="compact-patient" // Key única para AnimatePresence
+            key="compact-patient"
             variants={contentVariants}
             initial="hidden"
             animate="visible"
@@ -36,41 +35,66 @@ const ConsultationCard = ({ consultation, type, onViewDetails }) => {
             <span className="text-custom-dark-blue">
                 Dr/a. {consultation.shift.doctor.firstName} {consultation.shift.doctor.lastName}
             </span>
-            {/* 3. Anima la flecha */}
             <motion.div animate={{ rotate: 0 }}><IoIosArrowDown size={24} className="ml-2" /></motion.div>
         </motion.div>
     );
 
-    const renderPatientExpandedView = () => (
-        <motion.div
-            key="expanded-patient" // Key única
-            variants={contentVariants}
-            initial="hidden"
-            animate="visible"
-            exit="hidden"
-            className="flex flex-col w-full"
-        >
-            {/* Header de la vista expandida */}
-            <div className="flex justify-between items-center w-full mb-4">
-                <span className="font-semibold text-lg">
-                    {new Date(consultation.shift.startTime).toLocaleDateString()}
-                </span>
-                <span className="font-bold text-xl text-custom-dark-blue flex-grow text-center">
-                    {consultation.shift.doctor.specialty.name}
-                </span>
-                <span className="text-custom-dark-blue">
-                    Dr. {consultation.shift.doctor.firstName} {consultation.shift.doctor.lastName}
-                </span>
-                {/* 3. Anima la flecha */}
-                <motion.div animate={{ rotate: 180 }}><IoIosArrowDown size={24} className="ml-2" /></motion.div>
-            </div>
+    const renderPatientExpandedView = () => {
+        const handleDownloadReceta = (e) => {
+            e.stopPropagation();
 
-            {/* Contenido expandido */}
-            <div className="grid grid-cols-2 gap-4 text-custom-dark-blue mt-2 p-4 bg-blue-100 rounded-lg">
-                {/* ... (tu JSX de detalles del paciente va aquí) ... */}
-            </div>
-        </motion.div>
-    );
+            // 3. Aquí va tu lógica de descarga
+            console.log("Iniciando descarga de receta...");
+            // ... (lógica para generar el PDF o llamar a la API)
+        };
+
+        return (
+            <motion.div
+                key="expanded-patient"
+                variants={contentVariants}
+                initial="hidden"
+                animate="visible"
+                exit="hidden"
+                className="flex flex-col w-full"
+            >
+                <div className="flex justify-between items-center w-full mb-4">
+                    <span className="font-semibold text-lg">{new Date(consultation.consultationDate).toLocaleDateString()}</span>
+                    <span className="font-bold text-xl text-custom-dark-blue flex-grow text-center">{consultation.shift.doctor.specialty.name}</span>
+                    <span className="text-custom-dark-blue">Dr. {consultation.shift.doctor.firstName} {consultation.shift.doctor.lastName}</span>
+
+                    <motion.div animate={{ rotate: 180 }}><IoIosArrowDown size={24} className="mx-2" /></motion.div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 text-custom-dark-blue mt-2 p-4 bg-blue-100 rounded-lg">
+                    <div>
+                        <h3 className="font-bold text-lg mb-2">{consultation.shift.doctor.specialty.name}</h3>
+                        <p><span className="font-semibold">Médico:</span> Dr. {consultation.shift.doctor.firstName} {consultation.shift.doctor.lastName}</p>
+                        <p><span className="font-semibold">Fecha de Consulta:</span> {new Date(consultation.consultationDate).toLocaleDateString()}</p>
+                        <p><span className="font-semibold">Motivo de consulta:</span> {consultation.shift.reason}</p>
+                        <p className="mt-4"><span className="font-semibold">Diagnóstico:</span> {consultation.diagnosis}</p>
+                        <p><span className="font-semibold">Tratamiento:</span> {consultation.treatment}</p>
+                    </div>
+                    <div>
+                        <div className='flex flex-row items-center justify-between'>
+                            <h3 className="font-bold text-lg mb-2">Recetas:</h3>
+                            <Button text={"Descargar Receta Digital"} size={"small"} onClick={handleDownloadReceta} /> { /* BOTON PARA DESCARGAR, ACA FALTA LA LOGICA DEL DOCUMENTO GENERADO */}
+                        </div>
+                        {consultation.medications && consultation.medications.length > 0 ? (
+                            consultation.medications.map((med, index) => (
+                                <div key={med.prescriptionId || index} className="mb-2">
+                                    <p><span className="font-semibold">Medicamento:</span> {med.name}</p>
+                                    <p><span className="font-semibold">Dosis:</span> {med.dosage}</p>
+                                    <p><span className="font-semibold">Instrucciones:</span> {med.instructions}</p>
+                                </div>
+                            ))
+                        ) : (
+                            <p>No hay medicamentos recetados.</p>
+                        )}
+                    </div>
+                </div>
+            </motion.div>
+        );
+    }
 
     const renderDoctorCompactView = () => (
         <motion.div key="compact-doctor" variants={contentVariants} initial="hidden" animate="visible" exit="hidden" className="flex justify-between items-center w-full">
@@ -87,10 +111,9 @@ const ConsultationCard = ({ consultation, type, onViewDetails }) => {
                 <span className="font-semibold text-lg">{new Date(consultation.consultationDate).toLocaleDateString()}</span>
                 <span className="font-bold text-xl text-custom-dark-blue flex-grow text-center">{consultation.shift.doctor.specialty.name}</span>
                 <span className="text-custom-dark-blue">Dr. {consultation.shift.doctor.firstName} {consultation.shift.doctor.lastName}</span>
-                <div animate={{ rotate: 180 }}><IoIosArrowDown size={24} className="ml-2" /></div>
+                <div animate={{ rotate: 180 }}><IoIosArrowDown size={24} className="mx-2" /></div>
             </div>
 
-            {/* Contenido expandido para Doctor (similar a Image 4) */}
             <div className="grid grid-cols-2 gap-4 text-custom-dark-blue mt-2 p-4 bg-blue-100 rounded-lg">
                 <div>
                     <h3 className="font-bold text-lg mb-2">{consultation.shift.doctor.specialty.name}</h3>
@@ -120,8 +143,7 @@ const ConsultationCard = ({ consultation, type, onViewDetails }) => {
     );
 
     const renderAdminView = () => {
-        // Renderizado basado en si es información de paciente o doctor
-        if (type === 'Admin' && consultation.adminViewType === 'patient') { // Asumo un 'adminViewType' en el objeto de consulta
+        if (type === 'Admin' && consultation.adminViewType === 'patient') {
             return (
                 <div className="flex justify-between items-center w-full text-custom-dark-blue">
                     <span className="font-semibold">{consultation.shift.patient.dni}</span>
@@ -138,7 +160,7 @@ const ConsultationCard = ({ consultation, type, onViewDetails }) => {
                     />
                 </div>
             );
-        } else if (type === 'Admin' && consultation.adminViewType === 'doctor') { // Otra vista para Admin
+        } else if (type === 'Admin' && consultation.adminViewType === 'doctor') {
             return (
                 <div className="flex justify-between items-center w-full text-custom-dark-blue">
                     <span className="font-semibold">{consultation.shift.doctor.licenseNumber}</span>
@@ -156,7 +178,7 @@ const ConsultationCard = ({ consultation, type, onViewDetails }) => {
                 </div>
             );
         }
-        return null; // En caso de que adminViewType no esté definido o no coincida
+        return null;
     };
 
     const baseClasses = `
@@ -167,20 +189,17 @@ const ConsultationCard = ({ consultation, type, onViewDetails }) => {
     `;
 
     return (
-        // 5. El contenedor principal usa 'layout' para animar su altura
-        <motion.div 
-            layout // <-- ¡LA MAGIA PRINCIPAL!
-            transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }} // Una curva suave
-            className={baseClasses} 
+        <motion.div
+            layout
+            transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+            className={baseClasses}
             onClick={type !== 'Admin' ? toggleExpand : undefined}
         >
-            {/* 6. AnimatePresence maneja la entrada/salida del contenido */}
             <AnimatePresence initial={false} mode="wait">
                 {type === 'Patient' && (isExpanded ? renderPatientExpandedView() : renderPatientCompactView())}
                 {type === 'Doctor' && (isExpanded ? renderDoctorExpandedView() : renderDoctorCompactView())}
             </AnimatePresence>
-            
-            {/* La vista de Admin no es animada, así que va fuera */}
+
             {type === 'Admin' && renderAdminView()}
         </motion.div>
     );
