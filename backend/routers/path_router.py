@@ -6,7 +6,6 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-
 # Endpoints del controlador
 @router.get("/")
 async def get_path():
