@@ -8,7 +8,7 @@ import { motion } from 'framer-motion';
 import { FaSearch } from "react-icons/fa";
 import { LiaUndoAltSolid } from "react-icons/lia";
 
-const initialFiltersState = {
+export const initialFiltersState = {
     specialty: "",
     doctor: "",
     date: "",

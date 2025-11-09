@@ -248,23 +248,41 @@ export const mockPatient_Gomez = {
     socialWork: mockSocialWorks[0] // OSDE
 };
 
-export const mockPatient_Messi = {
+export const mockPatient_Lionel_Messi = {
     patientId: 5,
     firstName: "Lionel",
     lastName: "Messi",
-    dni: "30123456",
+    dni: "30123456", 
     telephone: "3411010101",
-    birthDate: "1987-06-24",
-    membershipNumber: "1010101010",
+    birthDate: "1987-06-24", 
+    membershipNumber: "1010101010-01", 
     user: {
-        userId: 205,
-        email: "lio.messi@gmail.com",
+        userId: 205, 
+        email: "lio.messi@gmail.com", 
         createdAt: "2024-09-01T10:00:00",
         active: true,
         role: "Patient"
     },
     socialWork: mockSocialWorks[3] // AFA
 };
+
+export const mockPatient_Thiago_Messi = {
+    patientId: 7, 
+    firstName: "Thiago",
+    lastName: "Messi", 
+    dni: "55123456", 
+    telephone: "3411010102", 
+    birthDate: "2012-11-02", 
+    membershipNumber: "1010101010-02", 
+    user: {
+        userId: 207, 
+        email: "thiago.messi@gmail.com", 
+        createdAt: "2024-09-01T10:00:00",
+        active: true,
+        role: "Patient"
+    },
+    socialWork: mockSocialWorks[3] // AFA
+}; 
 
 // --- Paciente sin Obra Social ---
 export const mockPatient_Garcia_NoSocial = {
@@ -339,7 +357,16 @@ export const doctorScheduleMock = [
         reason: "Consulta por lesión de rodilla.",
         status: mockShiftStatus.cancelled, // Caso: Turno cancelado
         doctor: mockDoctor_Sanchez,
-        patient: mockPatient_Messi
+        patient: mockPatient_Lionel_Messi
+    },
+    {
+        shiftId: 6, 
+        startTime: "2025-11-04T12:00:00", 
+        endTime: "2025-11-04T12:30:00",
+        reason: "Control de rodilla post-partido.",
+        status: mockShiftStatus.pending,
+        doctor: mockDoctor_Sanchez, 
+        patient: mockPatient_Thiago_Messi 
     }
 ];
 
@@ -355,7 +382,7 @@ export const patientScheduleMock = [
         reason: "Consulta por lesión de rodilla.",
         status: mockShiftStatus.cancelled,
         doctor: mockDoctor_Sanchez,
-        patient: mockPatient_Messi
+        patient: mockPatient_Lionel_Messi
     },
     {
         shiftId: 6,
@@ -364,7 +391,7 @@ export const patientScheduleMock = [
         reason: "Control anual, apto físico.",
         status: mockShiftStatus.pending,
         doctor: mockDoctor_Torres, // Diferente doctor
-        patient: mockPatient_Messi
+        patient: mockPatient_Lionel_Messi
     },
     {
         shiftId: 7,
@@ -373,7 +400,7 @@ export const patientScheduleMock = [
         reason: "Control de lunares.",
         status: mockShiftStatus.pending,
         doctor: mockDoctor_Ruiz, // Diferente doctor
-        patient: mockPatient_Messi
+        patient: mockPatient_Lionel_Messi
     },
     {
         shiftId: 8,
@@ -382,7 +409,7 @@ export const patientScheduleMock = [
         reason: "Certificado de buena salud.",
         status: mockShiftStatus.attended,
         doctor: mockDoctor_Fernandez, // Diferente doctor
-        patient: mockPatient_Messi
+        patient: mockPatient_Lionel_Messi
     }
 ];
 

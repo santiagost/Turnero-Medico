@@ -5,19 +5,13 @@ import { completedConsultationsMock, doctorOptions, specialtyOptions } from '../
 
 import SectionCard from '../../components/ui/SectionCard';
 import ConsultationCard from '../../components/features/medicalHistory/ConsultationCard';
-import ConsultationFilterPanel from '../../components/features/filterPanel/ConsultationFilterPanel';
+import ConsultationFilterPanel, { initialFiltersState } from '../../components/features/filterPanel/ConsultationFilterPanel';
 
-const initialFilters = {
-  specialty: "",
-  doctor: "",
-  date: "",
-  order: "date_desc"
-};
 
 const PatientHistory = () => {
   // const [allConsultations, setAllConsultations] = useState([]); // Debe empezar vacio cuando este con una api
-  const [allConsultations, setAllConsultations] = useState(completedConsultationsMock); // Debe empezar vacio cuando este con una api
-  const [activeFilters, setActiveFilters] = useState(initialFilters);
+  const [allConsultations, setAllConsultations] = useState(completedConsultationsMock);
+  const [activeFilters, setActiveFilters] = useState(initialFiltersState);
   const [filteredConsultations, setFilteredConsultations] = useState([]); // Empieza vacío
 
 
