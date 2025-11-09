@@ -1,17 +1,17 @@
 """
-Módulo de conexión a la base de datos.
-Implementa un singleton para la conexión SQLite.
+Singleton para la conexión con la base de datos SQLite.
 """
 import sqlite3
 from typing import Optional
-from config import get_settings
+from pathlib import Path
+
+# Obtener la ruta base del proyecto
+BASE_DIR = Path(__file__).resolve().parent.parent
+DATABASE_DIR = BASE_DIR / "database"
+database_url: Path = DATABASE_DIR / "turnero_medico.db"
 
 
 class DatabaseConnection:
-    """
-    Singleton para la conexión a la base de datos SQLite.
-    Garantiza que solo exista una conexión compartida en toda la aplicación.
-    """
     _instance: Optional['DatabaseConnection'] = None
     _connection: Optional[sqlite3.Connection] = None
 
@@ -23,37 +23,23 @@ class DatabaseConnection:
     def __init__(self):
         """Inicializa la conexión si aún no existe"""
         if self._connection is None:
-            settings = get_settings()
-            # Extraer la ruta del archivo de la URL
-            db_path = settings.database_url.replace("sqlite:///", "")
             self._connection = sqlite3.connect(
-                db_path,
-                check_same_thread=False  # Importante para FastAPI
+                str(database_url),
+                check_same_thread=False
             )
             self._connection.row_factory = sqlite3.Row  # Permite acceso por nombre de columna
-            print(f"✅ Conexión a base de datos establecida: {db_path}")
+            print(f"✅ Conexión a base de datos establecida: {database_url}")
 
     @classmethod
     def get_connection(cls) -> sqlite3.Connection:
         """
         Retorna la conexión singleton a la base de datos.
         
-        Returns:
-            sqlite3.Connection: Conexión activa a la base de datos
+        sqlite3.Connection: Conexión activa a la base de datos
         """
         if cls._instance is None:
             cls()
         return cls._instance._connection
-
-    @classmethod
-    def get_cursor(cls) -> sqlite3.Cursor:
-        """
-        Retorna un cursor para ejecutar consultas.
-        
-        Returns:
-            sqlite3.Cursor: Cursor de la base de datos
-        """
-        return cls.get_connection().cursor()
 
     @classmethod
     def commit(cls):
@@ -77,7 +63,7 @@ class DatabaseConnection:
         """Context manager: entrada"""
         return self.get_connection()
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type):
         """Context manager: salida"""
         if exc_type is not None:
             self.rollback()

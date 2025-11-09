@@ -1,9 +1,13 @@
-## Requisitos
+## 📋 Requisitos
 - Python 3.11 o 3.12
+- Node.js (para el frontend)
 - Ejecutar comandos en bash
 
 **Ir a la carpeta raiz del proyecto**
 
+---
+
+## ⚙️ Backend (Python)
 
 **Crear y activar entorno virtual** (ejecutar estos 2 comandos)
 
@@ -29,4 +33,18 @@
 
     deactivate
 
+---
 
+## 🖥️ Frontend (React)
+
+**Ir a la carpeta del frontend** (desde la raíz)
+
+    cd frontend
+
+**Instalar dependencias**
+
+    npm i
+
+**Levantar servidor de desarrollo**
+
+    npm run dev
