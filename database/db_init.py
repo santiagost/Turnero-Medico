@@ -27,9 +27,9 @@ CREATE TABLE IF NOT EXISTS Rol (
 );
 
 -- -----------------------------------------------------
--- Tabla: Usuario_Rol (Tabla de unión)
+-- Tabla: UsuarioRol (Tabla de unión)
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS Usuario_Rol (
+CREATE TABLE IF NOT EXISTS UsuarioRol (
   id_usuario INTEGER,
   id_rol INTEGER,
   PRIMARY KEY (id_usuario, id_rol),
