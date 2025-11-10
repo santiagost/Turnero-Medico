@@ -4,6 +4,9 @@ Servicio de pacientes - Contiene la lógica de negocio y acceso a datos
 import sqlite3
 from typing import List, Optional
 from fastapi import HTTPException, status
+from models.paciente import PacienteResponse
+from models.usuario import UsuarioResponse
+from models.obraSocial import ObraSocialResponse
 
 
 class PacienteService:
@@ -12,7 +15,7 @@ class PacienteService:
         self.db = db
         self.cursor = db.cursor()
     
-    def _get_paciente_completo(self, paciente_id: int) -> Optional[dict]:
+    def _get_paciente_completo(self, paciente_id: int) -> Optional[PacienteResponse]:
         """
         Método privado: Obtiene un paciente con sus relaciones (usuario y obra social).
         """
@@ -26,24 +29,51 @@ class PacienteService:
         paciente_dict = dict(paciente_row)
         
         # Obtener datos del usuario si existe
+        usuario_obj = None
         if paciente_dict.get('id_usuario'):
             self.cursor.execute("SELECT * FROM Usuario WHERE id_usuario = ?", (paciente_dict['id_usuario'],))
             usuario_row = self.cursor.fetchone()
-            paciente_dict['usuario'] = dict(usuario_row) if usuario_row else None
-        else:
-            paciente_dict['usuario'] = None
+            if usuario_row:
+                usuario_data = dict(usuario_row)
+                usuario_obj = UsuarioResponse(
+                    email=usuario_data['email'],
+                    id_usuario=usuario_data['id_usuario'],
+                    activo=bool(usuario_data['activo']),
+                    creado_en=usuario_data['creado_en']
+                )
         
         # Obtener datos de la obra social si existe
+        obra_social_obj = None
         if paciente_dict.get('id_obra_social'):
             self.cursor.execute("SELECT * FROM ObraSocial WHERE id_obra_social = ?", (paciente_dict['id_obra_social'],))
             obra_social_row = self.cursor.fetchone()
-            paciente_dict['obra_social'] = dict(obra_social_row) if obra_social_row else None
-        else:
-            paciente_dict['obra_social'] = None
+            if obra_social_row:
+                obra_social_data = dict(obra_social_row)
+                obra_social_obj = ObraSocialResponse(
+                    nombre=obra_social_data['nombre'],
+                    id_obra_social=obra_social_data['id_obra_social'],
+                    cuit=obra_social_data.get('cuit'),
+                    direccion=obra_social_data.get('direccion'),
+                    telefono=obra_social_data.get('telefono'),
+                    mail=obra_social_data.get('mail')
+                )
         
-        return paciente_dict
+        # Crear objeto PacienteResponse
+        return PacienteResponse(
+            dni=paciente_dict['dni'],
+            nombre=paciente_dict['nombre'],
+            apellido=paciente_dict['apellido'],
+            telefono=paciente_dict['telefono'],
+            id_paciente=paciente_dict['id_paciente'],
+            id_usuario=paciente_dict.get('id_usuario'),
+            fecha_nacimiento=paciente_dict.get('fecha_nacimiento'),
+            id_obra_social=paciente_dict.get('id_obra_social'),
+            nro_afiliado=paciente_dict.get('nro_afiliado'),
+            usuario=usuario_obj,
+            obra_social=obra_social_obj
+        )
     
-    def get_all(self) -> List[dict]:
+    def get_all(self) -> List[PacienteResponse]:
         """
         Obtiene todos los pacientes con sus relaciones.
         """
@@ -66,7 +96,7 @@ class PacienteService:
                 detail=f"Error al obtener pacientes: {str(e)}"
             )
     
-    def get_by_id(self, paciente_id: int) -> dict:
+    def get_by_id(self, paciente_id: int) -> PacienteResponse:
         """
         Obtiene un paciente por su ID con sus relaciones.
         """
@@ -87,43 +117,45 @@ class PacienteService:
                 detail=f"Error al obtener paciente: {str(e)}"
             )
     
-    def create(self, paciente_data: dict) -> dict:
+    def create(self, paciente_data) -> PacienteResponse:
         """
         Crea un nuevo paciente.
+        paciente_data: PacienteCreate
         """
         try:
             # Validar DNI único
-            self.cursor.execute("SELECT id_paciente FROM Paciente WHERE dni = ?", (paciente_data['dni'],))
+            self.cursor.execute("SELECT id_paciente FROM Paciente WHERE dni = ?", (paciente_data.dni,))
             if self.cursor.fetchone():
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Ya existe un paciente con DNI {paciente_data['dni']}"
+                    detail=f"Ya existe un paciente con DNI {paciente_data.dni}"
                 )
             
             # Validar nro_afiliado único para la obra social
-            if paciente_data.get('id_obra_social') and paciente_data.get('nro_afiliado'):
+            if paciente_data.id_obra_social and paciente_data.nro_afiliado:
                 self.cursor.execute(
                     "SELECT id_paciente FROM Paciente WHERE id_obra_social = ? AND nro_afiliado = ?",
-                    (paciente_data['id_obra_social'], paciente_data['nro_afiliado'])
+                    (paciente_data.id_obra_social, paciente_data.nro_afiliado)
                 )
                 if self.cursor.fetchone():
                     raise HTTPException(
                         status_code=status.HTTP_400_BAD_REQUEST,
-                        detail=f"Ya existe un paciente con nro_afiliado {paciente_data['nro_afiliado']} en la obra social"
+                        detail=f"Ya existe un paciente con nro_afiliado {paciente_data.nro_afiliado} en la obra social"
                     )
             
             # Insertar nuevo paciente
             self.cursor.execute("""
-                INSERT INTO Paciente (dni, nombre, apellido, fecha_nacimiento, telefono, id_obra_social, nro_afiliado)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO Paciente (dni, nombre, apellido, fecha_nacimiento, telefono, id_obra_social, nro_afiliado, id_usuario)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """, (
-                paciente_data['dni'],
-                paciente_data['nombre'],
-                paciente_data['apellido'],
-                paciente_data['fecha_nacimiento'],
-                paciente_data.get('telefono'),
-                paciente_data.get('id_obra_social'),
-                paciente_data.get('nro_afiliado')
+                paciente_data.dni,
+                paciente_data.nombre,
+                paciente_data.apellido,
+                paciente_data.fecha_nacimiento,
+                paciente_data.telefono,
+                paciente_data.id_obra_social,
+                paciente_data.nro_afiliado,
+                paciente_data.id_usuario
             ))
             
             self.db.commit()
@@ -139,9 +171,10 @@ class PacienteService:
                 detail=f"Error al crear paciente: {str(e)}"
             )
     
-    def update(self, paciente_id: int, paciente_data: dict) -> dict:
+    def update(self, paciente_id: int, paciente_data) -> PacienteResponse:
         """
         Actualiza los datos de un paciente existente.
+        paciente_data: PacienteUpdate
         """
         try:
             # Verificar existencia
@@ -156,10 +189,25 @@ class PacienteService:
             update_fields = []
             update_values = []
             
-            for field in ['nombre', 'apellido', 'fecha_nacimiento', 'telefono', 'id_obra_social', 'nro_afiliado']:
-                if field in paciente_data and paciente_data[field] is not None:
-                    update_fields.append(f"{field} = ?")
-                    update_values.append(paciente_data[field])
+            # Verificar cada campo del objeto PacienteUpdate
+            if paciente_data.nombre is not None:
+                update_fields.append("nombre = ?")
+                update_values.append(paciente_data.nombre)
+            if paciente_data.apellido is not None:
+                update_fields.append("apellido = ?")
+                update_values.append(paciente_data.apellido)
+            if paciente_data.fecha_nacimiento is not None:
+                update_fields.append("fecha_nacimiento = ?")
+                update_values.append(paciente_data.fecha_nacimiento)
+            if paciente_data.telefono is not None:
+                update_fields.append("telefono = ?")
+                update_values.append(paciente_data.telefono)
+            if paciente_data.id_obra_social is not None:
+                update_fields.append("id_obra_social = ?")
+                update_values.append(paciente_data.id_obra_social)
+            if paciente_data.nro_afiliado is not None:
+                update_fields.append("nro_afiliado = ?")
+                update_values.append(paciente_data.nro_afiliado)
             
             if not update_fields:
                 raise HTTPException(
