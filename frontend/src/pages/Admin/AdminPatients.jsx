@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import AnimatedPage from '../../components/layout/AnimatedPage';
 import SectionCard from '../../components/ui/SectionCard';
 import AdminNewPatient from '../../components/features/adminDataManagement/create/AdminNewPatient';
@@ -6,7 +6,7 @@ import AdminPatientFilterPanel from '../../components/features/filterPanel/admin
 import Button from '../../components/ui/Button';
 import { IoMdClose } from "react-icons/io";
 import { motion, AnimatePresence } from 'framer-motion';
-import { useParams } from 'react-router-dom';
+import { useParams, useOutletContext } from 'react-router-dom';
 import AdminEditPatient from '../../components/features/adminDataManagement/edit/AdminEditPatient';
 
 import Modal from '../../components/ui/Modal';
@@ -29,9 +29,26 @@ const AdminPatients = () => {
       opacity: 1,
       height: "auto",
       y: 0,
-      transition: { duration: 0.3, ease: "easeInOut", delay: 0.1 }
+      transition: { duration: 0.2, ease: "easeInOut", delay: 0.1 }
     }
   };
+
+  const detailSectionRef = useRef(null);
+  const { scrollContainerRef } = useOutletContext();
+
+  useEffect(() => {
+    if (selectedPatientId && detailSectionRef.current && scrollContainerRef.current) {
+
+      const timerId = setTimeout(() => {
+        const targetPosition = detailSectionRef.current.offsetTop;
+        scrollContainerRef.current.scrollTo({
+          top: targetPosition,
+          behavior: 'smooth',
+        });
+      }, 300);
+      return () => clearTimeout(timerId);
+    }
+  }, [selectedPatientId]);
 
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
   const [isDiscardModalOpen, setIsDiscardModalOpen] = useState(false);
@@ -140,7 +157,8 @@ const AdminPatients = () => {
         <AnimatePresence>
           {selectedPatientId &&
             <motion.div
-              key="edit-doctor"
+              key="edit-patient"
+              ref={detailSectionRef}
               variants={sectionVariants}
               initial="hidden"
               animate="visible"
