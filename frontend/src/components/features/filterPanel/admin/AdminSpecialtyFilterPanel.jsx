@@ -15,7 +15,7 @@ export const initialFiltersState = {
     name: ""
 };
 
-const AdminSpecialtyFilterPanel = () => {
+const AdminSpecialtyFilterPanel = ({ specialtyToDelete, specialtyToEdit }) => {
     const [allSpecialties, setAllSpecialties] = useState(mockSpecialties);
 
     const [localFilters, setLocalFilters] = useState(initialFiltersState);
@@ -48,14 +48,7 @@ const AdminSpecialtyFilterPanel = () => {
         setHasSearched(false);
     };
 
-    const handleEdit = (id) => {
-        alert(`Abrir modal de edición para Especialidad ID: ${id}`);
-    };
-
-    const handleDelete = (id) => {
-        alert(`Abrir modal de confirmación para eliminar Especialidad ID: ${id}`);
-    };
-
+    
     return (
         <div className="w-full p-4">
             <form
@@ -114,11 +107,11 @@ const AdminSpecialtyFilterPanel = () => {
                             <div className="flex items-center gap-3">
                                 <IconButton
                                     icon={<LiaPencilAltSolid size={24} />}
-                                    content onClick={() => handleEdit(sp.specialtyId)}
+                                    content onClick={() => specialtyToEdit(sp.specialtyId)}
                                 />
                                 <IconButton
                                     icon={<LiaTrashAltSolid size={24} />}
-                                    s onClick={() => handleDelete(sp.specialtyId)}
+                                    s onClick={() => specialtyToDelete(sp.specialtyId)}
                                 />
                             </div>
                         </motion.div>

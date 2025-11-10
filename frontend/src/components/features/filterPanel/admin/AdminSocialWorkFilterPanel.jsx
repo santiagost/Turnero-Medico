@@ -15,7 +15,7 @@ export const initialFiltersState = {
     cuit: ""
 };
 
-const AdminSocialWorkFilterPanel = () => {
+const AdminSocialWorkFilterPanel = ({ socialWorkToDelete, socialWorkToEdit }) => {
     const [allSocialWorks, setAllSocialWorks] = useState(mockSocialWorks);
     
     const [localFilters, setLocalFilters] = useState(initialFiltersState);
@@ -51,16 +51,7 @@ const AdminSocialWorkFilterPanel = () => {
         setHasSearched(false);
     };
 
-    const handleEdit = (id) => {
-        alert(`Abrir modal de edición para Obra Social ID: ${id}`);
-        // Aquí abrirías un modal de edición
-    };
-
-    const handleDelete = (id) => {
-        alert(`Abrir modal de confirmación para eliminar Obra Social ID: ${id}`);
-        // Aquí abrirías un modal de confirmación
-    };
-
+    
     return (
         <div className="w-full p-4">
             <form
@@ -128,11 +119,11 @@ const AdminSocialWorkFilterPanel = () => {
                             <div className="flex items-center gap-3">
                                 <IconButton 
                                     icon={<LiaPencilAltSolid size={24} />}
-                                    onClick={() => handleEdit(sw.socialWorkId)}
+                                    onClick={() => socialWorkToEdit(sw.socialWorkId)}
                                 />
                                 <IconButton 
                                     icon={<LiaTrashAltSolid size={24} />}
-                                    onClick={() => handleDelete(sw.socialWorkId)}
+                                    onClick={() => socialWorkToDelete(sw.socialWorkId)}
                                 />
                             </div>
                         </motion.div>

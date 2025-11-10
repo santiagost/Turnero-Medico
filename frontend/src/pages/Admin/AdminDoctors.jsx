@@ -74,7 +74,7 @@ const AdminDoctors = () => {
   }
 
   const confirmSave = () => {
-    console.log("Guardando cambios en el paciente:", dataToSave);
+    console.log("Guardando cambios en el doctor:", dataToSave);
     // ... Aquí iría tu lógica de API para actualizar al paciente ...
 
     setIsSaveModalOpen(false);
@@ -83,7 +83,7 @@ const AdminDoctors = () => {
   };
 
   const confirmDelete = () => {
-    console.log("Eliminando paciente ID:", doctorIdToDelete);
+    console.log("Eliminando doctor ID:", doctorIdToDelete);
     // ... Aquí iría tu lógica de API para eliminar al paciente ...
 
     // Simulación: Muestra alerta y cierra
@@ -221,7 +221,7 @@ const AdminDoctors = () => {
         />
       </Modal>
 
-      {/* Modal de Eliminar Paciente */}
+      {/* Modal de Eliminar Médico */}
       <Modal isOpen={isDeleteModalOpen} onClose={closeDeleteModal}>
         <PrincipalCard
           title="Confirmar Eliminación"
