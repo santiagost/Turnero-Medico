@@ -3,13 +3,11 @@ import { IoIosArrowDown, IoIosArrowUp } from 'react-icons/io';
 import Button from '../../ui/Button';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const ConsultationCard = ({ consultation, type, onViewDetails }) => {
+const ConsultationCard = ({ consultation, type }) => {
     const [isExpanded, setIsExpanded] = useState(false);
 
     const toggleExpand = () => {
-        if (type !== 'Admin') {
-            setIsExpanded(prev => !prev);
-        }
+        setIsExpanded(prev => !prev);
     };
 
     const contentVariants = {
@@ -142,45 +140,6 @@ const ConsultationCard = ({ consultation, type, onViewDetails }) => {
         </motion.div>
     );
 
-    const renderAdminView = () => {
-        if (type === 'Admin' && consultation.adminViewType === 'patient') {
-            return (
-                <div className="flex justify-between items-center w-full text-custom-dark-blue">
-                    <span className="font-semibold">{consultation.shift.patient.dni}</span>
-                    <span className="font-bold text-lg grow text-center">
-                        {consultation.shift.patient.firstName} {consultation.shift.patient.lastName}
-                    </span>
-                    <span className="mr-4">{consultation.shift.patient.telephone}</span>
-                    <span className="mr-4">{consultation.shift.patient.user.email}</span>
-                    <span className="mr-4">{consultation.shift.patient.socialWork?.name || 'N/A'}</span>
-                    <Button
-                        text="Más Detalle"
-                        size="small"
-                        onClick={() => onViewDetails && onViewDetails(consultation.shift.patient.patientId, 'patient')}
-                    />
-                </div>
-            );
-        } else if (type === 'Admin' && consultation.adminViewType === 'doctor') {
-            return (
-                <div className="flex justify-between items-center w-full text-custom-dark-blue">
-                    <span className="font-semibold">{consultation.shift.doctor.licenseNumber}</span>
-                    <span className="font-bold text-lg grow text-center">
-                        Dr. {consultation.shift.doctor.firstName} {consultation.shift.doctor.lastName}
-                    </span>
-                    <span className="mr-4">{consultation.shift.doctor.telephone}</span>
-                    <span className="mr-4">{consultation.shift.doctor.user.email}</span>
-                    <span className="mr-4">{consultation.shift.doctor.specialty.name}</span>
-                    <Button
-                        text="Más Detalle"
-                        size="small"
-                        onClick={() => onViewDetails && onViewDetails(consultation.shift.doctor.doctorId, 'doctor')}
-                    />
-                </div>
-            );
-        }
-        return null;
-    };
-
     const baseClasses = `
         rounded-xl bg-blue-200 p-4 m-2 flex flex-col items-center 
         text-custom-dark-blue shadow-md 
@@ -193,14 +152,12 @@ const ConsultationCard = ({ consultation, type, onViewDetails }) => {
             layout
             transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
             className={baseClasses}
-            onClick={type !== 'Admin' ? toggleExpand : undefined}
+            onClick={toggleExpand}
         >
             <AnimatePresence initial={false} mode="wait">
                 {type === 'Patient' && (isExpanded ? renderPatientExpandedView() : renderPatientCompactView())}
                 {type === 'Doctor' && (isExpanded ? renderDoctorExpandedView() : renderDoctorCompactView())}
             </AnimatePresence>
-
-            {type === 'Admin' && renderAdminView()}
         </motion.div>
     );
 };

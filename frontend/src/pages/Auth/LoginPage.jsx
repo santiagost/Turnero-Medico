@@ -35,7 +35,7 @@ const LoginPage = () => {
     };
 
     useEffect(() => {
-        if (user) {
+        if (user && user.role) {
             const defaultPaths = {
                 'Patient': '/patient/home',
                 'Doctor': '/doctor/home',
@@ -90,18 +90,20 @@ const LoginPage = () => {
 
     const handleOnSubmit = (e) => {
         e.preventDefault();
-
         const isValid = validateForm();
 
         if (isValid) {
-            // --- ¡AQUÍ ESTÁ EL CAMBIO! ---
-            // En lugar de (o además de) los console.log y alerts:
-            // Llama a tu función de mockeo con el rol del formulario.
+            // 1. Llama a 'login' con el 'formData' completo
+            const loginSuccess = login(formData);
 
-            handleLogin(formData.role);
-
-            // Ya no necesitas el alert, porque el useEffect se encargará
-            // de la redirección automáticamente.
+            // 2. Comprueba la respuesta
+            if (!loginSuccess) {
+                // Muestra un error si el login falló
+                alert("Email o Rol incorrectos. Por favor, verifica tus datos.");
+                // Opcional: setErrors(prev => ({...prev, email: "Email o Rol incorrectos"}))
+            }
+            // Si loginSuccess es 'true', el 'useEffect' en AuthProvider
+            // se encargará de la redirección automáticamente.
 
         } else {
             console.log("Formulario inválido:", errors);

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import AnimatedPage from '../../components/layout/AnimatedPage';
+import { useAuth } from '../../hooks/useAuth';
 
 import { completedConsultationsMock, doctorOptions, specialtyOptions } from '../../utils/mockData';
 
@@ -9,8 +10,9 @@ import ConsultationFilterPanel, { initialFiltersState } from '../../components/f
 
 
 const PatientHistory = () => {
-  // const [allConsultations, setAllConsultations] = useState([]); // Debe empezar vacio cuando este con una api
-  const [allConsultations, setAllConsultations] = useState(completedConsultationsMock);
+  const { profile } = useAuth();
+
+  const [allPatientConsultations, setAllPatientConsultations] = useState([]);
   const [activeFilters, setActiveFilters] = useState(initialFiltersState);
   const [filteredConsultations, setFilteredConsultations] = useState([]); // Empieza vacío
 
@@ -21,37 +23,49 @@ const PatientHistory = () => {
   }
 
   useEffect(() => {
-    let results = [...allConsultations];
-    let filtersApplied = false;
+    if (profile) {
+      const baseline = completedConsultationsMock.filter(c =>
+        c.shift.patient.patientId === profile.patientId
+      );
+      setAllPatientConsultations(baseline);
+    }
+  }, [profile]);
+
+  useEffect(() => {
+    // Empieza con la lista maestra *ya filtrada por paciente*
+    let results = [...allPatientConsultations];
 
     // Lógica de Filtrado
     if (activeFilters.specialty) {
       results = results.filter(c => c.shift.doctor.specialty.specialtyId === parseInt(activeFilters.specialty));
-      filtersApplied = true;
     }
     if (activeFilters.doctor) {
       results = results.filter(c => c.shift.doctor.doctorId === parseInt(activeFilters.doctor));
-      filtersApplied = true;
     }
     if (activeFilters.date) {
       results = results.filter(c => c.shift.startTime.startsWith(activeFilters.date));
-      filtersApplied = true;
     }
 
-    // Lógica de Orden (El orden no cuenta como "filtro" para el mensaje)
+    // Lógica de Orden
     results.sort((a, b) => {
-      // ... (tu lógica de sort)
+      // ... (tu lógica de sort, ej: por 'date_desc')
+      switch (activeFilters.order) {
+        case 'date_asc':
+          return new Date(a.consultationDate) - new Date(b.consultationDate);
+        case 'alpha_asc':
+          return a.shift.doctor.specialty.name.localeCompare(b.shift.doctor.specialty.name);
+        case 'alpha_desc':
+          return b.shift.doctor.specialty.name.localeCompare(a.shift.doctor.specialty.name);
+        case 'date_desc':
+        default:
+          return new Date(b.consultationDate) - new Date(a.consultationDate);
+      }
     });
 
     setFilteredConsultations(results);
 
-    // Si no se aplicó ningún filtro, mostramos todos los resultados
-    // (Esto evita que la lista aparezca vacía al cargar)
-    if (!filtersApplied && activeFilters.date === "") {
-      setFilteredConsultations(allConsultations);
-    }
-
-  }, [activeFilters, allConsultations]);
+    
+  }, [activeFilters, allPatientConsultations]);
 
   return (
     <AnimatedPage>
@@ -75,7 +89,7 @@ const PatientHistory = () => {
         </div>
         <SectionCard content={
           <div className="mx-2 my-1">
-            {allConsultations.length === 0 ? (
+            {allPatientConsultations.length === 0 ? (
               // 1. No hay consultas EN TOTAL
               <p className="text-center text-custom-gray p-4">
                 Aún no tienes consultas en tu historial. Cuando hayas completado tu primera consulta, los detalles aparecerán aquí.

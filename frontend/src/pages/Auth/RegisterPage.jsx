@@ -171,7 +171,7 @@ const RegisterPage = () => {
         />
         <Input
           tittle={"Teléfono"}
-          type={"text"}
+          type={"tel"}
           required={true}
           name={"telephone"}
           value={formData.telephone}

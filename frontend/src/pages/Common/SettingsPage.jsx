@@ -6,13 +6,10 @@ import SectionCard from '../../components/ui/SectionCard';
 import PersonalDataSettings from '../../components/features/setings/PersonalDataSettings';
 import NotificationSettings from '../../components/features/setings/NotificationSettings';
 import SecuritySettings from '../../components/features/setings/SecuritySettings';
+import { socialWorkOptions } from '../../utils/mockData';
 
 const SettingsPage = () => {
-    const { user } = useAuth();
-    const socialWorks = [
-        { value: "Obra Social 1", label: "Obra Social 1" },
-        { value: "Obra Social 2", label: "Obra Social 2" },
-    ]
+    const { user, profile } = useAuth();
 
     if (!user) {
         return <div>Cargando configuración...</div>;
@@ -29,7 +26,7 @@ const SettingsPage = () => {
                     <div className='col-start-1 col-span-1 flex flex-col justify-center'>
                         <SectionCard 
                             tittle={"Mis Datos"} 
-                            content={<PersonalDataSettings user={user} socialWorks={socialWorks} />} 
+                            content={<PersonalDataSettings user={user} profile={profile} socialWorks={socialWorkOptions} />} 
                         />
                     </div>
                     <div className='col-start-2 col-span-1 flex flex-col justify-center'>

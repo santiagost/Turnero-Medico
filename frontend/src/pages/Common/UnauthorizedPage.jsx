@@ -6,6 +6,7 @@ const UnauthorizedPage = () => {
   const navigate = useNavigate();
 
   const handleGoHome = () => {
+    sessionStorage.clear();
     navigate('/');
   }
   

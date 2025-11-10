@@ -4,38 +4,40 @@ import Select from '../../ui/Select';
 import Button from '../../ui/Button';
 import ROLES, { getEditValidationSchema } from '../../../utils/utilities';
 
-const PersonalDataSettings = ({ user, socialWorks }) => {
+const PersonalDataSettings = ({ user, profile, socialWorks }) => {
     const [editMode, setEditMode] = useState(false);
     const [errors, setErrors] = useState({});
     const [formData, setFormData] = useState({
-        name: user.name || "",
-        lastname: user.lastname || "",
-        dni: user.dni || "",
-        role: `${ROLES[user?.role] || '...'}`,
-        telephone: user.telephone || "",
-        birthDate: user.birthDate || "",
-        email: user.email || "",
-        membershipNumber: user.membershipNumber || "",
-        socialWork: user.socialWork || "",
-        specialty: user.specialty || "",
-        matricula: user.matricula || "",
+        firstName: "",
+        lastName: "",
+        dni: "",
+        role: "",
+        telephone: "",
+        birthDate: "",
+        email: "",
+        membershipNumber: "",
+        socialWork: "",
+        specialty: "",
+        licenseNumber: "",
     });
 
     useEffect(() => {
-        setFormData({
-            name: user.name || "",
-            lastname: user.lastname || "",
-            dni: user.dni || "",
-            role: `${ROLES[user?.role] || '...'}`,
-            telephone: user.telephone || "",
-            birthDate: user.birthDate || "",
-            email: user.email || "",
-            membershipNumber: user.membershipNumber || "",
-            socialWork: user.socialWork || "",
-            specialty: user.specialty || "",
-            matricula: user.matricula || "",
-        });
-    }, [user]);
+        if (profile && user) {
+            setFormData({
+                firstName: profile.firstName || "",
+                lastName: profile.lastName || "",
+                dni: profile.dni || "",
+                role: `${ROLES[user.role] || '...'}`,
+                telephone: profile.telephone || "",
+                birthDate: profile.birthDate || "",
+                email: user.email || "",
+                membershipNumber: profile.membershipNumber || "",
+                socialWork: profile.socialWork?.name || "",
+                specialty: profile.specialty?.name || "",
+                licenseNumber: profile.licenseNumber || "",
+            });
+        }
+    }, [user, profile]);
 
     const updateFormData = (e) => {
         const { name, value } = e.target;
@@ -95,19 +97,21 @@ const PersonalDataSettings = ({ user, socialWorks }) => {
     const handleCancel = () => {
         setEditMode(false);
         setErrors({});
-        setFormData({
-            name: user.name || "",
-            lastname: user.lastname || "",
-            dni: user.dni || "",
-            role: `${ROLES[user?.role] || '...'}`,
-            telephone: user.telephone || "",
-            birthDate: user.birthDate || "",
-            email: user.email || "",
-            membershipNumber: user.membershipNumber || "",
-            socialWork: user.socialWork || "",
-            specialty: user.specialty || "",
-            matricula: user.matricula || "",
-        });
+        if (profile && user) {
+            setFormData({
+                firstName: profile.firstName || "",
+                lastName: profile.lastName || "",
+                dni: profile.dni || "",
+                role: `${ROLES[user.role] || '...'}`,
+                telephone: profile.telephone || "",
+                birthDate: profile.birthDate || "",
+                email: user.email || "",
+                membershipNumber: profile.membershipNumber || "",
+                socialWork: profile.socialWork?.name || "",
+                specialty: profile.specialty?.name || "",
+                licenseNumber: profile.licenseNumber || "",
+            });
+        }
     };
 
     const handleClearSocialWork = () => {
@@ -124,8 +128,8 @@ const PersonalDataSettings = ({ user, socialWorks }) => {
                 <form className='flex flex-col justify-between' onSubmit={handleSave}>
                     <div className='grid grid-cols-2 gap-x-6 gap-y-1 m-6'>
                         {/* --- Campos de Solo Lectura --- */}
-                        <Input tittle={"Nombre"} name={"name"} value={formData.name} size={"small"} disable={true} />
-                        <Input tittle={"Apellido"} name={"lastname"} value={formData.lastname} size={"small"} disable={true} />
+                        <Input tittle={"Nombre"} name={"name"} value={formData.firstName} size={"small"} disable={true} />
+                        <Input tittle={"Apellido"} name={"lastname"} value={formData.lastName} size={"small"} disable={true} />
                         <Input tittle={"DNI"} name={"dni"} value={formData.dni} size={"small"} disable={true} />
                         <Input tittle={"Perfil"} name={"role"} value={formData.role} disable={true} size={"small"} />
                         <Input tittle={"Fecha de Nacimiento"} type={"date"} name={"birthDate"} value={formData.birthDate} disable={true} size={"small"} />
@@ -134,6 +138,7 @@ const PersonalDataSettings = ({ user, socialWorks }) => {
                         {/* --- Campos Editables (Paciente) --- */}
                         <Input
                             tittle={"Teléfono"}
+                            type={"tel"}
                             name={"telephone"}
                             value={formData.telephone}
                             disable={!editMode}
@@ -199,14 +204,15 @@ const PersonalDataSettings = ({ user, socialWorks }) => {
                 <form className='flex flex-col justify-between' onSubmit={handleSave}>
                     <div className='grid grid-cols-2 gap-x-6 gap-y-1 m-6'>
                         {/* --- Campos de Solo Lectura (Doctor/Admin) --- */}
-                        <Input tittle={"Nombre"} name={"name"} value={formData.name} size={"small"} disable={true} />
-                        <Input tittle={"Apellido"} name={"lastname"} value={formData.lastname} size={"small"} disable={true} />
+                        <Input tittle={"Nombre"} name={"name"} value={formData.firstName} size={"small"} disable={true} />
+                        <Input tittle={"Apellido"} name={"lastname"} value={formData.lastName} size={"small"} disable={true} />
                         <Input tittle={"DNI"} name={"dni"} value={formData.dni} size={"small"} disable={true} />
                         <Input tittle={"Perfil"} name={"role"} value={formData.role} disable={true} size={"small"} />
 
                         {/* --- Campo Editable (Doctor/Admin) --- */}
                         <Input
                             tittle={"Teléfono"}
+                            type={"tel"}
                             name={"telephone"}
                             value={formData.telephone}
                             disable={!editMode}
@@ -222,7 +228,7 @@ const PersonalDataSettings = ({ user, socialWorks }) => {
                         {user.role === 'Doctor' && (
                             <>
                                 <Input tittle={"Especialidad"} name={"specialty"} value={formData.specialty} size={"small"} disable={true} />
-                                <Input tittle={"Matrícula"} name={"matricula"} value={formData.matricula} size={"small"} disable={true} />
+                                <Input tittle={"Matrícula"} name={"matricula"} value={formData.licenseNumber} size={"small"} disable={true} />
                             </>
                         )}
                     </div>

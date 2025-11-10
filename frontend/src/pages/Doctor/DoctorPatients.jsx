@@ -12,10 +12,15 @@ import { calculateAge } from '../../utils/utilities'
 import SectionCard from '../../components/ui/SectionCard';
 import ConsultationCard from '../../components/features/medicalHistory/ConsultationCard';
 import PatientFilterPanel from '../../components/features/filterPanel/PatientFilterPanel';
+import IconButton from '../../components/ui/IconButton';
+
+import { IoMdArrowBack } from "react-icons/io";
 
 // Simulamos la lista de pacientes únicos que este doctor atiende
 // (En una app real, la API te daría esto)
 const uniquePatients = [...new Map(doctorScheduleMock.map(shift => [shift.patient.patientId, shift.patient])).values()];
+
+const CURRENT_DOCTOR_ID = 1; // ID de Dr. Martin Sanchez
 
 const DoctorPatients = () => {
   const [patient, setPatient] = useState(null);
@@ -28,16 +33,14 @@ const DoctorPatients = () => {
     console.log("Buscando paciente con:", filters);
     setPatient(null);
 
-    // --- CORRECCIÓN AQUÍ ---
-    // Comprueba los 3 campos de búsqueda, no solo 2
+
     if (!filters.dni && !filters.name && !filters.attentionDate) {
       setSearchResults(uniquePatients); // Muestra todos
       setSearchMessage(""); // Limpia cualquier mensaje de "no encontrado"
       return; // Termina la función aquí
     }
-    // --- FIN DE LA CORRECCIÓN ---
 
-    // Lógica de búsqueda (esta ya estaba bien)
+
     let foundPatients = [];
     if (filters.dni) {
       foundPatients = uniquePatients.filter(p => p.dni === filters.dni);
@@ -61,14 +64,18 @@ const DoctorPatients = () => {
   const handleSelectPatient = (selected) => {
     console.log("Paciente seleccionado:", selected);
     setPatient(selected);
-    setSearchResults([]);
     setSearchMessage("");
+  };
+
+  const handleGoBackToSearch = () => {
+    setPatient(null);
   };
 
   useEffect(() => {
     if (patient) {
       const results = completedConsultationsMock.filter(c =>
-        c.shift.patient.patientId === patient.patientId
+        c.shift.patient.patientId === patient.patientId &&
+        c.shift.doctor.doctorId === CURRENT_DOCTOR_ID
       );
       setConsultations(results);
     } else {
@@ -80,7 +87,7 @@ const DoctorPatients = () => {
     <AnimatedPage>
       <div className="px-8">
         <h1 className="text-2xl font-bold text-custom-dark-blue mb-6">
-          Mi Historial Clínico
+          Historial Clínico de Pacientes
         </h1>
         <SectionCard tittle={"Filtra entre tus Pacientes"} content={
           <PatientFilterPanel
@@ -96,55 +103,65 @@ const DoctorPatients = () => {
               </h1>
               <p>(haz click en una consulta para ver en detalle)</p>
             </div>
-            <SectionCard tittle={"Historial Clínico del Paciente"} content={
-              <div className="mx-2 my-1">
-                {/* Info del paciente encontrado */}
-                <div className="w-full px-5 py-2">
-                  <div className="flex flex-row items-center justify-between">
-                    <p className="font-bold text-xl">{patient.lastName}, {patient.firstName}</p>
+            <SectionCard complexHeader={
+              <>
+                <div className="relative flex flex-row items-center justify-center">
+                  <div className="absolute left-0">
+                    <IconButton icon={<IoMdArrowBack size={30} onClick={handleGoBackToSearch} type="button" />} />
                   </div>
-                  <div className="mx-2 my-1">
+                  <p>Historial Clínico del Paciente</p>
+                </div>
+              </>
+            }
+              content={
+                <div className="mx-2 my-1">
+                  {/* Info del paciente encontrado */}
+                  <div className="w-full px-5 py-2">
                     <div className="flex flex-row items-center justify-between">
-                      <p className="font-semibold">Edad: <span className="font-normal">{calculateAge(patient.birthDate)} años</span></p>
-                      <p className="font-semibold">DNI: <span className="font-normal">{patient.dni}</span></p>
-                      <p className="font-semibold">Teléfono: <span className="font-normal">{patient.telephone}</span></p>
-                      <p className="font-semibold">Obra Social: <span className="font-normal">{patient.socialWork?.name || "No Aplica"}</span></p>
-                      <p className="font-semibold">Número de Afiliado: <span className="font-normal">{patient.membershipNumber || "No Aplica"}</span></p>
+                      <p className="font-bold text-xl">{patient.lastName}, {patient.firstName}</p>
+                    </div>
+                    <div className="mx-2 my-1">
+                      <div className="flex flex-row items-center justify-between">
+                        <p className="font-semibold">Edad: <span className="font-normal">{calculateAge(patient.birthDate)} años</span></p>
+                        <p className="font-semibold">DNI: <span className="font-normal">{patient.dni}</span></p>
+                        <p className="font-semibold">Teléfono: <span className="font-normal">{patient.telephone}</span></p>
+                        <p className="font-semibold">Obra Social: <span className="font-normal">{patient.socialWork?.name || "No Aplica"}</span></p>
+                        <p className="font-semibold">Número de Afiliado: <span className="font-normal">{patient.membershipNumber || "No Aplica"}</span></p>
+                      </div>
+                    </div>
+                  </div>
+                  {/* Lista de sus consultas */}
+                  <div className="w-full px-5 py-2">
+                    <p className="font-bold text-xl text-start">Ultimas Consultas</p>
+                    <div className="mx-2 my-1">
+                      {consultations.length > 0 ? (
+                        consultations.map(consultation => (
+                          <ConsultationCard
+                            key={consultation.consultationId}
+                            consultation={consultation}
+                            type="Doctor"
+                          />
+                        ))
+                      ) : (
+                        <p className="text-center text-gray-500 p-4">
+                          Este paciente no tiene consultas en su historial.
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
-                {/* Lista de sus consultas */}
-                <div className="w-full px-5 py-2">
-                  <p className="font-bold text-xl text-start">Ultimas Consultas</p>
-                  <div className="mx-2 my-1">
-                    {consultations.length > 0 ? (
-                      consultations.map(consultation => (
-                        <ConsultationCard
-                          key={consultation.consultationId}
-                          consultation={consultation}
-                          type="Doctor"
-                        />
-                      ))
-                    ) : (
-                      <p className="text-center text-gray-500 p-4">
-                        Este paciente no tiene consultas en su historial.
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            } />
+              } />
           </>
         ) : searchResults.length > 0 ? (
           <SectionCard tittle={"Resultados de la Búsqueda"} content={<div className="flex flex-col gap-2 p-4">
             {searchResults.map(p => (
               <div
                 key={p.patientId}
-                className="flex justify-between items-center p-3 bg-white rounded-lg shadow-sm hover:bg-blue-50 cursor-pointer"
+                className="flex justify-between items-center p-3 bg-white rounded-lg shadow-sm hover:bg-custom-light-blue/25 cursor-pointer"
                 onClick={() => handleSelectPatient(p)}
               >
                 <span className="font-bold">{p.lastName}, {p.firstName}</span>
-                <span className="text-gray-600">DNI: {p.dni}</span>
+                <span className="text-custom-gray">DNI: {p.dni}</span>
               </div>
             ))}
           </div>}

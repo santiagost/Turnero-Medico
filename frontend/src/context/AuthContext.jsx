@@ -1,51 +1,70 @@
 import React, { createContext, useState, useEffect } from 'react';
 
+import {
+    mockDoctor_Sanchez,
+    mockPatient_Garcia,
+    mockAdmin_Diaz // (Suponiendo que creaste un mock de admin)
+} from '../utils/mockData';
+
 export const AuthContext = createContext(null);
+
+const MOCK_USER_DB = {
+    "martin.sanchez@vitalis.com": mockDoctor_Sanchez,
+    "emi.garcia@gmail.com": mockPatient_Garcia,
+    "agus.diaz@vitalis.com": mockAdmin_Diaz
+};
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [profile, setProfile] = useState(null);
 
     useEffect(() => {
         try {
-            const storedUser = localStorage.getItem('user');
-            if (storedUser) {
+            // 2. Cargamos AMBOS datos desde sessionStorage
+            const storedUser = sessionStorage.getItem('user');
+            const storedProfile = sessionStorage.getItem('profile');
+
+            if (storedUser && storedProfile) {
                 setUser(JSON.parse(storedUser));
+                setProfile(JSON.parse(storedProfile));
             }
         } catch (error) {
-            console.error("Error al cargar usuario desde localStorage", error);
+            console.error("Error al cargar datos desde sessionStorage", error);
             setUser(null);
+            setProfile(null);
         } finally {
             setIsLoading(false);
         }
     }, []);
 
-    const login = (role) => {
-        const mockUserData = {
-            name: 'Lionel Andres',
-            lastname: 'Messi',
-            dni: '11222333',
-            role: role,
-            telephone: '3884665015',
-            birthDate: '24/06/1987',
-            email: 'leo.messi@gmail.com',
-            membershipNumber: '1111 2222 3333 4444',
-            socialWork: 'OSDE',
-            specialty: 'Traumatología y Ortopedia',
-            matricula: '[MP-12345]',
-        };
+    const login = (formData) => {
+        const { email, role } = formData;
+        const fullProfile = MOCK_USER_DB[email];
+        if (fullProfile && fullProfile.user.role === role) {
+            sessionStorage.setItem('user', JSON.stringify(fullProfile.user)); // Solo el objeto 'user'
+            sessionStorage.setItem('profile', JSON.stringify(fullProfile)); // El perfil completo
 
-        localStorage.setItem('user', JSON.stringify(mockUserData));
-        setUser(mockUserData);
+            setUser(fullProfile.user); // Setea el 'user' anidado
+            setProfile(fullProfile); // Setea el perfil completo
+
+            return true; // Login exitoso
+        }
+
+        console.error("Login fallido: Email o Rol incorrectos.");
+        return false; // Login fallido
     };
 
     const logout = () => {
-        localStorage.removeItem('user');
+        // 6. Limpia AMBOS
+        sessionStorage.removeItem('user');
+        sessionStorage.removeItem('profile');
         setUser(null);
+        setProfile(null);
     };
 
     return (
-        <AuthContext.Provider value={{ user, isLoading, login, logout }}>
+        <AuthContext.Provider value={{ user, isLoading, login, logout, profile }}>
             {children}
         </AuthContext.Provider>
     );

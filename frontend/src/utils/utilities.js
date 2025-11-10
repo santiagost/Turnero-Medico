@@ -170,6 +170,83 @@ export const medicationValidationSchema = {
   }
 };
 
+// --- Esquema para crear un nuevo paciente por el Admin ---
+export const adminCreatePatientSchema = {
+    // Reutilizamos las reglas de registro
+    firstName: registerValidationSchema.name, // Reusa la regla 'name' pero la asigna a 'firstName'
+    lastName: registerValidationSchema.lastname, // Reusa la regla 'lastname'
+    dni: registerValidationSchema.dni,
+    telephone: registerValidationSchema.telephone,
+    birthDate: registerValidationSchema.birthDate,
+    email: registerValidationSchema.email,
+    
+    // Reutilizamos las reglas de edición
+    membershipNumber: editValidationRules.membershipNumber,
+    socialWorkId: editValidationRules.socialWork, // La prop en tu form es 'socialWorkId'
+};
+
+// --- NUEVO: Esquema de Creación de Médico por Admin ---
+export const adminCreateDoctorSchema = {
+    // Reutilizamos reglas
+    firstName: registerValidationSchema.name,
+    lastName: registerValidationSchema.lastname,
+    dni: registerValidationSchema.dni,
+    telephone: registerValidationSchema.telephone,
+    email: registerValidationSchema.email,
+    
+    // Reglas específicas de Médico
+    licenseNumber: (value) => {
+        if (!value) return "La matrícula es requerida.";
+        // (Podrías añadir una REGEX específica para matrículas si quieres)
+        return null;
+    },
+    specialtyId: (value) => {
+        if (!value) return "La especialidad es requerida.";
+        return null;
+    }
+};
+
+export const adminCreateSocialWorkSchema = {
+    name: (value) => {
+        if (!value) return "El nombre es requerido.";
+        if (value.length < 3) return "El nombre debe tener al menos 3 caracteres.";
+        return null;
+    },
+    cuit: (value) => {
+        if (!value) return "El CUIT es requerido.";
+        // Regex básica para CUIT argentino (XX-XXXXXXXX-X)
+        if (!/^\d{2}-\d{8}-\d{1}$/.test(value)) return "El CUIT debe tener el formato XX-XXXXXXXX-X.";
+        return null;
+    },
+    telephone: (value) => {
+        if (!value) return "El teléfono es requerido.";
+        if (!/^\d{10,}$/.test(value.replace(/\D/g, ''))) return "El teléfono debe contener solo números y al menos 10 dígitos.";
+        return null;
+    },
+    address: (value) => {
+        if (!value) return "La dirección es requerida.";
+        if (value.length < 5) return "La dirección debe tener al menos 5 caracteres.";
+        return null;
+    },
+    email: (value) => {
+        if (!value) return "El correo electrónico es requerido.";
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return "Formato de correo electrónico inválido.";
+        return null;
+    },
+};
+
+export const adminCreateSpecialtySchema = {
+    name: (value) => {
+        if (!value) return "El nombre es requerido.";
+        if (value.length < 3) return "Debe tener al menos 3 caracteres.";
+        return null;
+    },
+    description: (value) => {
+        if (!value) return "La descripción es requerida.";
+        if (value.length < 10) return "La descripción debe tener al menos 10 caracteres.";
+        return null;
+    }
+};
 
 export const calculateAge = (dateString) => {
   if (!dateString) {
