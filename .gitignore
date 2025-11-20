@@ -12,6 +12,7 @@ venv/
 htmlcov/
 .tox/
 .nox/
+database/turnero_medico.db
 
 # IDE/editor
 .vscode/
