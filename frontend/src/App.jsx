@@ -27,6 +27,7 @@ import AdminReports from "./pages/Admin/AdminReports";
 import AdminOthers from "./pages/Admin/AdminOthers";
 import SettingsPage from "./pages/Common/SettingsPage";
 import { AuthLayout } from "./components/layout/AuthLayout";
+import { AuthProvider } from "./context/AuthContext";
 
 const router = createHashRouter([
   {
@@ -104,9 +105,9 @@ const router = createHashRouter([
 
 const App = () => {
   return (
-    <>
+    <AuthProvider>
       <RouterProvider router={router} />
-    </>
+    </AuthProvider>
   );
 }
 

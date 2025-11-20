@@ -1,3 +1,5 @@
+import { format, isBefore, addMinutes, parse, } from "date-fns";
+
 export const calculateAge = (dateString) => {
   if (!dateString) {
     return null;
@@ -76,11 +78,6 @@ export const getFormattedDate = (isoString) => {
   }
 };
 
-/**
- * Extrae la hora en formato "hh:mm hs" (Argentina) de un string ISO.
- * @param {string} isoString - (ej: "2025-11-03T09:30:00").
- * @returns {string | null} - La hora "09:30 hs" o null.
- */
 export const getFormattedTime = (isoString) => {
   if (!isoString) return null;
   try {
@@ -95,4 +92,33 @@ export const getFormattedTime = (isoString) => {
     console.error("Error al formatear la hora:", error);
     return null;
   }
+};
+
+export const generateMasterGrid = (doctorAvailability) => {
+    if (!doctorAvailability || doctorAvailability.length === 0) return [];
+
+    // 1. Encontrar la hora de inicio más temprana y la de fin más tardía de la semana
+    let minStart = "23:59";
+    let maxEnd = "00:00";
+    // Asumimos que la duración es estándar (30 min) para la grilla, 
+    // o tomamos la mínima si varía (para simplificar usamos 30).
+    const step = 30; 
+
+    doctorAvailability.forEach(config => {
+        if (config.startTime < minStart) minStart = config.startTime;
+        if (config.endTime > maxEnd) maxEnd = config.endTime;
+    });
+
+    // 2. Generar todos los slots entre minStart y maxEnd
+    const slots = [];
+    let current = parse(minStart, "HH:mm", new Date());
+    const end = parse(maxEnd, "HH:mm", new Date());
+
+    // Iteramos mientras sea antes de la hora de fin
+    while (isBefore(current, end)) {
+        slots.push(format(current, "HH:mm"));
+        current = addMinutes(current, step);
+    }
+
+    return slots;
 };

@@ -15,6 +15,7 @@ import {
     doctorOptions,
     mockDoctors,
     getMockDoctorSchedule,
+    mockDoctorAvailability
 } from "../../../utils/mockData";
 
 import { newShiftSchema } from "../../../validations/shiftSchemas";
@@ -50,6 +51,7 @@ const NewMedicalShift = ({ user }) => {
     });
 
     const [errors, setErrors] = useState({});
+    const [doctorScheduleConfig, setDoctorScheduleConfig] = useState([]);
 
     const [specialties, setSpecialties] = useState(specialtyOptions);
     const [filteredDoctorOptions, setFilteredDoctorOptions] = useState(doctorOptions);
@@ -109,6 +111,19 @@ const NewMedicalShift = ({ user }) => {
             }));
         }
     }, [selectedShift]);
+
+    useEffect(() => {
+        if (formData.doctor) {
+            // SIMULACION: En la vida real harías un fetch al backend: 
+            // api.get(`/doctors/${formData.doctor}/availability`)
+
+            // Por ahora, usaremos el mock. Puedes filtrar si el mock tiene ID de doctor, 
+            // o usar uno genérico para probar que funciona la UI.
+            setDoctorScheduleConfig(mockDoctorAvailability);
+        } else {
+            setDoctorScheduleConfig([]);
+        }
+    }, [formData.doctor]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -304,6 +319,7 @@ const NewMedicalShift = ({ user }) => {
                                 selectedShift={selectedShift}
                                 setSelectedShift={setSelectedShift}
                                 existingShifts={currentWeekShifts}
+                                doctorAvailability={doctorScheduleConfig}
                                 role="patient"
                             />
                         </div>

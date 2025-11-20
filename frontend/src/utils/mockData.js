@@ -769,3 +769,30 @@ export const getMockDoctorSchedule = (startOfWeekDate) => {
     }
   ];
 };
+
+export const mockDoctorAvailability = [
+    {
+        dayOfWeek: 1, // Lunes
+        startTime: "09:00",
+        endTime: "13:00",
+        durationMinutes: 30
+    },
+    {
+        dayOfWeek: 3, // Miércoles
+        startTime: "14:00",
+        endTime: "18:00",
+        durationMinutes: 30 // Turnos más largos
+    },
+    {
+        dayOfWeek: 4, // Miércoles
+        startTime: "09:00",
+        endTime: "18:00",
+        durationMinutes: 30 // Turnos más largos
+    },
+    {
+        dayOfWeek: 5, // Viernes
+        startTime: "08:00",
+        endTime: "12:00",
+        durationMinutes: 30 // Turnos rápidos
+    }
+];
