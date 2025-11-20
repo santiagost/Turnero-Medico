@@ -1,4 +1,13 @@
-import { addDays, setHours, setMinutes, format } from "date-fns";
+import {
+  addDays,
+  setHours,
+  setMinutes,
+  format,
+  startOfWeek,
+  subWeeks,
+  isSameDay,
+  parseISO
+} from "date-fns";
 /**
  * =================================================================
  * MOCK DATA (Datos Falsos para Pruebas)
@@ -731,68 +740,97 @@ export const completedConsultationsMock = [
   },
 ];
 
-export const getMockDoctorSchedule = (startOfWeekDate) => {
-  // startOfWeekDate debe ser el Lunes de la semana que estás viendo
-  
+export const getMockDoctorSchedule = (viewedMondayDate) => {
+
   return [
+    // --- LUNES ---
     {
-      shiftId: 101,
-      // Lunes a las 09:00
-      startTime: format(setMinutes(setHours(startOfWeekDate, 9), 0), "yyyy-MM-dd'T'HH:mm:00"), 
+      shiftId: 1,
+      // Lunes 09:00 - Atendido
+      startTime: format(setMinutes(setHours(viewedMondayDate, 9), 0), "yyyy-MM-dd'T'HH:mm:00"),
       status: mockShiftStatus.attended,
-      patient: mockPatient_Lionel_Messi,
-      reason: "Control rutinario"
+      patient: mockPatient_Garcia,
+      reason: "Control Rutinario",
     },
     {
-      shiftId: 102,
-      // Lunes a las 10:30
-      startTime: format(setMinutes(setHours(startOfWeekDate, 10), 30), "yyyy-MM-dd'T'HH:mm:00"),
+      shiftId: 2,
+      // Lunes 11:30 - Cancelado
+      startTime: format(setMinutes(setHours(viewedMondayDate, 11), 30), "yyyy-MM-dd'T'HH:mm:00"),
       status: mockShiftStatus.cancelled,
-      patient: mockPatient_Lionel_Messi,
-      reason: "Cancelado por el paciente"
+      patient: mockPatient_Garcia,
+      reason: "Consulta por lesión de rodilla.",
+    },
+
+    // --- MIÉRCOLES (Día + 2) ---
+    {
+      shiftId: 3,
+      // Miércoles 15:00 - Pendiente
+      startTime: format(setMinutes(setHours(addDays(viewedMondayDate, 2), 15), 0), "yyyy-MM-dd'T'HH:mm:00"),
+      status: mockShiftStatus.attended,
+      patient: mockPatient_Garcia,
+      reason: "Consulta por lesión de rodilla.",
+    },
+
+    // --- JUEVES (Día + 3) ---
+    {
+      shiftId: 4,
+      // Jueves 09:30 - Pendiente
+      startTime: format(setMinutes(setHours(addDays(viewedMondayDate, 3), 9), 30), "yyyy-MM-dd'T'HH:mm:00"),
+      status: mockShiftStatus.attended,
+      patient: mockPatient_Garcia,
+      reason: "Consulta nutricional",
+    },
+
+    // --- VIERNES (Día + 4) ---
+    {
+      shiftId: 5,
+      // Viernes 10:00 - Cancelado
+      startTime: format(setMinutes(setHours(addDays(viewedMondayDate, 4), 10), 0), "yyyy-MM-dd'T'HH:mm:00"),
+      status: mockShiftStatus.cancelled,
+      patient: mockPatient_Garcia,
+      reason: "Consulta por lesión de rodilla.",
     },
     {
-      shiftId: 103,
-      // Martes a las 11:00
-      startTime: format(setMinutes(setHours(addDays(startOfWeekDate, 1), 11), 0), "yyyy-MM-dd'T'HH:mm:00"),
-      status: mockShiftStatus.pending, // Pendiente (Ocupado futuro)
-      patient: mockPatient_Lionel_Messi,
-      reason: "Consulta dolor de espalda"
-    },
-    {
-      shiftId: 104,
-      // Jueves a las 09:30
-      startTime: format(setMinutes(setHours(addDays(startOfWeekDate, 3), 9), 30), "yyyy-MM-dd'T'HH:mm:00"),
+      shiftId: 5,
+      // Viernes 10:00 - Cancelado
+      startTime: format(setMinutes(setHours(addDays(viewedMondayDate, 4), 11), 0), "yyyy-MM-dd'T'HH:mm:00"),
       status: mockShiftStatus.pending,
-      patient: mockPatient_Lionel_Messi,
-      reason: "Revisión estudios"
-    }
+      patient: mockPatient_Garcia,
+      reason: "Consulta por lesión de rodilla.",
+    },
   ];
 };
 
+
 export const mockDoctorAvailability = [
-    {
-        dayOfWeek: 1, // Lunes
-        startTime: "09:00",
-        endTime: "13:00",
-        durationMinutes: 30
-    },
-    {
-        dayOfWeek: 3, // Miércoles
-        startTime: "14:00",
-        endTime: "18:00",
-        durationMinutes: 30 // Turnos más largos
-    },
-    {
-        dayOfWeek: 4, // Miércoles
-        startTime: "09:00",
-        endTime: "18:00",
-        durationMinutes: 30 // Turnos más largos
-    },
-    {
-        dayOfWeek: 5, // Viernes
-        startTime: "08:00",
-        endTime: "12:00",
-        durationMinutes: 30 // Turnos rápidos
-    }
+  {
+    dayOfWeek: 1, // Lunes
+    startTime: "09:00",
+    endTime: "14:00",
+    durationMinutes: 30,
+  },
+  {
+    dayOfWeek: 2, // Martes
+    startTime: "12:00",
+    endTime: "16:00",
+    durationMinutes: 30,
+  },
+  {
+    dayOfWeek: 3, // Miércoles
+    startTime: "09:00",
+    endTime: "18:00",
+    durationMinutes: 30,
+  },
+  {
+    dayOfWeek: 4, // Jueves
+    startTime: "10:30",
+    endTime: "17:00",
+    durationMinutes: 30,
+  },
+  {
+    dayOfWeek: 5, // Viernes
+    startTime: "09:00",
+    endTime: "18:00",
+    durationMinutes: 30,
+  },
 ];
