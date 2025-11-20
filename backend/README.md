@@ -12,6 +12,12 @@
     python -m pip install -r ./requirements.txt
 
 
+**Inicializar y poblar la base de datos**
+
+    python database/db_init.py
+
+    python database/db_poblate.py
+
 **Levantar servidor de desarrollo**
 
     python -m uvicorn api:app --reload --host 127.0.0.1 --port 8000
