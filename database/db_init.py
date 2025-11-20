@@ -1,6 +1,10 @@
+import os
 import sqlite3
 
-DB_FILE = "turnero_medico.db"
+# DB_FILE = "turnero_medico.db"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_FILE = os.path.join(BASE_DIR, "turnero_medico.db")
+
 
 SQL_SCHEMA = """
 -- Habilitar el soporte de claves foráneas (es necesario en SQLite)
