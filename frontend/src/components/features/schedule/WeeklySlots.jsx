@@ -1,10 +1,11 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { format, addDays, isSameDay, parseISO, setHours, setMinutes, isBefore, getDay } from "date-fns";
 import { es } from "date-fns/locale";
 
 import { generateMasterGrid } from "../../../utils/dateUtils";
 
-const WeeklySlots = ({ selectedWeek, selectedShift, setSelectedShift, existingShifts = [], doctorAvailability = [], role = "patient" }) => {
+
+const WeeklySlots = ({ selectedWeek, selectedShift, setSelectedShift, existingShifts = [], doctorAvailability = [], role = "patient", onSlotClick }) => {
 
     // 1. Validaciones Tempranas
     if (!selectedWeek || !selectedWeek.from) {
@@ -14,7 +15,6 @@ const WeeklySlots = ({ selectedWeek, selectedShift, setSelectedShift, existingSh
             </div>
         );
     }
-
 
     // 2. Configuracion de dias de la semana
     const startDayMonday = addDays(selectedWeek.from, 1);
@@ -28,9 +28,7 @@ const WeeklySlots = ({ selectedWeek, selectedShift, setSelectedShift, existingSh
         () => generateMasterGrid(doctorAvailability),
         [doctorAvailability]
     );
-
-
-
+    
     // 3. Lógica Auxiliar (Helpers)
     // Verifica si un horario específico está dentro del rango de trabajo de un día
     const isWorkingHour = (dayConfig, time) => {
@@ -44,14 +42,9 @@ const WeeklySlots = ({ selectedWeek, selectedShift, setSelectedShift, existingSh
         const slotDateTime = setHours(setMinutes(new Date(dayDate), minutes), hours);
         const now = new Date();
 
+
         // A. Slot Expirado (Pasado)
-        if (isBefore(slotDateTime, now)) {
-            return {
-                status: "expired",
-                label: "No Disponible",
-                color: "bg-custom-gray/30 text-custom-gray border-custom-gray/70 cursor-not-allowed",
-            };
-        }
+        const isExpired = isBefore(slotDateTime, now);
 
         // B. Buscar Turno Existente en Backend
         const foundShift = existingShifts.find((shift) => {
@@ -60,36 +53,57 @@ const WeeklySlots = ({ selectedWeek, selectedShift, setSelectedShift, existingSh
             return isSameDay(shiftDate, dayDate) && shiftTime === timeString;
         });
 
-        // --- VISTA DOCTOR ---
+        // --- VISTA DOCTOR (Prioridad Alta) ---
         if (role === "doctor") {
-            if (!foundShift) {
+
+            // CASO 1: Existe un turno (sea pasado o futuro) -> Mostrar estado real
+            if (foundShift) {
+                let colorClass = "bg-custom-blue/20 text-custom-blue border-custom-blue/50";
+                const statusName = foundShift.status.name;
+
+                if (statusName === "Atendido") {
+                    colorClass = "bg-custom-green/20 text-custom-green border-custom-green/50 font-semibold";
+                } else if (statusName === "Cancelado") {
+                    colorClass = "bg-custom-red/10 text-custom-red border-custom-red/30 opacity-60";
+                } else if (statusName === "Pendiente") {
+                    colorClass = "bg-custom-orange/20 text-custom-orange border-custom-orange/50 font-semibold";
+                }
+
                 return {
-                    status: "empty",
-                    label: "-",
-                    color: "bg-custom-gray/5 border-custom-gray/20 text-custom-gray/30",
+                    status: "occupied_doctor",
+                    label: statusName,
+                    color: colorClass,
+                    data: foundShift,
                 };
             }
 
-            let colorClass = "bg-custom-blue/20 text-custom-blue border-custom-blue/50";
-            const statusName = foundShift.status.name;
-
-            if (statusName === "Atendido") {
-                colorClass = "bg-custom-green/20 text-custom-green border-custom-green/50 font-semibold";
-            } else if (statusName === "Cancelado") {
-                colorClass = "bg-custom-red/10 text-custom-red border-custom-red/30 opacity-60";
-            } else if (statusName === "Pendiente") {
-                colorClass = "bg-custom-orange/20 text-custom-orange border-custom-orange/50 font-semibold";
+            // CASO 2: No hay turno Y es pasado -> Slot vacío del pasado (Gris claro/deshabilitado)
+            if (isExpired) {
+                return {
+                    status: "empty_past",
+                    label: "Expirado",
+                    color: "bg-gray-100 border-transparent text-gray-400 cursor-default" // Estilo muy sutil para el pasado vacío
+                };
             }
 
+            // CASO 3: No hay turno Y es futuro -> Slot vacío disponible para asignar (si hubiera funcionalidad)
             return {
-                status: "occupied_doctor",
-                label: statusName,
-                color: colorClass,
-                data: foundShift,
+                status: "empty",
+                label: "Libre", // O "Libre"
+                color: "bg-white border-gray-200 text-gray-500 transition-colors"
             };
         }
 
-        // --- VISTA PACIENTE ---
+        // --- VISTA PACIENTE (Lógica original) ---
+
+        // B. Slot Expirado (Solo afecta al paciente si NO hay turno que él deba ver)
+        if (isExpired) {
+            return {
+                status: "expired",
+                label: "No Disponible",
+                color: "bg-custom-gray/30 text-custom-gray border-custom-gray/70 cursor-not-allowed",
+            };
+        }
 
         // C. Slot Ocupado
         if (foundShift && foundShift.status.name !== "Cancelado") {
@@ -126,34 +140,28 @@ const WeeklySlots = ({ selectedWeek, selectedShift, setSelectedShift, existingSh
     // 4. Handlers
     const handleSlotClick = (dayDate, timeString, slotInfo) => {
         if (role === "doctor") {
-            if (slotInfo.data) console.log("Info del turno:", slotInfo.data);
+            if (slotInfo.status === "empty" || slotInfo.status === "empty_past") return;
+            if (onSlotClick) {
+                onSlotClick(slotInfo);
+            }
             return;
         }
 
         if (slotInfo.status === "occupied" || slotInfo.status === "expired") return;
 
         // Lógica de deselección si clickea el mismo
-        if (
-            selectedShift &&
-            isSameDay(selectedShift.date, dayDate) &&
-            selectedShift.time === timeString
-        ) {
+        if (selectedShift && isSameDay(selectedShift.date, dayDate) && selectedShift.time === timeString) {
             setSelectedShift(null);
             return;
         }
 
         // Nueva selección
-        setSelectedShift({
-            date: dayDate,
-            time: timeString,
-            displayDate: format(dayDate, "dd/MM/yyyy"),
-        });
+        setSelectedShift({ date: dayDate, time: timeString, displayDate: format(dayDate, "dd/MM/yyyy"), });
     };
-
 
     // 5. Render
     return (
-        <div className="py-4 w-full m-2 h-full overflow-y-scroll custom-scrollbar">
+        <div className={`py-4 w-full m-2 h-full ${role === "patient" && "overflow-y-scroll custom-scrollbar"}`}>
             <div className="grid grid-cols-7 gap-2">
                 {weekDays.map((day, index) => {
                     if (index === 7) return null;
@@ -186,7 +194,7 @@ const WeeklySlots = ({ selectedWeek, selectedShift, setSelectedShift, existingSh
                                         const slotInfo = getSlotInfo(day, time);
 
                                         return (
-                                            <button 
+                                            <button
                                                 key={`${index}-${timeIndex}`}
                                                 onClick={() => handleSlotClick(day, time, slotInfo)}
                                                 disabled={(role === "patient" && slotInfo.status === "occupied") || slotInfo.status === "expired"}

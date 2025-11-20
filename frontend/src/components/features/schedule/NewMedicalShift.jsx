@@ -211,6 +211,15 @@ const NewMedicalShift = ({ user }) => {
         console.log("Datos Confirmados y Enviados al Backend:", formData);
         // AQUI IRÍA TU LLAMADA A LA API
 
+        setFormData({
+            specialty: "",
+            doctor: "",
+            date: "",
+            time: "",
+            reason: "",
+        });
+        setSelectedWeek()
+        setSelectedShift()
         setIsConfirmModalOpen(false);
         setErrors({});
     };
