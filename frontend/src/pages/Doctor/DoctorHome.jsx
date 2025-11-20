@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import AnimatedPage from '../../components/layout/AnimatedPage';
 // User Context
 import { useAuth } from '../../hooks/useAuth';
@@ -11,11 +11,14 @@ import PrincipalCard from '../../components/ui/PrincipalCard'
 import Modal from '../../components/ui/Modal';
 import Button from '../../components/ui/Button';
 
+import { useParams } from 'react-router-dom';
+
 // Mock data
 import { doctorScheduleMock, mockShiftStatus } from '../../utils/mockData';
 
 const DoctorHome = () => {
   const { user } = useAuth();
+  const { shiftId } = useParams();
   const [doctorSchedule, setDoctorSchedule] = useState(doctorScheduleMock);
 
   // Atencion de Turno
@@ -33,6 +36,19 @@ const DoctorHome = () => {
   // Descartar
   const [isDiscardModalOpen, setIsDiscardModalOpen] = useState(false);
 
+
+  // ----------------- Cargar Turno desde URL ---------------
+  useEffect(() => {
+    if (shiftId) {
+      const idToFind = Number(shiftId);
+      const foundShift = doctorSchedule.find(s => s.shiftId === idToFind);
+
+      if (foundShift) {
+        setSelectedShift(foundShift);
+        setAttendingShift(true);
+      }
+    }
+  }, [shiftId, doctorSchedule]);
 
   //  ----------------- Cancelar Turno ---------------
   const handleCancelShift = (id) => {
