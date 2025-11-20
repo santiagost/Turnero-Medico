@@ -3,7 +3,7 @@ import { IoMdNotificationsOutline, IoMdMenu } from "react-icons/io";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import { useClickOutside } from '../../hooks/useClickOutside';
-import ROLES from '../../utils/utilities';
+import ROLES from '../../utils/constants';
 
 
 const MenuDropdown = ({ user, onLogout, onGoToProfile }) => {

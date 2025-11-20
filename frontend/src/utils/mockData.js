@@ -1,3 +1,4 @@
+import { addDays, setHours, setMinutes, format } from "date-fns";
 /**
  * =================================================================
  * MOCK DATA (Datos Falsos para Pruebas)
@@ -729,3 +730,42 @@ export const completedConsultationsMock = [
     shift: patientScheduleMock[3], // Turno ID 8 (Lionel Messi)
   },
 ];
+
+export const getMockDoctorSchedule = (startOfWeekDate) => {
+  // startOfWeekDate debe ser el Lunes de la semana que estás viendo
+  
+  return [
+    {
+      shiftId: 101,
+      // Lunes a las 09:00
+      startTime: format(setMinutes(setHours(startOfWeekDate, 9), 0), "yyyy-MM-dd'T'HH:mm:00"), 
+      status: mockShiftStatus.attended,
+      patient: mockPatient_Lionel_Messi,
+      reason: "Control rutinario"
+    },
+    {
+      shiftId: 102,
+      // Lunes a las 10:30
+      startTime: format(setMinutes(setHours(startOfWeekDate, 10), 30), "yyyy-MM-dd'T'HH:mm:00"),
+      status: mockShiftStatus.cancelled,
+      patient: mockPatient_Lionel_Messi,
+      reason: "Cancelado por el paciente"
+    },
+    {
+      shiftId: 103,
+      // Martes a las 11:00
+      startTime: format(setMinutes(setHours(addDays(startOfWeekDate, 1), 11), 0), "yyyy-MM-dd'T'HH:mm:00"),
+      status: mockShiftStatus.pending, // Pendiente (Ocupado futuro)
+      patient: mockPatient_Lionel_Messi,
+      reason: "Consulta dolor de espalda"
+    },
+    {
+      shiftId: 104,
+      // Jueves a las 09:30
+      startTime: format(setMinutes(setHours(addDays(startOfWeekDate, 3), 9), 30), "yyyy-MM-dd'T'HH:mm:00"),
+      status: mockShiftStatus.pending,
+      patient: mockPatient_Lionel_Messi,
+      reason: "Revisión estudios"
+    }
+  ];
+};

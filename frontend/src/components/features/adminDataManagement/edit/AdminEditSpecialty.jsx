@@ -4,7 +4,7 @@ import Button from '../../../ui/Button';
 
 // 1. Importa los mocks (asumido) y el esquema de Especialidad
 import { mockSpecialties } from '../../../../utils/mockData';
-import { adminCreateSpecialtySchema } from '../../../../utils/utilities';
+import { adminCreateSpecialtySchema } from '../../../../validations/adminSchemas';
 
 // 2. Define el estado inicial para Especialidad
 const initialSpecialtyState = {

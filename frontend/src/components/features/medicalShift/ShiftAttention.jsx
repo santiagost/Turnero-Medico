@@ -2,7 +2,8 @@ import React, { useState } from "react"
 import { IoIosAdd, IoIosClose, IoIosCheckmark } from "react-icons/io";
 
 // Utilities
-import { calculateAge, medicationValidationSchema, estimateDate, getFormattedDate, getFormattedTime } from "../../../utils/utilities";
+import { medicationValidationSchema } from "../../../validations/adminSchemas";
+import { calculateAge, estimateDate, getFormattedDate, getFormattedTime } from "../../../utils/dateUtils";
 import { completedConsultationsMock } from "../../../utils/mockData";
 // Features
 import MedicationList from "../medication/MedicationList";

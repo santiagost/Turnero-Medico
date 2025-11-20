@@ -5,7 +5,8 @@ import Button from '../../../ui/Button';
 
 // 1. Importa los mocks de Pacientes y Obras Sociales, y el esquema de Paciente
 import { mockPatients, socialWorkOptions } from '../../../../utils/mockData';
-import ROLES, { adminCreatePatientSchema } from '../../../../utils/utilities';
+import { adminCreatePatientSchema } from '../../../../validations/adminSchemas';
+import ROLES from '../../../../utils/constants';
 
 // 2. Define el estado inicial para Paciente
 const initialPatientState = {

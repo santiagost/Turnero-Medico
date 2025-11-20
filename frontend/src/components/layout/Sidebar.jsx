@@ -60,15 +60,14 @@ const Sidebar = () => {
                 <nav
                     className="flex flex-col gap-4">
                     {links?.main.map((link) => (
-                        <>
+                        <div key={link.path}>
                             <SidebarItem
-                                key={link.path}
                                 label={link.label}
                                 icon={link.icon}
                                 path={link.path}
                             />
                             <hr className='border-t border-white mx-4' />
-                        </>
+                        </div>
                     ))}
                 </nav>
 

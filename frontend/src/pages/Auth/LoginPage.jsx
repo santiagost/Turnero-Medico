@@ -5,7 +5,9 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import PrincipalCard from '../../components/ui/PrincipalCard';
 import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
-import ROLES, { loginValidationSchema } from '../../utils/utilities';
+
+import { loginValidationSchema } from '../../validations/authSchemas';
+import ROLES from '../../utils/constants';
 
 import { FaRegEye, FaRegEyeSlash } from "react-icons/fa6";
 import Button from '../../components/ui/Button';

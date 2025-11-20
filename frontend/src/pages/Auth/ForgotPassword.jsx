@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import PrincipalCard from '../../components/ui/PrincipalCard';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
-import { forgotPasswordValidationSchema } from '../../utils/utilities';
+import { forgotPasswordValidationSchema } from '../../validations/authSchemas';
 
 const ForgotPasswordPage = () => {
     const navigate = useNavigate();

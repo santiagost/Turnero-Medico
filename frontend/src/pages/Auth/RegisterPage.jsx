@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { registerValidationSchema } from "../../utils/utilities";
+import { registerValidationSchema } from "../../validations/authSchemas";
 
 import PrincipalCard from "../../components/ui/PrincipalCard";
 import Input from "../../components/ui/Input";

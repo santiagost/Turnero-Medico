@@ -7,7 +7,7 @@ import {
   doctorScheduleMock
 } from '../../utils/mockData';
 
-import { calculateAge } from '../../utils/utilities'
+import { calculateAge } from '../../utils/dateUtils';
 
 import SectionCard from '../../components/ui/SectionCard';
 import ConsultationCard from '../../components/features/medicalHistory/ConsultationCard';

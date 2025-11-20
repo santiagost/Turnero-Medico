@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import Input from '../../../ui/Input';
 import Button from '../../../ui/Button';
 
-import { adminCreateSocialWorkSchema } from '../../../../utils/utilities';
+import { adminCreateSocialWorkSchema } from '../../../../validations/adminSchemas';
 
 const initialSocialWorkState = {
     name: "",

@@ -5,7 +5,9 @@ import Button from '../../../ui/Button';
 
 
 import { specialtyOptions } from '../../../../utils/mockData';
-import ROLES, { adminCreateDoctorSchema } from '../../../../utils/utilities';
+import { adminCreateDoctorSchema } from '../../../../validations/adminSchemas';
+import ROLES from '../../../../utils/constants';
+
 
 const initialDoctorState = {
     firstName: "",

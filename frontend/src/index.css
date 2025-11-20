@@ -6,6 +6,7 @@
   --font-family-sans: 'Montserrat', theme(fontFamily.sans);
 }
 
+
 @theme {
     --color-custom-dark-blue: #131048;
     --color-custom-mid-dark-blue: #3a81dc;

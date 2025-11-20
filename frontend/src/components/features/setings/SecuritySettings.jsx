@@ -3,7 +3,7 @@ import Input from '../../ui/Input';
 import Button from '../../ui/Button';
 import { FaRegEye, FaRegEyeSlash } from "react-icons/fa6";
 
-import { securityValidationSchema } from '../../../utils/utilities';
+import { securityValidationSchema } from '../../../validations/authSchemas';
 
 const SecuritySettings = () => {
     const [formData, setFormData] = useState({

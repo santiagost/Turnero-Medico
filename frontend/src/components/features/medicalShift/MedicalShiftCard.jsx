@@ -3,7 +3,7 @@ import { IoClose } from "react-icons/io5";
 import StatusBadge from "../../ui/StatusBadge";
 import Button from "../../ui/Button"
 
-import { estimateDate, getFormattedDate, getFormattedTime } from "../../../utils/utilities";
+import { estimateDate, getFormattedDate, getFormattedTime } from "../../../utils/dateUtils";
 
 const MedicalShiftCard = ({ type, medicalShift, onCancel, onAttend }) => {
     const { 
@@ -20,7 +20,7 @@ const MedicalShiftCard = ({ type, medicalShift, onCancel, onAttend }) => {
 
     if (type === "Doctor") {
         return (
-            <div className="w-full max-w-sm bg-white rounded-xl shadow-md p-4 flex flex-col gap-3 h-full">
+            <div className="w-full max-w-sm bg-white rounded-xl p-4 flex flex-col gap-3 h-full">
                 <div className="flex justify-between items-start">
                     <h3 className="text-xl font-bold text-custom-dark-blue">{patient.lastName}, {patient.firstName}</h3>
                     <button onClick={() => onCancel(shiftId)} className="text-gray-400 hover:text-custom-dark-blue">
@@ -46,13 +46,10 @@ const MedicalShiftCard = ({ type, medicalShift, onCancel, onAttend }) => {
         );
     }
 
-    // --- Versión para PACIENTE (Imagen 1) ---
     return (
-        <div className="w-full max-w-sm bg-white rounded-xl shadow-md p-4 flex flex-col gap-3 h-full">
-            {/* Fila 1: Especialidad + Botón de Cancelar */}
+        <div className="w-full max-w-sm bg-white rounded-xl p-4 flex flex-col gap-3 h-full">
             <div className="flex justify-between items-start">
                 <div className="flex flex-col">
-                    {/* 3. Usa los datos desestructurados */}
                     <h3 className="text-xl font-bold text-custom-dark-blue">{doctor.specialty.name}</h3>
                     <p className="text-sm text-gray-500">Dr/a. {doctor.firstName} {doctor.lastName}</p>
                 </div>
@@ -60,8 +57,6 @@ const MedicalShiftCard = ({ type, medicalShift, onCancel, onAttend }) => {
                     <IoClose size={24} />
                 </button>
             </div>
-
-            {/* Fila 2: Estado + Hora */}
             <div className="flex justify-between items-end">
                 <StatusBadge status={status.name} />
                 <div className="text-right">

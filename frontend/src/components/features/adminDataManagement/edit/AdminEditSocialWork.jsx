@@ -4,7 +4,7 @@ import Button from '../../../ui/Button';
 
 // 1. Importa los mocks y el esquema de Obra Social
 import { mockSocialWorks } from '../../../../utils/mockData';
-import { adminCreateSocialWorkSchema } from '../../../../utils/utilities';
+import { adminCreateSocialWorkSchema } from '../../../../validations/adminSchemas';
 
 // 2. Define el estado inicial para Obra Social
 const initialSocialWorkState = {
