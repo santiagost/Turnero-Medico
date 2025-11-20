@@ -67,7 +67,9 @@ const router = createHashRouter([
         element: <Layout />,
         children: [
           { path: "/doctor/home", element: <DoctorHome /> },
+          { path: "/doctor/home/:shiftId", element: <DoctorHome /> },
           { path: "/doctor/patients", element: <DoctorPatients /> },
+          { path: "/doctor/patients/:patientId", element: <DoctorPatients /> },
           { path: "/doctor/schedule", element: <DoctorSchedule /> },
           { path: "/doctor/settings", element: <SettingsPage /> },
         ],

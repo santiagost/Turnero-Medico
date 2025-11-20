@@ -13,8 +13,11 @@ import { getFormattedDate, getFormattedTime } from "../../../utils/dateUtils";
 
 import { mockDoctorAvailability, getMockDoctorSchedule } from "../../../utils/mockData";
 
+import { useNavigate } from "react-router-dom";
+
 const DoctorShifts = () => {
     const { user, profile } = useAuth();
+    const navigate = useNavigate();
     const [doctorScheduleConfig, setDoctorScheduleConfig] = useState([]);
 
     // Inicializamos la semana seleccionada con la FECHA ACTUAL
@@ -55,10 +58,14 @@ const DoctorShifts = () => {
         setSelectedSlotData(null);
     };
 
-    // Ejemplo de redirección
-    const handleGoToConsultation = () => {
-        console.log("Redirigiendo a consulta del turno:", selectedSlotData.data.shiftId);
-        // navigate(`/doctor/consultation/${selectedSlotData.data.shiftId}`);
+    const handleGoToShiftAttention = () => {
+        console.log("Redirigiendo a atender turno:", selectedSlotData.data.shiftId);
+        navigate(`/doctor/home/${selectedSlotData.data.shiftId}`)
+    };
+    
+    const handleGoToPatientHistory = () => {
+        console.log("Redirigiendo a consulta del turno del paciente:", selectedSlotData.data.shiftId);        
+        navigate(`/doctor/patients/${selectedSlotData.data.patient.patientId}`)
     };
 
     return (
@@ -173,13 +180,13 @@ const DoctorShifts = () => {
                                         <Button
                                             text={"Ver Detalle de Consulta"}
                                             variant="primary"
-                                            onClick={() => console.log("Ir a historial")}
+                                            onClick={handleGoToPatientHistory}
                                         />
                                     ) : (
                                         <Button
                                             text={"Atender Paciente"}
                                             variant="primary"
-                                            onClick={handleGoToConsultation}
+                                            onClick={handleGoToShiftAttention}
                                         />
                                     )}
                                 </div>
