@@ -9,7 +9,6 @@ Pero para arreglar tu error actual rápidamente, simplemente corrige el import e
 
 import sqlite3
 from typing import List, Optional
-from fastapi import HTTPException
 from models.especialidad import EspecialidadResponse, EspecialidadCreate, EspecialidadUpdate
 
 class EspecialidadService:
