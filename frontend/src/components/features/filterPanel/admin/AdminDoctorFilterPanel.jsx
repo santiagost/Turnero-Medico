@@ -20,8 +20,6 @@ export const initialFiltersState = {
 
 const AdminDoctorFilterPanel = ({ doctorToDelete, doctorToEdit, viewMode = "detail" }) => {
     const navigate = useNavigate();
-    const location = useLocation();
-    const currentPath = location.pathname;
 
     const [localFilters, setLocalFilters] = useState(initialFiltersState);
     const [searchResults, setSearchResults] = useState([]);
