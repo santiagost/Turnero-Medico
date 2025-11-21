@@ -45,13 +45,14 @@ from database import DatabaseConnection
 DatabaseConnection()
 
 # Registrar los routers de los controladores
-from routers import path_router, paciente_router, rol_router, especialidad_router, obra_social_router
+from routers import path_router, paciente_router, rol_router, especialidad_router, obra_social_router, estado_turno_router
 
 FastAPIApp.include_router(path_router)
 FastAPIApp.include_router(paciente_router)
 FastAPIApp.include_router(rol_router)
 FastAPIApp.include_router(especialidad_router)
 FastAPIApp.include_router(obra_social_router)
+FastAPIApp.include_router(estado_turno_router)
 
 
 # Evento de cierre: cerrar la conexión a la base de datos
