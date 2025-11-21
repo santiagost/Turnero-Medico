@@ -127,7 +127,7 @@ const DoctorPatients = () => {
                   <div className="absolute left-0">
                     <IconButton icon={<IoMdArrowBack size={30} onClick={handleGoBackToSearch} type="button" />} />
                   </div>
-                  <p>Historial Clínico del Paciente</p>
+                  <p className='text-custom-dark-blue text-center font-bold text-2xl'>Historial Clínico del Paciente</p>
                 </div>
               </>
             }

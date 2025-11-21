@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { addDays, format } from "date-fns";
 
-import Calendar from "./Calendar";
+import Calendar from "../../ui/Calendar";
 import WeeklySlots from "./WeeklySlots";
 import Select from "../../ui/Select";
 import Input from "../../ui/Input";

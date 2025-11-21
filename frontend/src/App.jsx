@@ -53,6 +53,7 @@ const router = createHashRouter([
           { path: "/patient/home", element: <PatientHome /> },
           { path: "/patient/schedule", element: <PatientSchedule /> },
           { path: "/patient/history", element: <PatientHistory /> },
+          { path: "/patient/history/:consultationId", element: <PatientHistory /> },
           { path: "/patient/settings", element: <SettingsPage /> },
         ],
       },

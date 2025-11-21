@@ -73,7 +73,7 @@ const Select = ({
 
             <div className={`${baseStyles} ${variantStyles}`}>
                 <select
-                    className={`${textColor} bg-transparent outline-none w-full`}
+                    className={`${textColor} bg-transparent outline-none w-full cursor-pointer`}
                     disabled={disable}
                     value={value}
                     onChange={onChange}

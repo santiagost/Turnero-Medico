@@ -1,11 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { IoIosArrowDown, IoIosArrowUp } from 'react-icons/io';
 import Button from '../../ui/Button';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const ConsultationCard = ({ consultation, type }) => {
-    const [isExpanded, setIsExpanded] = useState(false);
+const ConsultationCard = ({ consultation, type, forceOpen = false }) => {
+    const [isExpanded, setIsExpanded] = useState(forceOpen);
 
+    useEffect(() => {
+        setIsExpanded(forceOpen);
+    }, [forceOpen]);
+    
     const toggleExpand = () => {
         setIsExpanded(prev => !prev);
     };

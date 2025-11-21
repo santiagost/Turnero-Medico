@@ -27,7 +27,7 @@ const Modal = ({ isOpen, onClose, children }) => {
                         {/* Botón de 'X' opcional */}
                         <button 
                             onClick={onClose} 
-                            className="absolute top-2 right-2 text-gray-400 hover:text-gray-800 z-10"
+                            className="absolute top-2 right-2 text-gray-400 hover:text-gray-800 z-10 cursor-pointer"
                         >
                             <IoClose size={28} />
                         </button>

@@ -8,9 +8,12 @@ import SectionCard from '../../components/ui/SectionCard';
 import ConsultationCard from '../../components/features/medicalHistory/ConsultationCard';
 import ConsultationFilterPanel, { initialFiltersState } from '../../components/features/filterPanel/ConsultationFilterPanel';
 
+import { useParams, useNavigate } from 'react-router-dom';
 
 const PatientHistory = () => {
   const { profile } = useAuth();
+  const { consultationId } = useParams();
+  const navigate = useNavigate();
 
   const [allPatientConsultations, setAllPatientConsultations] = useState([]);
   const [activeFilters, setActiveFilters] = useState(initialFiltersState);
@@ -18,7 +21,7 @@ const PatientHistory = () => {
 
 
   const handleFilteredSearch = (filtersFromPanel) => {
-    console.log("Nuevos filtros aplicados:", filtersFromPanel);
+    setFilteredConsultations(allPatientConsultations);
     setActiveFilters(filtersFromPanel);
   }
 
@@ -32,10 +35,12 @@ const PatientHistory = () => {
   }, [profile]);
 
   useEffect(() => {
-    // Empieza con la lista maestra *ya filtrada por paciente*
     let results = [...allPatientConsultations];
 
-    // Lógica de Filtrado
+    // CASO 1: Si hay un ID en la URL, tiene prioridad absoluta
+    if (consultationId) {
+      results = results.filter(c => c.consultationId.toString() === consultationId);
+    }
     if (activeFilters.specialty) {
       results = results.filter(c => c.shift.doctor.specialty.specialtyId === parseInt(activeFilters.specialty));
     }
@@ -46,9 +51,9 @@ const PatientHistory = () => {
       results = results.filter(c => c.shift.startTime.startsWith(activeFilters.date));
     }
 
-    // Lógica de Orden
+
+    // Lógica de Orden (se aplica a ambos casos)
     results.sort((a, b) => {
-      // ... (tu lógica de sort, ej: por 'date_desc')
       switch (activeFilters.order) {
         case 'date_asc':
           return new Date(a.consultationDate) - new Date(b.consultationDate);
@@ -64,8 +69,8 @@ const PatientHistory = () => {
 
     setFilteredConsultations(results);
 
-    
-  }, [activeFilters, allPatientConsultations]);
+    // Agregamos consultationId a las dependencias
+  }, [activeFilters, allPatientConsultations, consultationId]);
 
   return (
     <AnimatedPage>
@@ -73,6 +78,7 @@ const PatientHistory = () => {
         <h1 className="text-2xl font-bold text-custom-dark-blue mb-6">
           Mi Historial Clínico
         </h1>
+
         <SectionCard tittle={"Filtra entre tus consultas"} content={
           <ConsultationFilterPanel
             onSearch={handleFilteredSearch}
@@ -81,31 +87,31 @@ const PatientHistory = () => {
           />
         } />
 
+
         <div className='flex flex-row items-center justify-between mt-5 text-custom-dark-blue'>
           <h1 className="text-2xl font-bold mb-6">
             Listado de Consultas
           </h1>
           <p>(haz click en una consulta para ver en detalle)</p>
         </div>
+
         <SectionCard content={
           <div className="mx-2 my-1">
             {allPatientConsultations.length === 0 ? (
-              // 1. No hay consultas EN TOTAL
               <p className="text-center text-custom-gray p-4">
-                Aún no tienes consultas en tu historial. Cuando hayas completado tu primera consulta, los detalles aparecerán aquí.
+                Aún no tienes consultas en tu historial.
               </p>
             ) : filteredConsultations.length === 0 ? (
-              // 2. Hay consultas, pero el filtro no arrojó resultados
               <p className="text-center text-custom-gray p-4">
-                No se encontraron consultas que coincidan con los filtros.
+                No se encontró la consulta solicitada o no coincide con los filtros.
               </p>
             ) : (
-              // 3. Hay resultados filtrados para mostrar
               filteredConsultations.map(consultation => (
                 <ConsultationCard
                   key={consultation.consultationId}
                   consultation={consultation}
                   type="Patient"
+                  forceOpen={consultation.consultationId.toString() === consultationId}
                 />
               ))
             )}

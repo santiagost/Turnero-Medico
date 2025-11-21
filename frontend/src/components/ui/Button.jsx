@@ -15,7 +15,7 @@ const Button = ({ text, variant = "primary", onClick, disable = false, type, siz
         }
     }
     
-    const baseStyles = "transition-all duration-200 ease-in-out transform hover:scale-105 active:scale-100 flex flex-row items-center justify-center gap-2"
+    const baseStyles = "transition-all duration-200 ease-in-out transform hover:scale-105 active:scale-100 flex flex-row items-center justify-center gap-2 cursor-pointer"
 
     const variants = {
         primary: "bg-custom-mid-dark-blue text-white hover:bg-custom-mid-light-blue active:bg-custom-mid-dark-blue",

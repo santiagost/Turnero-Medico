@@ -32,7 +32,7 @@ const RightSidebar = ({ isOpen, onClose, title, children }) => {
 
                     {/* 2. Sidebar (Deslizante) */}
                     <motion.div
-                        className="fixed inset-y-0 right-0 z-50 w-full max-w-xl bg-white shadow-2xl flex flex-col"
+                        className="fixed inset-y-0 right-0 z-40 w-full max-w-xl bg-white shadow-2xl flex flex-col"
                         initial={{ x: "100%" }}
                         animate={{ x: "0%" }}
                         exit={{ x: "100%" }}
@@ -46,7 +46,7 @@ const RightSidebar = ({ isOpen, onClose, title, children }) => {
                             </h2>
                             <button
                                 onClick={onClose}
-                                className="text-gray-400 hover:text-gray-800 z-10"
+                                className="text-gray-400 hover:text-gray-800 z-10 cursor-pointer"
                             >
                                 <IoClose size={28} />
                             </button>

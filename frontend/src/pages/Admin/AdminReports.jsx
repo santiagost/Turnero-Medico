@@ -3,8 +3,11 @@ import AnimatedPage from '../../components/layout/AnimatedPage';
 
 const AdminReports = () => (
   <AnimatedPage>
-    <div style={{ padding: '10px', background: '#f3e5f5' }}>
-      <h3>Bienvenido, Admin (Reportes)</h3>
+    <div className="px-8">
+      <h1 className="text-2xl font-bold text-custom-dark-blue mb-6">
+        Reportes y Estadisticas
+      </h1>
+      {/* <SectionCard tittle={"Mi Agenda"} content={<DoctorShifts />} /> */}
     </div>
   </AnimatedPage>
 );
