@@ -54,13 +54,13 @@ const AdminHome = () => {
         </h1>
 
         <div className='flex flex-row gap-4 items-center justify-around w-full'>
-          <SectionCard complexHeader={<p className='w-[15vw]'>Turnos Totales<br />de Hoy</p>}
+          <SectionCard complexHeader={<p className='w-[15vw] text-custom-dark-blue text-center font-bold text-2xl '>Turnos Totales<br />de Hoy</p>}
             content={<p className='text-5xl text-custom-dark-blue font-bold text-center m-5'>{statistics.totalShifts}</p>} />
-          <SectionCard complexHeader={<p className='w-[15vw]'>Pacientes <br />Atendidos</p>}
+          <SectionCard complexHeader={<p className='w-[15vw] text-custom-dark-blue text-center font-bold text-2xl '>Pacientes <br />Atendidos</p>}
             content={<p className='text-5xl text-custom-dark-blue font-bold text-center m-5'>{statistics.patientsTreated}</p>} />
-          <SectionCard complexHeader={<p className='w-[15vw]'>Turnos Cancelados de Hoy</p>}
+          <SectionCard complexHeader={<p className='w-[15vw] text-custom-dark-blue text-center font-bold text-2xl '>Turnos Cancelados de Hoy</p>}
             content={<p className='text-5xl text-custom-dark-blue font-bold text-center m-5'>{statistics.cancelledShifts}</p>} />
-          <SectionCard complexHeader={<p className='w-[15vw]'>Nuevos Pacientes Registrados</p>}
+          <SectionCard complexHeader={<p className='w-[15vw] text-custom-dark-blue text-center font-bold text-2xl '>Nuevos Pacientes Registrados</p>}
             content={<p className='text-5xl text-custom-dark-blue font-bold text-center m-5'>{statistics.newPatientsRegistered}</p>} />
         </div>
 
