@@ -3,7 +3,7 @@ import { addDays, startOfWeek, format } from "date-fns";
 
 import { useAuth } from "../../../hooks/useAuth";
 
-import Calendar from "./Calendar";
+import Calendar from "../../ui/Calendar";
 import WeeklySlots from "./WeeklySlots";
 import RightSidebar from "../../ui/RightSidebar";
 import StatusBadge from "../../ui/StatusBadge";

@@ -11,7 +11,7 @@ import PrincipalCard from '../../components/ui/PrincipalCard'
 import Modal from '../../components/ui/Modal';
 import Button from '../../components/ui/Button';
 
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 
 // Mock data
 import { doctorScheduleMock, mockShiftStatus } from '../../utils/mockData';
@@ -19,6 +19,7 @@ import { doctorScheduleMock, mockShiftStatus } from '../../utils/mockData';
 const DoctorHome = () => {
   const { user } = useAuth();
   const { shiftId } = useParams();
+  const navigate = useNavigate();
   const [doctorSchedule, setDoctorSchedule] = useState(doctorScheduleMock);
 
   // Atencion de Turno
@@ -109,6 +110,7 @@ const DoctorHome = () => {
     setSelectedShift(null);
     setIsSaveModalOpen(false);
     setDataToSave(null);
+    navigate("/doctor/home")
 
     alert("Consulta registrada con éxito.");
   };
@@ -139,6 +141,7 @@ const DoctorHome = () => {
     setAttendingShift(false);
     setSelectedShift(null);
     setIsDiscardModalOpen(false);
+    navigate("/doctor/home")
   };
 
   const closeDiscardModal = () => {

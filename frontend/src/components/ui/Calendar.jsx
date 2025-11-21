@@ -58,7 +58,7 @@ const Calendar = ({ selectedWeek, setSelectedWeek}) => {
             }}
             footer={
                 selectedWeek?.from && selectedWeek?.to &&
-                <p className="my-2">{`Semana del ${selectedWeek.from.toLocaleDateString()} al ${selectedWeek.to.toLocaleDateString()}`}</p>
+                <p className="my-2 text-custom-dark-blue">{`Semana del ${selectedWeek.from.toLocaleDateString()} al ${selectedWeek.to.toLocaleDateString()}`}</p>
             }
         />
     );

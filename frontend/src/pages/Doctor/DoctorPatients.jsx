@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import AnimatedPage from '../../components/layout/AnimatedPage';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 
 
 import {
@@ -25,6 +25,7 @@ const CURRENT_DOCTOR_ID = 1; // ID de Dr. Martin Sanchez
 
 const DoctorPatients = () => {
   const { patientId } = useParams();
+  const navigate = useNavigate();
   const [patient, setPatient] = useState(null);
   const [consultations, setConsultations] = useState([]);
   const [searchMessage, setSearchMessage] = useState("Busca un paciente por DNI o nombre para ver su historial.");
@@ -70,6 +71,7 @@ const DoctorPatients = () => {
   };
 
   const handleGoBackToSearch = () => {
+    navigate("/doctor/patients")
     setPatient(null);
   };
 
