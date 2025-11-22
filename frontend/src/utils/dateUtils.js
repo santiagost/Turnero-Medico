@@ -1,4 +1,5 @@
 import { format, isBefore, addMinutes, parse, } from "date-fns";
+import { WEEKDAYS } from "./constants";
 
 export const calculateAge = (dateString) => {
   if (!dateString) {
@@ -122,3 +123,8 @@ export const generateMasterGrid = (doctorAvailability) => {
 
     return slots;
 };
+
+export const daysOptions = WEEKDAYS.map((day, index) => ({
+  value: index,
+  label: day,
+}));

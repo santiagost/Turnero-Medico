@@ -86,3 +86,59 @@ export const adminCreateSpecialtySchema = {
     return null;
   }
 };
+
+// Constantes para usar en la validación
+const START_HOUR_CANVAS = 7;
+const END_HOUR_CANVAS = 21;
+
+export const adminDoctorScheduleSchema = {
+  dayOfWeek: (value) => {
+    if (value === "" || value === undefined || value === null) return "Seleccione un día.";
+    return null;
+  },
+  
+  startTime: (value) => {
+    if (!value) return "Requerido.";
+    
+    const [hours] = value.split(':').map(Number);
+    if (hours < START_HOUR_CANVAS || hours >= END_HOUR_CANVAS) {
+      return `El horario debe ser entre ${START_HOUR_CANVAS}:00 y ${END_HOUR_CANVAS}:00.`;
+    }
+    return null;
+  },
+
+  endTime: (value, formData) => {
+    if (!value) return "Requerido.";
+    
+    // 1. Validar que sea mayor al inicio
+    if (formData.startTime && value <= formData.startTime) {
+      return "El fin debe ser mayor al inicio.";
+    }
+
+    // 2. Validar limites del canvas
+    const [hours] = value.split(':').map(Number);
+    if (hours > END_HOUR_CANVAS || (hours === END_HOUR_CANVAS && value.split(':')[1] !== "00")) {
+        return `No puede exceder las ${END_HOUR_CANVAS}:00.`;
+    }
+
+    return null;
+  },
+
+  durationMinutes: (value, formData) => {
+    if (!value) return "Requerido.";
+    if (Number(value) < 5) return "Mínimo 5 min.";
+
+    // 3. Validar coherencia matemática: ¿Entra un turno en ese rango?
+    if (formData.startTime && formData.endTime) {
+        const start = new Date(`1970-01-01T${formData.startTime}:00`);
+        const end = new Date(`1970-01-01T${formData.endTime}:00`);
+        const diffMinutes = (end - start) / 60000; // Diferencia en minutos
+
+        if (Number(value) > diffMinutes) {
+            return `La duración excede el rango horario (${diffMinutes} min).`;
+        }
+    }
+
+    return null;
+  }
+};

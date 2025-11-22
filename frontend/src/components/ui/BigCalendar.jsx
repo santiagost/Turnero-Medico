@@ -4,9 +4,9 @@ import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, fo
 
 const BigCalendar = ({ currentDate, events = [], userRole, onEventClick }) => {
     const monthStart = startOfMonth(currentDate);
-    const startDate = startOfWeek(monthStart, { weekStartsOn: 1 });
+    const startDate = startOfWeek(monthStart, { weekStartsOn: 0 });
     const monthEnd = endOfMonth(currentDate);
-    const endDate = endOfWeek(monthEnd, { weekStartsOn: 1 });
+    const endDate = endOfWeek(monthEnd, { weekStartsOn: 0 });
     const daysInGrid = eachDayOfInterval({ start: startDate, end: endDate });
     const today = new Date();
 

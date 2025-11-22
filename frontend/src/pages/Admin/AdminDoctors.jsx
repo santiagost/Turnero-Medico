@@ -11,6 +11,7 @@ import AdminEditDoctor from '../../components/features/adminDataManagement/edit/
 
 import Modal from '../../components/ui/Modal';
 import PrincipalCard from '../../components/ui/PrincipalCard';
+import AdminDoctorSchedulePanel from '../../components/features/adminDataManagement/edit/AdminDoctorSchedulePanel';
 
 const AdminDoctors = () => {
   const [showNewDoctor, setShowNewDoctor] = useState(false);
@@ -37,18 +38,18 @@ const AdminDoctors = () => {
   const { scrollContainerRef } = useOutletContext();
 
   useEffect(() => {
-      if (selectedDoctorId && detailSectionRef.current && scrollContainerRef.current) {
-  
-        const timerId = setTimeout(() => {
-          const targetPosition = detailSectionRef.current.offsetTop;
-          scrollContainerRef.current.scrollTo({
-            top: targetPosition,
-            behavior: 'smooth',
-          });
-        }, 300);
-        return () => clearTimeout(timerId);
-      }
-    }, [selectedDoctorId]);
+    if (selectedDoctorId && detailSectionRef.current && scrollContainerRef.current) {
+
+      const timerId = setTimeout(() => {
+        const targetPosition = detailSectionRef.current.offsetTop;
+        scrollContainerRef.current.scrollTo({
+          top: targetPosition,
+          behavior: 'smooth',
+        });
+      }, 300);
+      return () => clearTimeout(timerId);
+    }
+  }, [selectedDoctorId]);
 
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
   const [isDiscardModalOpen, setIsDiscardModalOpen] = useState(false);
@@ -64,22 +65,34 @@ const AdminDoctors = () => {
     setSelectedDoctorId(id)
   }
 
+  // Este handleSave es para editar los DATOS PERSONALES del médico
   const handleSave = (doctorData) => {
     setDataToSave(doctorData);
     setIsSaveModalOpen(true);
   }
+
+  // --- NUEVA FUNCIÓN: Manejar el guardado de HORARIOS ---
+  const handleScheduleSave = (updatedSchedule) => {
+    console.log("API CALL: Guardando nueva grilla de horarios para doctor ID:", selectedDoctorId);
+    console.log("Datos a enviar al backend:", updatedSchedule);
+
+    // Aquí iría tu llamada al backend (ej. axios.put(`/doctors/${selectedDoctorId}/schedule`, updatedSchedule))
+    // Podrías agregar una notificación toast de éxito aquí
+    // toast.success("Horarios actualizados correctamente");
+    setSelectedDoctorId(null);
+  };
 
   const handleCancel = () => {
     setIsDiscardModalOpen(true);
   }
 
   const confirmSave = () => {
-    console.log("Guardando cambios en el doctor:", dataToSave);
+    console.log("Guardando cambios en datos personales del doctor:", dataToSave);
     // ... Aquí iría tu lógica de API para actualizar al paciente ...
 
     setIsSaveModalOpen(false);
     setDataToSave(null);
-    setSelectedDoctorId();
+    setSelectedDoctorId(null);
   };
 
   const confirmDelete = () => {
@@ -90,7 +103,6 @@ const AdminDoctors = () => {
     setIsDeleteModalOpen(false);
     setDoctorIdToDelete(null);
     // Aquí deberías re-ejecutar la búsqueda en AdminDoctorFilterPanel
-    // para que la lista se actualice.
   };
 
   const closeDeleteModal = () => {
@@ -175,16 +187,19 @@ const AdminDoctors = () => {
               <h1 className="text-2xl font-bold text-custom-dark-blue mb-6 mt-8">
                 Horarios del Médico
               </h1>
-              <SectionCard tittle={"Definir el Horario de Atención de un Médico"} content={
-                // <AdminSchedulePanel /> // (Placeholder para tu futuro componente)
-                <div>Contenido de Horarios...</div>
+              <SectionCard tittle={"Definir el Horario de Atención del Médico"} content={
+
+                <AdminDoctorSchedulePanel
+                  doctorId={selectedDoctorId}
+                  onSaveSuccess={handleScheduleSave}
+                />
               } />
             </motion.div>
           }
         </AnimatePresence>
 
       </div>
-      {/* Modal de Guardar Cambios */}
+      {/* Modal de Guardar Cambios (Datos Personales) */}
       <Modal isOpen={isSaveModalOpen} onClose={closeSaveModal}>
         <PrincipalCard
           title="Guardar Cambios"
