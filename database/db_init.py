@@ -128,6 +128,11 @@ CREATE TABLE IF NOT EXISTS Turno (
   fecha_hora_inicio TEXT NOT NULL,
   fecha_hora_fin TEXT NOT NULL,
   motivo_consulta TEXT,
+
+  -- agregado para seguimiento de recordatorios
+  recordatorio_notificado INTEGER DEFAULT 0, -- 0: No, 1: Si
+  reserva_notificada INTEGER DEFAULT 0, -- 0: No, 1: Si
+
   FOREIGN KEY (id_paciente) REFERENCES Paciente(id_paciente),
   FOREIGN KEY (id_medico) REFERENCES Medico(id_medico),
   FOREIGN KEY (id_estado_turno) REFERENCES EstadoTurno(id_estado_turno)

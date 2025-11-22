@@ -95,17 +95,17 @@ INSERT INTO HorarioAtencion (id_medico, dia_semana, hora_inicio, hora_fin, durac
 
 -- Turnos
 -- Turno 1: Messi con House (Pasado y Realizado)
-INSERT INTO Turno (id_paciente, id_medico, id_estado_turno, fecha_hora_inicio, fecha_hora_fin, motivo_consulta) VALUES 
-(1, 1, 4, '2024-01-10 09:00:00', '2024-01-10 09:30:00', 'Dolor en la pierna izquierda'),
+INSERT INTO Turno (id_paciente, id_medico, id_estado_turno, fecha_hora_inicio, fecha_hora_fin, motivo_consulta, recordatorio_notificado, reserva_notificada) VALUES 
+(1, 1, 4, '2024-01-10 09:00:00', '2024-01-10 09:30:00', 'Dolor en la pierna izquierda', 1, 1),
 -- Turno 2: Fito con Grey (Futuro y Pendiente)
-(2, 2, 1, '2024-12-25 10:00:00', '2024-12-25 10:20:00', 'Chequeo general de garganta');
+(2, 2, 1, '2024-12-25 10:00:00', '2024-12-25 10:20:00', 'Chequeo general de garganta', 1, 0);
 
 -- Consultas (Solo para el turno realizado)
-INSERT INTO Consulta (id_turno, diagnostico, notas_privadas_medico, tratamiento, fecha_consulta) VALUES 
+INSERT INTO Consulta (id_turno, diagnostico, notas_privadas_medico, tratamiento, fecha_consulta) VALUES
 (1, 'Contractura muscular leve', 'El paciente refiere mucho entrenamiento', 'Reposo y kinesiología', '2024-01-10 09:25:00');
 
 -- Recetas (Para la consulta anterior)
-INSERT INTO Receta (id_consulta, medicamento, dosis, instrucciones, fecha_emision) VALUES 
+INSERT INTO Receta (id_consulta, medicamento, dosis, instrucciones, fecha_emision) VALUES
 (1, 'Diclofenac', '75mg', 'Uno cada 12 horas si hay dolor', '2024-01-10');
 
 

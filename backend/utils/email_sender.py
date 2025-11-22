@@ -35,7 +35,6 @@ class EmailSender:
 
         # 2. Conectar con el servidor de Gmail
         # Usamos SSL para seguridad
-        # context = ssl.create_default_context()
         context = ssl._create_unverified_context()  # Evita errores de certificado (no recomendado para prod)
 
         try:
@@ -48,13 +47,14 @@ class EmailSender:
                 # Enviar
                 server.send_message(msg)
             
-            print("✅ Correo enviado exitosamente.")
+            print("Correo enviado exitosamente.")
             return True
 
         except Exception as e:
-            print(f"❌ Error enviando el correo: {e}")
+            print(f"Error enviando el correo: {e}")
             return False
         
+
 
 
 if __name__ == "__main__":
@@ -64,6 +64,6 @@ if __name__ == "__main__":
     print("Prueba de envío de email...")
     exito = EmailSender.send_email(
         destinatario="facu.witt@gmail.com", # <--- Pon tu mail personal aquí para probar
-        asunto="Prueba del Turnero Médico",
+        asunto="VITALIS - Prueba del email_sender Turnero Médico",
         cuerpo="Hola! Si estás leyendo esto, el sistema de notificaciones funciona."
     )
