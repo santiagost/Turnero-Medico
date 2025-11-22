@@ -107,19 +107,18 @@ const ScheduleHeader = ({ selectedDoctor, selectedView, onFilterChange, currentD
                                 size={"small"}
                             />
                         </div>
-                        <div className="w-full">
-                            <Select
-                                tittle="Vista"
-                                name="view"
-                                value={selectedView}
-                                onChange={handleChange}
-                                options={viewOptions}
-                                size={"small"}
-                            />
-                        </div>
                     </>
                 )}
-
+                <div className="w-full">
+                    <Select
+                        tittle="Vista"
+                        name="view"
+                        value={selectedView}
+                        onChange={handleChange}
+                        options={viewOptions}
+                        size={"small"}
+                    />
+                </div>
             </div>
         </div>
     );

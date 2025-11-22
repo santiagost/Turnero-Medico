@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import AnimatedPage from '../../components/layout/AnimatedPage';
 import ScheduleHeader from '../../components/features/schedule/ScheduleHeader'
 import SectionCard from '../../components/ui/SectionCard'
@@ -6,14 +6,16 @@ import BigCalendar from '../../components/ui/BigCalendar';
 import StatusBadge from '../../components/ui/StatusBadge';
 import { useAuth } from '../../hooks/useAuth';
 import RightSidebar from '../../components/ui/RightSidebar';
-import Button from '../../components/ui/Button'; 
+import Button from '../../components/ui/Button';
 import Modal from '../../components/ui/Modal'; // IMPORTADO
 import PrincipalCard from '../../components/ui/PrincipalCard'; // IMPORTADO
 
-import { IoMdInformationCircleOutline, IoMdArrowBack } from "react-icons/io"; 
+import { IoMdInformationCircleOutline, IoMdArrowBack } from "react-icons/io";
 
 import { startOfMonth, endOfMonth, parseISO, isWithinInterval, startOfDay, endOfDay, format } from 'date-fns';
-import { doctorScheduleMock, patientScheduleMock, doctorOptions } from '../../utils/mockData';
+import { doctorScheduleMock, patientScheduleMock, doctorOptions, mockDoctorAvailability, } from '../../utils/mockData';
+
+import WeekCalendar from '../../components/ui/WeekCalendar';
 
 const AdminSchedule = () => {
   const { user } = useAuth();
@@ -27,14 +29,16 @@ const AdminSchedule = () => {
 
   // --- ESTADOS PARA LA SIDEBAR ---
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [sidebarView, setSidebarView] = useState('list'); 
-  const [dayShifts, setDayShifts] = useState([]); 
-  const [selectedShift, setSelectedShift] = useState(null); 
+  const [sidebarView, setSidebarView] = useState('list');
+  const [dayShifts, setDayShifts] = useState([]);
+  const [selectedShift, setSelectedShift] = useState(null);
 
   // --- ESTADOS PARA CANCELACIÓN (NUEVO) ---
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [shiftToCancel, setShiftToCancel] = useState(null);
   const [cancelReason, setCancelReason] = useState(""); // Motivo administrativo
+
+  const [doctorScheduleConfig, setDoctorScheduleConfig] = useState([]);
 
   const handleFilterChange = (name, value) => {
     setFilters((prev) => ({
@@ -42,6 +46,14 @@ const AdminSchedule = () => {
       [name]: value,
     }));
   };
+
+  useEffect(() => {
+    if (filters.doctor) {
+      setDoctorScheduleConfig(mockDoctorAvailability);
+    } else {
+      setDoctorScheduleConfig([]);
+    }
+  }, [filters.doctor]);
 
   useEffect(() => {
     if (user.role === 'Admin' && filters.doctor === "" && doctorOptions.length > 0) {
@@ -160,26 +172,38 @@ const AdminSchedule = () => {
 
   const confirmCancel = () => {
     console.log(`Cancelando turno ${shiftToCancel} por motivo: ${cancelReason}`);
-    
+
     // 1. Actualizar la vista de detalle actual
     if (selectedShift && selectedShift.id === shiftToCancel) {
       setSelectedShift(prev => ({ ...prev, status: 'Cancelado' }));
     }
 
     // 2. Actualizar la lista de turnos del día (para que se vea reflejado al volver)
-    setDayShifts(prevShifts => 
-      prevShifts.map(shift => 
-        shift.shiftId === shiftToCancel 
+    setDayShifts(prevShifts =>
+      prevShifts.map(shift =>
+        shift.shiftId === shiftToCancel
           ? { ...shift, status: { ...shift.status, name: 'Cancelado' } }
           : shift
       )
     );
-    
+
     // 3. (Opcional) Aquí actualizarías calendarEvents si quisieras que persista al cerrar sidebar
     // o harías la llamada al backend.
 
     closeCancelModal();
   };
+
+  const rawDoctorEvents = useMemo(() => {
+    if (!filters.doctor) return [];
+    return doctorScheduleMock.filter(shift =>
+      String(shift.doctor.doctorId) === String(filters.doctor)
+    ).map(t => ({
+      ...t,
+      date: t.startTime,
+      // El admin necesita ver info del paciente o un "Ocupado"
+      title: `${t.patient.firstName} ${t.patient.lastName}`
+    }));
+  }, [filters.doctor]);
 
   return (
     <AnimatedPage>
@@ -211,12 +235,26 @@ const AdminSchedule = () => {
                       Cargando agenda...
                     </div>
                   ) : (
-                    <BigCalendar
-                      currentDate={currentDate}
-                      events={calendarEvents}
-                      userRole={user.role}
-                      onEventClick={handleEventClick}
-                    />
+                    filters.view === 'month' ? (
+                      <BigCalendar
+                        currentDate={currentDate}
+                        events={calendarEvents}
+                        userRole={user.role}
+                        onEventClick={handleEventClick}
+                      />
+                    ) : (
+                      <WeekCalendar
+                        currentDate={currentDate}
+                        events={rawDoctorEvents}
+                        userRole={user.role}
+                        doctorAvailability={doctorScheduleConfig}
+                        onEventClick={(event) => {
+                          setDayShifts([]); // <--- CLAVE: Limpiamos la lista para que no salga el botón "Volver"
+                          handleSelectShiftFromList(event);
+                          setIsSidebarOpen(true);
+                        }}
+                      />
+                    )
                   )}
                 </>
               )}
@@ -262,12 +300,14 @@ const AdminSchedule = () => {
             <div className="flex flex-col gap-6 animate-fade-in-right">
 
               {/* Botón Volver */}
-              <button
-                onClick={handleBackToList}
-                className="flex items-center gap-2 text-sm text-custom-blue font-bold hover:underline w-fit cursor-pointer"
-              >
-                <IoMdArrowBack size={18} /> Volver al listado
-              </button>
+              {dayShifts.length > 0 && (
+                <button
+                  onClick={handleBackToList}
+                  className="flex items-center gap-2 text-sm text-custom-blue font-bold hover:underline w-fit cursor-pointer"
+                >
+                  <IoMdArrowBack size={18} /> Volver al listado
+                </button>
+              )}
 
               {/* SECCIÓN 1: DATOS DEL PACIENTE */}
               <div className="flex flex-col gap-1">

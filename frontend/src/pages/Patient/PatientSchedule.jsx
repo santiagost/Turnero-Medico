@@ -1,40 +1,38 @@
-import React, { useState, useEffect } from 'react';
-import AnimatedPage from '../../components/layout/AnimatedPage';
-import ScheduleHeader from '../../components/features/schedule/ScheduleHeader'
-import SectionCard from '../../components/ui/SectionCard'
-import BigCalendar from '../../components/ui/BigCalendar';
-import { useAuth } from '../../hooks/useAuth';
-
-import StatusBadge from '../../components/ui/StatusBadge';
-import RightSidebar from '../../components/ui/RightSidebar';
-import Button from '../../components/ui/Button';
-import Modal from '../../components/ui/Modal';
-import PrincipalCard from '../../components/ui/PrincipalCard';
-
-import { IoMdArrowBack } from "react-icons/io"; // Importamos la flecha
-
-import { startOfMonth, endOfMonth, parseISO, isWithinInterval, startOfDay, endOfDay, format } from 'date-fns';
-import { patientScheduleMock, getConsultationByShiftId } from '../../utils/mockData';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { startOfMonth, endOfMonth, parseISO, isWithinInterval, startOfDay, endOfDay, format } from 'date-fns';
+import { IoMdArrowBack } from "react-icons/io";
+
+import { useAuth } from '../../hooks/useAuth';
+import { patientScheduleMock, getConsultationByShiftId } from '../../utils/mockData';
+
+import AnimatedPage from '../../components/layout/AnimatedPage';
+import SectionCard from '../../components/ui/SectionCard';
+import PrincipalCard from '../../components/ui/PrincipalCard';
+import RightSidebar from '../../components/ui/RightSidebar';
+import Modal from '../../components/ui/Modal';
+import Button from '../../components/ui/Button';
+import StatusBadge from '../../components/ui/StatusBadge';
+import ScheduleHeader from '../../components/features/schedule/ScheduleHeader';
+import BigCalendar from '../../components/ui/BigCalendar';
+import WeekCalendar from '../../components/ui/WeekCalendar';
+
 
 const PatientSchedule = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+
   const [filters, setFilters] = useState({ view: "month" });
   const [currentDate, setCurrentDate] = useState(new Date());
   const [calendarEvents, setCalendarEvents] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
 
-
-
-  // --- ESTADOS DE NAVEGACIÓN (SIDEBAR) ---
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [sidebarView, setSidebarView] = useState('detail'); // 'list' | 'detail'
-  const [dayShifts, setDayShifts] = useState([]); // Para la lista de turnos
-  const [selectedShift, setSelectedShift] = useState(null); // Para el detalle único
+  const [sidebarView, setSidebarView] = useState('detail');
+  const [dayShifts, setDayShifts] = useState([]);
+  const [selectedShift, setSelectedShift] = useState(null);
   const [relatedConsultation, setRelatedConsultation] = useState(null);
 
-  // --- ESTADOS PARA CANCELACIÓN ---
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [shiftToCancel, setShiftToCancel] = useState(null);
 
@@ -42,16 +40,12 @@ const PatientSchedule = () => {
     setFilters((prev) => ({ ...prev, [name]: value }));
   };
 
-  // -----------------------------------------------------------------------
-  // 1. LÓGICA DE CARGA Y AGRUPACIÓN HÍBRIDA
-  // -----------------------------------------------------------------------
   useEffect(() => {
     setIsLoading(true);
     const start = startOfMonth(currentDate);
     const end = endOfMonth(currentDate);
 
     const timer = setTimeout(() => {
-      // 1. Filtrar por usuario
       let myPersonalTurns = patientScheduleMock;
       if (user && user.userId) {
         myPersonalTurns = patientScheduleMock.filter(
@@ -59,7 +53,6 @@ const PatientSchedule = () => {
         );
       }
 
-      // 2. Filtrar por mes actual
       const filteredShifts = myPersonalTurns.filter((shift) => {
         const shiftDate = parseISO(shift.startTime);
         return isWithinInterval(shiftDate, {
@@ -68,7 +61,6 @@ const PatientSchedule = () => {
         });
       });
 
-      // 3. Agrupar por día
       const groupedByDate = filteredShifts.reduce((acc, shift) => {
         const dateKey = format(parseISO(shift.startTime), 'yyyy-MM-dd');
         if (!acc[dateKey]) acc[dateKey] = [];
@@ -76,37 +68,33 @@ const PatientSchedule = () => {
         return acc;
       }, {});
 
-      // 4. Generar Eventos (Lógica Condicional)
       let finalEvents = [];
 
       Object.keys(groupedByDate).forEach(dateKey => {
         const shiftsOnDay = groupedByDate[dateKey];
-        shiftsOnDay.sort((a, b) => new Date(a.startTime) - new Date(b.startTime)); // Ordenar por hora
+        shiftsOnDay.sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
 
-        // CONDICIÓN: ¿Son 3 o más?
         if (shiftsOnDay.length >= 3) {
-          // OPCIÓN A: MODO "CLUSTER" (Lista)
           finalEvents.push({
             id: `group-${dateKey}`,
-            title: `+${shiftsOnDay.length} Turnos`, // Título del bloque
+            title: `+${shiftsOnDay.length} Turnos`,
             date: dateKey,
             start: parseISO(dateKey),
             end: parseISO(dateKey),
             allDay: true,
-            resource: { type: 'cluster', shifts: shiftsOnDay } // Guardamos todos
+            resource: { type: 'cluster', shifts: shiftsOnDay }
           });
         } else {
-          // OPCIÓN B: MODO INDIVIDUAL (Como estaba antes)
           shiftsOnDay.forEach(shift => {
             const shiftDate = parseISO(shift.startTime);
             finalEvents.push({
               id: shift.shiftId,
-              title: shift.doctor.specialty.name, // Mostramos especialidad en el calendario
+              title: shift.doctor.specialty.name,
               date: dateKey,
-              start: shiftDate, // Hora exacta para que se acomode si es vista semanal/diaria
+              start: shiftDate,
               end: shiftDate,
-              allDay: true, // O false si usas vista semanal con horas
-              resource: { type: 'single', shift: shift } // Guardamos solo este
+              allDay: true,
+              resource: { type: 'single', shift: shift }
             });
           });
         }
@@ -119,30 +107,6 @@ const PatientSchedule = () => {
     return () => clearTimeout(timer);
   }, [currentDate, user]);
 
-
-  // -----------------------------------------------------------------------
-  // 2. MANEJO DE CLICKS INTELIGENTE
-  // -----------------------------------------------------------------------
-  const handleEventClick = (eventData) => {
-    const { type, shifts, shift } = eventData.resource;
-
-    if (type === 'cluster') {
-      // Si es un grupo (+3 turnos), mostramos la lista
-      setDayShifts(shifts); // Array de turnos originales
-      setSidebarView('list');
-    } else {
-      // Si es un turno individual, vamos directo al detalle
-      const processed = processShiftForDetail(shift);
-      setSelectedShift(processed);
-      const consultation = getConsultationByShiftId(processed.id);
-      setRelatedConsultation(consultation);
-      setDayShifts([]);
-      setSidebarView('detail');
-    }
-    setIsSidebarOpen(true);
-  };
-
-  // Helper para formatear el turno al objeto que usa tu vista de detalle
   const processShiftForDetail = (shift) => ({
     id: shift.shiftId,
     date: format(parseISO(shift.startTime), 'yyyy-MM-dd'),
@@ -153,6 +117,23 @@ const PatientSchedule = () => {
     status: shift.status.name,
     reason: shift.reason
   });
+
+  const handleEventClick = (eventData) => {
+    const { type, shifts, shift } = eventData.resource;
+
+    if (type === 'cluster') {
+      setDayShifts(shifts);
+      setSidebarView('list');
+    } else {
+      const processed = processShiftForDetail(shift);
+      setSelectedShift(processed);
+      const consultation = getConsultationByShiftId(processed.id);
+      setRelatedConsultation(consultation);
+      setDayShifts([]);
+      setSidebarView('detail');
+    }
+    setIsSidebarOpen(true);
+  };
 
   const handleSelectShiftFromList = (rawShift) => {
     const processed = processShiftForDetail(rawShift);
@@ -174,7 +155,6 @@ const PatientSchedule = () => {
     setDayShifts([]);
   };
 
-  // --- LÓGICA DE CANCELACIÓN ---
   const handleAttemptCancel = (id) => {
     setShiftToCancel(id);
     setIsCancelModalOpen(true);
@@ -186,13 +166,10 @@ const PatientSchedule = () => {
   };
 
   const confirmCancel = () => {
-    // Actualizar eventos (simplificado para demo visual)
     setCalendarEvents(prev => prev.map(ev => {
-      // Si es individual
       if (ev.resource.type === 'single' && ev.resource.shift.shiftId === shiftToCancel) {
         return { ...ev, resource: { ...ev.resource, shift: { ...ev.resource.shift, status: { name: 'Cancelado' } } } };
       }
-      // Si es cluster
       if (ev.resource.type === 'cluster') {
         const updatedShifts = ev.resource.shifts.map(s =>
           s.shiftId === shiftToCancel ? { ...s, status: { name: 'Cancelado' } } : s
@@ -202,12 +179,10 @@ const PatientSchedule = () => {
       return ev;
     }));
 
-    // Actualizar estado visual seleccionado
     if (selectedShift && selectedShift.id === shiftToCancel) {
       setSelectedShift(prev => ({ ...prev, status: 'Cancelado' }));
     }
 
-    // Actualizar lista del sidebar si está abierta
     if (dayShifts.length > 0) {
       setDayShifts(prev => prev.map(s =>
         s.shiftId === shiftToCancel ? { ...s, status: { name: 'Cancelado' } } : s
@@ -218,10 +193,20 @@ const PatientSchedule = () => {
   };
 
   const handleGoToPatientHistory = () => {
-    console.log("Redirigiendo a consulta del turno del paciente:", relatedConsultation.consultationId);
     navigate(`/patient/history/${relatedConsultation.consultationId}`)
   };
 
+  const filteredEventsForWeek = useMemo(() => {
+    let myTurns = user && user.userId
+      ? patientScheduleMock.filter(s => s.patient.user.userId === user.userId)
+      : patientScheduleMock;
+
+    return myTurns.map(t => ({
+      ...t,
+      date: t.startTime,
+      title: t.doctor.specialty.name
+    }));
+  }, [user]);
 
   return (
     <AnimatedPage>
@@ -244,12 +229,27 @@ const PatientSchedule = () => {
                   Cargando agenda...
                 </div>
               ) : (
-                <BigCalendar
-                  currentDate={currentDate}
-                  events={calendarEvents}
-                  userRole={user.role}
-                  onEventClick={handleEventClick}
-                />
+                <>
+                  {filters.view === 'month' ? (
+                    <BigCalendar
+                      currentDate={currentDate}
+                      events={calendarEvents}
+                      userRole={user.role}
+                      onEventClick={handleEventClick}
+                    />
+                  ) : (
+                    <WeekCalendar
+                      currentDate={currentDate}
+                      events={filteredEventsForWeek}
+                      userRole={user.role}
+                      onEventClick={(event) => {
+                        setDayShifts([]);
+                        handleSelectShiftFromList(event);
+                        setIsSidebarOpen(true);
+                      }}
+                    />
+                  )}
+                </>
               )}
             </div>
           }
@@ -260,8 +260,6 @@ const PatientSchedule = () => {
           onClose={closeSidebar}
           title={sidebarView === 'list' ? "Mis Turnos del Día" : "Detalle del Turno"}
         >
-
-          {/* --- VISTA 1: LISTA DE TURNOS (Solo si venimos de un grupo) --- */}
           {sidebarView === 'list' && (
             <div className="flex flex-col gap-4 animate-fade-in">
               <p className="text-sm text-custom-gray mb-2">
@@ -274,7 +272,6 @@ const PatientSchedule = () => {
                     onClick={() => handleSelectShiftFromList(shift)}
                     className="flex flex-row items-center justify-between p-3 border border-custom-gray/20 rounded-lg cursor-pointer hover:bg-custom-light-blue/10 hover:border-custom-blue transition-all"
                   >
-                    {/* INFO RELEVANTE PARA PACIENTE: Hora y Especialidad */}
                     <div className="flex flex-col gap-1">
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-custom-dark-blue text-lg">
@@ -295,11 +292,8 @@ const PatientSchedule = () => {
             </div>
           )}
 
-          {/* --- VISTA 2: DETALLE (Tu diseño original) --- */}
           {sidebarView === 'detail' && selectedShift && (
             <div className="flex flex-col gap-6 animate-fade-in-right">
-
-              {/* Botón Volver (Solo si hay una lista detrás) */}
               {dayShifts.length > 0 && (
                 <button
                   onClick={handleBackToList}
@@ -309,7 +303,6 @@ const PatientSchedule = () => {
                 </button>
               )}
 
-              {/* SECCIÓN 1: PROFESIONAL */}
               <div className="flex flex-col gap-1">
                 <h3 className="text-lg font-bold text-custom-dark-blue">Profesional</h3>
                 <div className="flex flex-col text-custom-dark-blue">
@@ -318,7 +311,6 @@ const PatientSchedule = () => {
                 </div>
               </div>
 
-              {/* SECCIÓN 2: MOTIVO */}
               <div className="flex flex-col gap-1">
                 <h3 className="text-lg font-bold text-custom-dark-blue">Motivo indicado</h3>
                 <div className="text-custom-dark-blue">
@@ -330,7 +322,6 @@ const PatientSchedule = () => {
                 <hr className='border text-custom-gray/25 w-[90%]' />
               </div>
 
-              {/* SECCIÓN 3: DETALLES */}
               <div className="flex flex-col gap-2">
                 <h3 className="text-lg font-bold text-custom-dark-blue mb-1">Detalles del Turno</h3>
                 <div className="flex flex-col gap-y-1 text-md mx-4">
@@ -349,7 +340,6 @@ const PatientSchedule = () => {
                 </div>
               </div>
 
-              {/* SECCIÓN 4: ESTADO */}
               <div className="flex flex-col gap-2">
                 <h3 className="text-lg font-bold text-custom-dark-blue">Estado del Turno</h3>
                 <div className="flex flex-row justify-between items-center">
@@ -357,7 +347,6 @@ const PatientSchedule = () => {
                 </div>
               </div>
 
-              {/* SECCIÓN 5: ACCIONES */}
               {selectedShift.status === 'Pendiente' && (
                 <>
                   <div className="flex flex-col items-center">
@@ -393,7 +382,6 @@ const PatientSchedule = () => {
         </RightSidebar>
       </div>
 
-      {/* MODAL DE CONFIRMACIÓN */}
       <Modal isOpen={isCancelModalOpen} onClose={closeCancelModal}>
         <PrincipalCard
           title="Confirmar Cancelación"
@@ -410,7 +398,6 @@ const PatientSchedule = () => {
           }
         />
       </Modal>
-
     </AnimatedPage>
   );
 }

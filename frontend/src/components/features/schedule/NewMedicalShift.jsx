@@ -41,7 +41,7 @@ const sectionVariants = {
     },
 };
 
-const NewMedicalShift = ({ user }) => {
+const NewMedicalShift = () => {
     const [formData, setFormData] = useState({
         specialty: "",
         doctor: "",
