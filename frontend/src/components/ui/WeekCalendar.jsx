@@ -8,7 +8,7 @@ const INTERVAL = 30;
 
 const WeekCalendar = ({ currentDate, events = [], userRole, onEventClick, doctorAvailability = [] }) => {
 
-    const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
+    const weekStart = startOfWeek(currentDate, { weekStartsOn: 0 });
     const weekDays = Array.from({ length: 7 }).map((_, i) => addDays(weekStart, i));
 
     const timeSlots = useMemo(() => {
