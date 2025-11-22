@@ -1,6 +1,36 @@
 
+from contextlib import asynccontextmanager
+from apscheduler.schedulers.background import BackgroundScheduler
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+
+def chequear_recordatorios_background(): # para testear el scheduler
+    print("Esta es una tarea de ejemplo que se ejecuta cada 10 segundos")
+    
+    ## para continuar con la implementacion de las notificaciones hay que tener primero 
+    ## los routers y servicios hechos para los usuarios, pacientes, medicos y turnos
+    
+
+
+# --- LIFESPAN (Ciclo de vida de FastAPI) ---
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # 1. Al iniciar la app: Arrancar el Scheduler
+    scheduler = BackgroundScheduler()
+    
+    # Configuramos para que corra cada 10 o 30 segundos
+    # scheduler.add_job(chequear_recordatorios_background, 'interval', seconds=30)
+    scheduler.add_job(chequear_recordatorios_background, 'interval', seconds=10)
+    
+    scheduler.start()
+    print("Scheduler de notificaciones INICIADO")
+    
+    yield # Aquí corre tu API
+    
+    # 2. Al apagar la app: Apagar el Scheduler
+    scheduler.shutdown()
+    print("Scheduler de notificaciones APAGADO")
 
 
 class FastAPIApp:
@@ -10,7 +40,7 @@ class FastAPIApp:
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super(FastAPIApp, cls).__new__(cls)
-            cls._app = FastAPI(title="API - TURNERO MEDICO")
+            cls._app = FastAPI(title="API - TURNERO MEDICO", lifespan=lifespan)
             cls._configure_middleware(cls._app)
         return cls._instance
 
