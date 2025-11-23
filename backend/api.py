@@ -10,6 +10,7 @@ def chequear_recordatorios_background(): # para testear el scheduler
     
     ## para continuar con la implementacion de las notificaciones hay que tener primero 
     ## los routers y servicios hechos para los usuarios, pacientes, medicos y turnos
+    ## TurnoService.chequear_y_enviar_recordatorios() METODO ESTATICO A IMPLEMENTAR
     
 
 
