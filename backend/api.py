@@ -12,9 +12,6 @@ import sqlite3
 
 DatabaseConnection()
 
-
-
-
 def chequear_recordatorios_background(): # para testear el scheduler
     # turno_router.notificar_recordatorios()
     conn = None
@@ -98,12 +95,7 @@ class FastAPIApp:
 # Instancia global de la aplicación
 app = FastAPIApp.get_app()
 
-# # Inicializar la conexión a la base de datos
-# from database import DatabaseConnection
-# DatabaseConnection()
-
 # Registrar los routers de los controladores
-# from routers import path_router, paciente_router, rol_router, especialidad_router, obra_social_router, estado_turno_router, usuario_router, medico_router
 from routers import *
 
 

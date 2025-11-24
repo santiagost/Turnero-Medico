@@ -69,16 +69,29 @@ class TurnoService:
         return None
 
     def create(self, turno_data: TurnoCreate) -> TurnoResponse:
+
+        # TODO DEBEMOS HACER TODAS LAS VALIDACIONES
+
         try:
             """Crea un nuevo turno"""
             self.cursor.execute(
-                "INSERT INTO turno (fecha_hora_inicio, fecha_hora_fin, id_estado_turno, id_paciente, id_medico, motivo_consulta) VALUES (?, ?, ?, ?, ?, ?)",
+                "INSERT INTO turno (fecha_hora_inicio, fecha_hora_fin, id_estado_turno, id_paciente, id_medico, motivo_consulta, recordatorio_notificado, reserva_notificada) VALUES (?, ?, ?, ?, ?, ?, 0, 0)",
                 (turno_data.fecha_hora_inicio, turno_data.fecha_hora_fin, turno_data.id_estado_turno, turno_data.id_paciente, turno_data.id_medico, turno_data.motivo_consulta)
             )
             self.db.commit()
             turno_id = self.cursor.lastrowid
-            return self.get_by_id(turno_id)
+
+            turno = self.get_by_id(turno_id)
+
+            EmailSender.send_email(
+                destinatario=turno.paciente.usuario.email,
+                asunto="Confirmación de turno médico",
+                cuerpo=f"Estimado/a {turno.paciente.nombre}, su turno con el Dr./Dra. {turno.medico.nombre} ha sido confirmado para el día {turno.fecha_hora_inicio}."
+            )
+
+            return turno
         
+
         except sqlite3.IntegrityError as e:
             raise ValueError("Error de integridad al crear el turno: " + str(e))
         
@@ -98,6 +111,17 @@ class TurnoService:
         sql = f"UPDATE turno SET {', '.join(fields)} WHERE id_turno = ?"
         self.cursor.execute(sql, values)
         self.db.commit()
+        print(fields)
+
+        # preguntar el medico tiene el campo noti_cancel_email_act encendido
+        if 'id_estado_turno' in turno_data and turno_data['id_estado_turno'] == 3:
+            m = MedicoService(self.db).get_by_id(existing.id_medico)
+            p = PacienteService(self.db).get_by_id(existing.id_paciente)
+            EmailSender.send_email(
+                destinatario=m.usuario.email,
+                asunto="Notificación de turno cancelado",
+                cuerpo=f"Estimado/a Dr./Dra. {m.nombre}, le informamos que el turno con el paciente {p.nombre} programado para el día {existing.fecha_hora_inicio} ha sido cancelado."
+            )
         return self.get_by_id(turno_id)
     
     def delete(self, turno_id: int) -> bool:
