@@ -8,12 +8,16 @@ import AttendanceAndAbsence from '../../components/features/reports/AttendanceAn
 import StatisticsList from '../../components/features/reports/StatisticsList';
 import AdminReportsFilterPanel from '../../components/features/filterPanel/admin/AdminReportsFilterPanel';
 
-const AdminReports = () => {
-  const [filterData, setFiltersData] = useState({
-    fromDate: "",
-    toDate: ""
-  });
+import { getDateRange } from '../../utils/dateUtils';
 
+const AdminReports = () => {
+
+  const initialRange = getDateRange('month');
+
+  const [filterData, setFiltersData] = useState({
+    fromDate: initialRange.from,
+    toDate: initialRange.to
+  });
 
   return (
     <AnimatedPage>
@@ -33,23 +37,26 @@ const AdminReports = () => {
         {/* Filtro */}
         <SectionCard tittle={"Filtros"} content={<AdminReportsFilterPanel setFiltersData={setFiltersData} />} />
         {"Desde: " + filterData.fromDate + " | Hasta: " + filterData.toDate}
+
+
+        <div className='flex flex-col items-center justify-center m-6'>
+          <PatientVolume filters={filterData} />
+        </div>
+
+        {/* Graficos */}
         <div className='grid grid-cols-2 '>
-          {/* Graficos */}
           <div className='flex flex-col items-center justify-center m-6'>
-            <ShiftForSpecialty />
+            <ShiftForSpecialty filters={filterData} />
           </div>
 
           <div className='flex flex-col items-center justify-center m-6'>
-            <AttendanceAndAbsence />
+            <AttendanceAndAbsence filters={filterData} />
           </div>
         </div>
-        {/* Tablas */}
-        <div className='flex flex-col items-center justify-center m-6'>
-          <PatientVolume />
-        </div>
+
 
         <div className='flex flex-col items-center justify-center m-6'>
-          <ShiftForDoctor />
+          <ShiftForDoctor filters={filterData} />
         </div>
 
       </div>

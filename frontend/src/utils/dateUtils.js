@@ -128,3 +128,24 @@ export const daysOptions = WEEKDAYS.map((day, index) => ({
   value: index,
   label: day,
 }));
+
+export const getDateRange = (rangeType) => {
+    const today = new Date();
+    let to = new Date();
+    let from = new Date();
+
+    switch (rangeType) {
+        case 'today': break;
+        case 'week': from.setDate(today.getDate() - 7); break;
+        case 'month': from = new Date(today.getFullYear(), today.getMonth(), 1); break;
+        case 'lastMonth': 
+            from = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+            to = new Date(today.getFullYear(), today.getMonth(), 0);
+            break;
+        case 'year': from = new Date(today.getFullYear(), 0, 1); break;
+        default: return { from: "", to: "" };
+    }
+    
+    const formatDate = (d) => d.toISOString().split('T')[0];
+    return { from: formatDate(from), to: formatDate(to) };
+};
