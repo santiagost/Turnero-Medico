@@ -36,28 +36,30 @@ const AdminReports = () => {
         </h2>
         {/* Filtro */}
         <SectionCard tittle={"Filtros"} content={<AdminReportsFilterPanel setFiltersData={setFiltersData} />} />
-        {"Desde: " + filterData.fromDate + " | Hasta: " + filterData.toDate}
 
+        <SectionCard content={
+          <>
+            {/* Grafico de volumen de pacientes */}
+            <div className='flex flex-col items-center justify-center m-6 bg-white rounded-2xl pb-8 '>
+              <PatientVolume filters={filterData} />
+            </div>
 
-        <div className='flex flex-col items-center justify-center m-6'>
-          <PatientVolume filters={filterData} />
-        </div>
+            {/* Graficos */}
+            <div className='grid grid-cols-2 '>
+              <div className='flex flex-col items-center justify-center m-6 bg-white rounded-2xl pb-8 '>
+                <ShiftForSpecialty filters={filterData} />
+              </div>
 
-        {/* Graficos */}
-        <div className='grid grid-cols-2 '>
-          <div className='flex flex-col items-center justify-center m-6'>
-            <ShiftForSpecialty filters={filterData} />
-          </div>
+              <div className='flex flex-col items-center justify-center m-6 bg-white rounded-2xl pb-8 '>
+                <AttendanceAndAbsence filters={filterData} />
+              </div>
+            </div>
 
-          <div className='flex flex-col items-center justify-center m-6'>
-            <AttendanceAndAbsence filters={filterData} />
-          </div>
-        </div>
-
-
-        <div className='flex flex-col items-center justify-center m-6'>
-          <ShiftForDoctor filters={filterData} />
-        </div>
+            {/* Listado de turnos por medico */}
+            <div className='flex flex-col items-center justify-center m-6 bg-white rounded-2xl pb-8 '>
+              <ShiftForDoctor filters={filterData} />
+            </div>
+          </>} />
 
       </div>
     </AnimatedPage>
