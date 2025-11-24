@@ -7,15 +7,9 @@ import AdminDoctorFilterPanel from '../../components/features/filterPanel/admin/
 import AdminNewShift from '../../components/features/adminDataManagement/create/AdminNewShift'
 
 import { IoMdClose } from "react-icons/io";
+import StatisticsList from '../../components/features/reports/StatisticsList';
 
 const AdminHome = () => {
-  const [statistics, setStatistics] = useState({
-    totalShifts: 60,
-    patientsTreated: 15,
-    cancelledShifts: 7,
-    newPatientsRegistered: 5
-  });
-
   const [showNewShift, setNewShift] = useState(false);
   const [showSearchDoctor, setShowSearchDoctor] = useState(false);
   const [showSearchPatient, setShowSearchPatient] = useState(false);
@@ -24,28 +18,6 @@ const AdminHome = () => {
   const handleSearchDoctor = () => setShowSearchDoctor(prev => !prev);
   const handleSearchPatient = () => setShowSearchPatient(prev => !prev);
 
-  const fetchStatistics = () => {
-    console.log("Buscando estadísticas actualizadas...");
-    // En un futuro, aquí harías tu llamada a la API:
-    // try {
-    //   const response = await fetch('/api/admin/statistics');
-    //   const data = await response.json();
-    //   setStatistics(data);
-    // } catch (error) {
-    //   console.error("Error al cargar estadísticas:", error);
-    // }
-  };
-
-  useEffect(() => {
-    fetchStatistics();
-    const intervalId = setInterval(() => {
-      fetchStatistics();
-    }, 60000);
-    return () => {
-      clearInterval(intervalId);
-    };
-  }, []);
-
   return (
     <AnimatedPage>
       <div className="px-8">
@@ -53,16 +25,7 @@ const AdminHome = () => {
           Estadisticas de Hoy
         </h1>
 
-        <div className='flex flex-row gap-4 items-center justify-around w-full'>
-          <SectionCard complexHeader={<p className='w-[15vw] text-custom-dark-blue text-center font-bold text-2xl '>Turnos Totales<br />de Hoy</p>}
-            content={<p className='text-5xl text-custom-dark-blue font-bold text-center m-5'>{statistics.totalShifts}</p>} />
-          <SectionCard complexHeader={<p className='w-[15vw] text-custom-dark-blue text-center font-bold text-2xl '>Pacientes <br />Atendidos</p>}
-            content={<p className='text-5xl text-custom-dark-blue font-bold text-center m-5'>{statistics.patientsTreated}</p>} />
-          <SectionCard complexHeader={<p className='w-[15vw] text-custom-dark-blue text-center font-bold text-2xl '>Turnos Cancelados de Hoy</p>}
-            content={<p className='text-5xl text-custom-dark-blue font-bold text-center m-5'>{statistics.cancelledShifts}</p>} />
-          <SectionCard complexHeader={<p className='w-[15vw] text-custom-dark-blue text-center font-bold text-2xl '>Nuevos Pacientes Registrados</p>}
-            content={<p className='text-5xl text-custom-dark-blue font-bold text-center m-5'>{statistics.newPatientsRegistered}</p>} />
-        </div>
+        <StatisticsList />
 
         <h1 className="text-2xl font-bold text-custom-dark-blue mb-6 mt-5">
           Accesos Rápidos
@@ -83,7 +46,7 @@ const AdminHome = () => {
 
           {showSearchDoctor &&
             <SectionCard tittle={"Buscar Médico"} content={
-              <AdminDoctorFilterPanel viewMode = "detail"/>
+              <AdminDoctorFilterPanel viewMode="detail" />
             } />
           }
           {showSearchPatient &&

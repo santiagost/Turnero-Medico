@@ -9,7 +9,7 @@ export const commonRules = {
     if (!REGEX.name.test(value)) return "Inválido (solo letras).";
     return null;
   },
-  
+
   dni: (value) => {
     if (!value) return "El DNI es requerido.";
     if (!REGEX.dni.test(value)) return "DNI inválido (7-8 números).";
@@ -39,7 +39,7 @@ export const commonRules = {
     if (!value) return `El ${fieldName} es requerido.`;
     return null;
   },
-  
+
   birthDate: (value) => {
     if (!value) return "La fecha es requerida.";
     const today = new Date();
@@ -51,5 +51,24 @@ export const commonRules = {
       return "La fecha no puede ser futura.";
     }
     return null;
-  }
+  },
+
+  dateRange: (fromDateValue) => (toDateValue) => {
+    // Si falta alguna de las dos fechas, no validamos rango (dejamos que 'required' se encargue)
+    if (!fromDateValue || !toDateValue) return null;
+
+    // Convertimos a objetos Date para comparar correctamente
+    // Asumimos formato YYYY-MM-DD (input type="date" estándar)
+    const from = new Date(fromDateValue);
+    const to = new Date(toDateValue);
+
+    // Aseguramos que estamos comparando tiempos limpios (00:00:00) para evitar errores de zona horaria
+    from.setHours(0, 0, 0, 0);
+    to.setHours(0, 0, 0, 0);
+
+    if (to < from) {
+      return "La fecha final no puede ser anterior a la inicial.";
+    }
+    return null;
+  },
 };

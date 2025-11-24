@@ -36,7 +36,6 @@ const AdminSchedule = () => {
   // --- ESTADOS PARA CANCELACIÓN (NUEVO) ---
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [shiftToCancel, setShiftToCancel] = useState(null);
-  const [cancelReason, setCancelReason] = useState(""); // Motivo administrativo
 
   const [doctorScheduleConfig, setDoctorScheduleConfig] = useState([]);
 
@@ -160,18 +159,18 @@ const AdminSchedule = () => {
   // --- LÓGICA DE CANCELACIÓN (NUEVO) ---
   const handleAttemptCancel = (id) => {
     setShiftToCancel(id);
-    setCancelReason(""); // Resetear motivo
+
     setIsCancelModalOpen(true);
   };
 
   const closeCancelModal = () => {
     setIsCancelModalOpen(false);
     setShiftToCancel(null);
-    setCancelReason("");
+
   };
 
   const confirmCancel = () => {
-    console.log(`Cancelando turno ${shiftToCancel} por motivo: ${cancelReason}`);
+    console.log(`Cancelando turno ${shiftToCancel}`);
 
     // 1. Actualizar la vista de detalle actual
     if (selectedShift && selectedShift.id === shiftToCancel) {
