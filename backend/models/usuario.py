@@ -1,4 +1,5 @@
 from typing import Optional
+import datetime
 
 class Usuario:
     def __init__(self, email: str):
@@ -10,6 +11,7 @@ class UsuarioCreate(Usuario):
         super().__init__(email)
         self.password = password
         self.activo = activo
+        # self.creado_en = datetime.datetime.now().isoformat()
 
 class UsuarioLogin:
     def __init__(self, email: str, password: str):

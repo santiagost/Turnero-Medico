@@ -1,11 +1,22 @@
 import os
 import sqlite3
+import datetime
+
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_FILE = os.path.join(BASE_DIR, "turnero_medico.db")
 
 
-SQL_DATA = """
+# hoy = '2024-11-24 17:00:00'
+
+# hoy = datetime.date.today().isoformat()
+manana = (datetime.date.today() + datetime.timedelta(days=1)).isoformat()
+
+
+print(manana)
+
+
+SQL_DATA = f"""
 
 -- 1. LIMPIEZA (Opcional: Borrar datos viejos si quieres reiniciar IDs)
 DELETE FROM Receta;
@@ -31,21 +42,20 @@ INSERT INTO Rol (nombre, descripcion) VALUES
 ('Paciente', 'Usuario que solicita turnos');
 
 -- Estados de Turno
-INSERT INTO EstadoTurno (nombre, descripcion) VALUES 
+INSERT INTO EstadoTurno (nombre, descripcion) VALUES
 ('Pendiente', 'Turno reservado, a la espera de confirmación o llegada'),
-('Confirmado', 'El paciente ha confirmado asistencia'),
-('Cancelado', 'Turno anulado por medico o paciente'),
-('Realizado', 'La consulta se ha llevado a cabo');
+('Atendido', 'Turno que ha sido atendido por el médico'),
+('Cancelado', 'Turno anulado por medico o paciente');
 
 -- Especialidades
-INSERT INTO Especialidad (nombre, descripcion) VALUES 
+INSERT INTO Especialidad (nombre, descripcion) VALUES
 ('Cardiología', 'Enfermedades del corazón y sistema circulatorio'),
 ('Pediatría', 'Atención médica de bebés, niños y adolescentes'),
 ('Dermatología', 'Cuidado de la piel'),
 ('Clínica Médica', 'Atención primaria general');
 
 -- Obras Sociales
-INSERT INTO ObraSocial (nombre, cuit, direccion, telefono, mail) VALUES 
+INSERT INTO ObraSocial (nombre, cuit, direccion, telefono, mail) VALUES
 ('OSDE', '30-54678923-1', 'Av. Madero 1020', '0810-555-6733', 'contacto@osde.com.ar'),
 ('Swiss Medical', '30-12345678-9', 'Pueyrredón 1500', '0810-444-7700', 'info@swiss.com'),
 ('Particular', NULL, NULL, NULL, NULL);
@@ -53,12 +63,14 @@ INSERT INTO ObraSocial (nombre, cuit, direccion, telefono, mail) VALUES
 -- 3. USUARIOS (Contraseñas simuladas como hashes)
 -- IDs esperados: 1=Admin, 2=DrHouse, 3=DraGrey, 4=Messi(Pac), 5=Fito(Pac)
 
-INSERT INTO Usuario (email, password_hash, activo) VALUES 
+INSERT INTO Usuario (email, password_hash, activo) VALUES
 ('admin@turnero.com', 'hash_secreto_admin_123', 1),           -- ID 1
 ('house@hospital.com', 'hash_secreto_house', 1),              -- ID 2
 ('meredith@hospital.com', 'hash_secreto_grey', 1),            -- ID 3
 ('leomessi@gmail.com', 'hash_secreto_leo', 1),                -- ID 4
-('fitopaez@rock.com', 'hash_secreto_fito', 1);                -- ID 5
+('fitopaez@rock.com', 'hash_secreto_fito', 1),                -- ID 5
+('facu.witt@gmail.com', 'hash_secreto_fito', 1),              -- ID 6
+('facuwitt.ws@gmail.com', 'hash_secreto_fito', 1);            -- ID 7
 
 -- Asignar Roles (UsuarioRol)
 INSERT INTO UsuarioRol (id_usuario, id_rol) VALUES 
@@ -66,7 +78,10 @@ INSERT INTO UsuarioRol (id_usuario, id_rol) VALUES
 (2, 2), -- House es Medico
 (3, 2), -- Meredith es Medico
 (4, 3), -- Leo es Paciente
-(5, 3); -- Fito es Paciente
+(5, 3), -- Fito es Paciente
+(6, 3), -- Facu es Paciente
+(7, 2); -- Facu WS es Medico
+
 
 -- 4. ENTIDADES PRINCIPALES
 
@@ -75,14 +90,17 @@ INSERT INTO UsuarioRol (id_usuario, id_rol) VALUES
 INSERT INTO Medico (id_usuario, id_especialidad, matricula, dni, nombre, apellido, telefono) VALUES 
 (2, 1, 'MN-555444', '20123456', 'Gregory', 'House', '11-4444-5555'),
 -- Dra. Grey (ID Usr 3) -> Clínica Médica (ID Esp 4)
-(3, 4, 'MN-111222', '28987654', 'Meredith', 'Grey', '11-9999-8888');
+(3, 4, 'MN-111222', '28987654', 'Meredith', 'Grey', '11-9999-8888'),
+(7, 4, 'MN-333444', '30765432', 'Doc Jeremias', 'WS', '11-7777-6666');
 
 -- Pacientes
 -- Messi (ID Usr 4) -> OSDE (ID OS 1)
 INSERT INTO Paciente (id_usuario, dni, nombre, apellido, fecha_nacimiento, telefono, id_obra_social, nro_afiliado) VALUES 
 (4, '30001002', 'Lionel', 'Messi', '1987-06-24', '11-1010-1010', 1, 'OSDE-999111'),
 -- Fito (ID Usr 5) -> Swiss Medical (ID OS 2)
-(5, '14555666', 'Rodolfo', 'Paez', '1963-03-13', '11-2020-2020', 2, 'SM-777888');
+(5, '14555666', 'Rodolfo', 'Paez', '1963-03-13', '11-2020-2020', 2, 'SM-777888'),
+-- Facu (ID Usr 6) -> Particular (ID OS 3)
+(6, '44806336', 'Facundo', 'Witt', '2003-07-04', '11-3030-3030', 3, 'P-123456');
 
 -- 5. OPERATIVA
 
@@ -94,11 +112,15 @@ INSERT INTO HorarioAtencion (id_medico, dia_semana, hora_inicio, hora_fin, durac
 (2, 1, '09:00', '17:00', 20); -- Grey Martes (turnos de 20 min)
 
 -- Turnos
--- Turno 1: Messi con House (Pasado y Realizado)
-INSERT INTO Turno (id_paciente, id_medico, id_estado_turno, fecha_hora_inicio, fecha_hora_fin, motivo_consulta, recordatorio_notificado, reserva_notificada) VALUES 
-(1, 1, 4, '2024-01-10 09:00:00', '2024-01-10 09:30:00', 'Dolor en la pierna izquierda', 1, 1),
--- Turno 2: Fito con Grey (Futuro y Pendiente)
-(2, 2, 1, '2024-12-25 10:00:00', '2024-12-25 10:20:00', 'Chequeo general de garganta', 1, 0);
+INSERT INTO Turno (id_paciente, id_medico, id_estado_turno, fecha_hora_inicio, fecha_hora_fin, motivo_consulta, recordatorio_notificado, reserva_notificada) VALUES
+(1, 1, 3, '2024-01-10 09:00:00', '2024-01-10 09:30:00', 'Dolor en la pierna izquierda', 1, 1),
+(2, 2, 1, '2024-12-25 10:00:00', '2024-12-25 10:20:00', 'Chequeo general de garganta', 1, 0),
+(3, 2, 2, '2024-11-9 10:00:00', '2024-11-9 10:20:00', 'Turno 1', 1, 1),
+(3, 3, 2, '2025-11-10 09:00:00', '2024-11-10 09:30:00', 'Turno 2', 0, 1),
+(3, 2, 1, '{manana} 09:00:00', '{manana} 09:30:00', 'Turno 3', 0, 0),
+(3, 3, 1, '{manana} 12:00:00', '{manana} 12:30:00', 'Turno 4', 0, 0),
+(3, 3, 3, '{manana} 15:00:00', '{manana} 15:30:00', 'Turno 5', 0, 0);
+
 
 -- Consultas (Solo para el turno realizado)
 INSERT INTO Consulta (id_turno, diagnostico, notas_privadas_medico, tratamiento, fecha_consulta) VALUES
