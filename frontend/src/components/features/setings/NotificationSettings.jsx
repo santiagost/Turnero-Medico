@@ -32,10 +32,6 @@ const NotificationSettings = ({ user }) => {
                             <li>Notificarme cuando un paciente cancela un turno</li>
                             <ToggleSwitch/>
                         </div>
-                        <div className='flex flex-row items-center justify-between px-2'>
-                            <li>Enviar un resumen diario de mi agenda</li>
-                            <ToggleSwitch/>
-                        </div>
                     </div>
                 </div>
             )
