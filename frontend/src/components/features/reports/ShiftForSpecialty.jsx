@@ -32,6 +32,7 @@ const ShiftForSpecialty = ({ filters }) => {
 
     useEffect(() => {
         if (filters.fromDate && filters.toDate) {
+            // AQUI VA LA LLAMADA AL BACKEND
             // 1. Fetch real: await fetchSpecialtyStats(filters);
             // 2. Mock data
             setChartData(generateMockData());

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { addDays, format } from "date-fns";
-
+import { useToast } from "../../../../hooks/useToast";
 import Calendar from "../../../ui/Calendar";
 import WeeklySlots from "../../schedule/WeeklySlots";
 import Select from "../../../ui/Select";
@@ -36,7 +36,7 @@ const sectionVariants = {
 const AdminNewShift = () => {
     const [isPatientManual, setIsPatientManual] = useState(false);
     const [isPatientFound, setIsPatientFound] = useState(false);
-
+    const toast = useToast();
     const [formData, setFormData] = useState({
         patient: {
             dni: "",
@@ -57,7 +57,7 @@ const AdminNewShift = () => {
 
     const [errors, setErrors] = useState({});
     const [doctorScheduleConfig, setDoctorScheduleConfig] = useState([]);
-
+    const [isLoading, setIsLoading] = useState(false);
     const [specialties, setSpecialties] = useState(specialtyOptions);
     const [socialWorks, setSocialWorks] = useState(socialWorkOptions);
     const [filteredDoctorOptions, setFilteredDoctorOptions] = useState(doctorOptions);
@@ -180,6 +180,7 @@ const AdminNewShift = () => {
 
         if (!dniToSearch) {
             setErrors((prev) => ({ ...prev, dni: "Ingrese un DNI para buscar." }));
+            toast.warning("Por favor, ingrese un DNI para buscar.");
             return;
         }
 
@@ -200,9 +201,11 @@ const AdminNewShift = () => {
             }));
             setIsPatientFound(true);
             setErrors((prev) => ({ ...prev, dni: null }));
+            toast.info("Paciente encontrado en el sistema.");
         } else {
             setIsPatientFound(false);
             if (!isPatientManual) {
+                // ... (limpieza de campos) ...
                 setFormData((prev) => ({
                     ...prev,
                     patient: {
@@ -215,14 +218,18 @@ const AdminNewShift = () => {
                     },
                 }));
                 setErrors((prev) => ({ ...prev, dni: "Paciente no encontrado." }));
-            } else {
-                console.log("Paciente no encontrado en BD, continuar carga manual.");
+                toast.warning("Paciente no encontrado. Puede cargarlo manualmente.");
             }
         }
     };
 
     const handleToggleChange = () => {
         const newState = !isPatientManual;
+
+        if (isPatientFound && newState) {
+            toast.info("Atención: Si cambias estos datos, se actualizará el registro del paciente existente.");
+        }
+
         setIsPatientManual(newState);
 
         if (!newState && !isPatientFound) {
@@ -283,33 +290,60 @@ const AdminNewShift = () => {
         if (validateStep1()) {
             setIsConfirmModalOpen(true);
         } else {
+            toast.warning("Por favor, completa todos los campos requeridos del paciente y el turno.");
             console.log("Errores de validación:", errors);
         }
     };
 
-    const handleConfirmShift = () => {
+    const handleConfirmShift = async () => {
         const reasonRule = newAdminShiftSchema.reason;
         const reasonError = reasonRule ? reasonRule(formData.reason) : null;
 
         if (reasonError) {
             setErrors(prev => ({ ...prev, reason: reasonError }));
+            toast.error("El motivo de consulta es obligatorio.");
             return;
         }
 
-        console.log("Confirmado y enviando al backend:", formData);
-        setIsConfirmModalOpen(false);
+        setIsLoading(true);
+        try {
+            // AQUI VA LA LLAMADA AL BACKEND
+            // await axios.post('/api/shifts', formData);
+            await new Promise(resolve => setTimeout(resolve, 1000));
 
-        setFormData({
-            patient: { dni: "", firstName: "", lastName: "", telephone: "", membershipNumber: "", socialWorkId: "" },
-            specialty: "", doctor: "", date: "", time: "", reason: ""
-        });
-        setSelectedWeek(undefined);
-        setSelectedShift(undefined);
-        setIsPatientFound(false);
-        setIsPatientManual(false);
+            // Simulación de error
+            // await new Promise((_, reject) => setTimeout(() => reject({ response: { data: { message: "Error al asignar turno." } } }), 1000));
+
+            console.log("Confirmado y enviando al backend:", formData);
+
+            toast.success("Turno asignado exitosamente.");
+
+            setIsConfirmModalOpen(false);
+
+            setFormData({
+                patient: { dni: "", firstName: "", lastName: "", telephone: "", membershipNumber: "", socialWorkId: "" },
+                specialty: "", doctor: "", date: "", time: "", reason: ""
+            });
+            setSelectedWeek(undefined);
+            setSelectedShift(undefined);
+            setIsPatientFound(false);
+            setIsPatientManual(false);
+            setErrors({});
+
+        } catch (error) {
+            console.error("Error al crear turno:", error);
+            const errorMessage = error.response?.data?.message || "Ocurrió un error al intentar asignar el turno.";
+            toast.error(errorMessage);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
-    const closeConfirmModal = () => setIsConfirmModalOpen(false);
+    const closeConfirmModal = () => {
+        if (!isLoading) {
+            setIsConfirmModalOpen(false);
+        }
+    };
 
     const handleBlur = (e) => {
         const { name, value } = e.target;
@@ -508,6 +542,50 @@ const AdminNewShift = () => {
                         error={errors.time}
                     />
                 </div>
+                <div className="col-span-5">
+                    <AnimatePresence>
+                        {selectedDoctorObj && (
+                            <motion.div
+                                className="grid grid-cols-4 m-4 gap-4"
+                                key="doctor-availability-section"
+                                variants={sectionVariants}
+                                initial="hidden"
+                                animate="visible"
+                                exit="exit"
+                                style={{ overflow: "hidden" }}
+                            >
+                                <div className="col-span-1 items-center justify-start pt-10 flex flex-col">
+                                    <div className="mb-4 text-start">
+                                        <p className="text-custom-gray text-sm">Disponibilidad de:</p>
+                                        <p className="text-xl font-bold text-custom-blue">
+                                            Dr/a. {selectedDoctorObj.firstName}{" "}
+                                            {selectedDoctorObj.lastName}
+                                        </p>
+                                        <p className="text-sm mt-2">
+                                            Por favor, seleccione una semana para ver los turnos disponibles
+                                        </p>
+                                    </div>
+                                    <Calendar
+                                        selectedWeek={selectedWeek}
+                                        setSelectedWeek={setSelectedWeek}
+                                    />
+                                </div>
+
+                                <div className="bg-white col-span-3 items-center justify-center flex rounded-xl h-[65vh]">
+                                    <WeeklySlots
+                                        selectedWeek={selectedWeek}
+                                        selectedShift={selectedShift}
+                                        setSelectedShift={setSelectedShift}
+                                        existingShifts={currentWeekShifts}
+                                        doctorAvailability={doctorScheduleConfig}
+                                        role="patient"
+                                    />
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </div>
+
                 <div className="col-span-5 flex flex-row items-center justify-center h-full gap-5 text-white">
                     <Button
                         text={"Confirmar"}
@@ -518,47 +596,7 @@ const AdminNewShift = () => {
                 </div>
             </form>
 
-            <AnimatePresence>
-                {selectedDoctorObj && (
-                    <motion.div
-                        className="grid grid-cols-4 m-4 gap-4"
-                        key="doctor-availability-section"
-                        variants={sectionVariants}
-                        initial="hidden"
-                        animate="visible"
-                        exit="exit"
-                        style={{ overflow: "hidden" }}
-                    >
-                        <div className="col-span-1 items-center justify-start pt-10 flex flex-col">
-                            <div className="mb-4 text-start">
-                                <p className="text-custom-gray text-sm">Disponibilidad de:</p>
-                                <p className="text-xl font-bold text-custom-blue">
-                                    Dr/a. {selectedDoctorObj.firstName}{" "}
-                                    {selectedDoctorObj.lastName}
-                                </p>
-                                <p className="text-sm mt-2">
-                                    Por favor, seleccione una semana para ver los turnos disponibles
-                                </p>
-                            </div>
-                            <Calendar
-                                selectedWeek={selectedWeek}
-                                setSelectedWeek={setSelectedWeek}
-                            />
-                        </div>
 
-                        <div className="bg-white col-span-3 items-center justify-center flex rounded-xl h-[65vh]">
-                            <WeeklySlots
-                                selectedWeek={selectedWeek}
-                                selectedShift={selectedShift}
-                                setSelectedShift={setSelectedShift}
-                                existingShifts={currentWeekShifts}
-                                doctorAvailability={doctorScheduleConfig}
-                                role="patient"
-                            />
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
 
             <Modal isOpen={isConfirmModalOpen} onClose={closeConfirmModal}>
                 <PrincipalCard
@@ -614,12 +652,14 @@ const AdminNewShift = () => {
                                     variant="secondary"
                                     onClick={closeConfirmModal}
                                     className="w-full"
+                                    disable={isLoading}
                                 />
                                 <Button
                                     text="Confirmar Turno"
                                     variant="primary"
                                     onClick={handleConfirmShift}
                                     className="w-full"
+                                    isLoading={isLoading}
                                 />
                             </div>
                         </div>

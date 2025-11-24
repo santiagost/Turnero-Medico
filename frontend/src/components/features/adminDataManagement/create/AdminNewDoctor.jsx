@@ -7,7 +7,7 @@ import Button from '../../../ui/Button';
 import { specialtyOptions } from '../../../../utils/mockData';
 import { adminCreateDoctorSchema } from '../../../../validations/adminSchemas';
 import ROLES from '../../../../utils/constants';
-
+import { useToast } from '../../../../hooks/useToast';
 
 const initialDoctorState = {
     firstName: "",
@@ -16,13 +16,15 @@ const initialDoctorState = {
     profile: `${ROLES["Doctor"]}`,
     telephone: "",
     email: "",
-    matricula: "",
+    licenseNumber: "",
     specialtyId: ""
 };
 
 const AdminNewDoctor = () => {
     const [doctorData, setDoctorData] = useState(initialDoctorState);
     const [errors, setErrors] = useState({});
+    const toast = useToast();
+    const [isLoading, setIsLoading] = useState(false);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -55,15 +57,41 @@ const AdminNewDoctor = () => {
         return Object.keys(newErrors).length === 0;
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         const isValid = validateForm();
 
-        if (isValid) {
+        if (!isValid) {
+            toast.warning("Por favor, complete correctamente todos los campos requeridos.");
+            return;
+        }
+
+        setIsLoading(true); // Activar spinner
+
+        try {
+            // AQUI VA LA LLAMADA AL BACKEND
+            // await axios.post('/api/doctors', doctorData);
+
+            // Simulación de espera
+            await new Promise(resolve => setTimeout(resolve, 1500));
+
+            // Simulación de error (Descomentar para probar)
+            // throw new Error("El correo electrónico ya está registrado.");
+
             console.log("Datos del nuevo médico a guardar:", doctorData);
-            alert("Médico guardado exitosamente (simulado).");
+
+            toast.success("Médico registrado exitosamente en el sistema.");
+
+            // Limpiar formulario
             setDoctorData(initialDoctorState);
             setErrors({});
+
+        } catch (error) {
+            console.error("Error al crear médico:", error);
+            const errorMessage = error.response?.data?.message || error.message || "Ocurrió un error al intentar registrar al médico.";
+            toast.error(errorMessage);
+        } finally {
+            setIsLoading(false); // Desactivar spinner
         }
     };
 
@@ -79,6 +107,7 @@ const AdminNewDoctor = () => {
                     error={errors.firstName}
                     size="small"
                     required
+                    disable={isLoading}
                 />
                 <Input
                     tittle="Apellido"
@@ -89,6 +118,7 @@ const AdminNewDoctor = () => {
                     error={errors.lastName}
                     size="small"
                     required
+                    disable={isLoading}
                 />
                 <Input
                     tittle="DNI"
@@ -99,6 +129,7 @@ const AdminNewDoctor = () => {
                     error={errors.dni}
                     size="small"
                     required
+                    disable={isLoading}
                 />
                 <Input
                     tittle="Perfil"
@@ -118,6 +149,7 @@ const AdminNewDoctor = () => {
                     error={errors.telephone}
                     size="small"
                     required
+                    disable={isLoading}
                 />
 
                 <div className="col-start-3 col-span-2">
@@ -131,18 +163,20 @@ const AdminNewDoctor = () => {
                         error={errors.email}
                         size="small"
                         required
+                        disable={isLoading}
                     />
                 </div>
 
                 <Input
                     tittle="Matrícula"
-                    name="matricula"
-                    value={doctorData.matricula}
+                    name="licenseNumber"
+                    value={doctorData.licenseNumber}
                     onChange={handleChange}
                     onBlur={handleBlur}
-                    error={errors.matricula}
+                    error={errors.licenseNumber}
                     size="small"
                     required
+                    disable={isLoading}
                 />
 
 
@@ -158,6 +192,7 @@ const AdminNewDoctor = () => {
                     placeholder="Seleccione una especialidad..."
                     size="small"
                     required
+                    disable={isLoading}
                 />
 
                 <div className="col-span-4 flex justify-center mt-6">
@@ -166,6 +201,7 @@ const AdminNewDoctor = () => {
                         variant="primary"
                         type="submit"
                         size="big"
+                        isLoading={isLoading} // Spinner en el botón
                     />
                 </div>
 

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Input from '../../../ui/Input';
 import Button from '../../../ui/Button';
-
+import { useToast } from '../../../../hooks/useToast';
 import { adminCreateSpecialtySchema } from '../../../../validations/adminSchemas';
 
 const initialSpecialtyState = {
@@ -9,9 +9,11 @@ const initialSpecialtyState = {
     description: ""
 };
 
-const AdminNewSpecialty = () => {    
+const AdminNewSpecialty = () => {
     const [specialtyData, setSpecialtyData] = useState(initialSpecialtyState);
     const [errors, setErrors] = useState({});
+    const toast = useToast();
+    const [isLoading, setIsLoading] = useState(false);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -45,15 +47,37 @@ const AdminNewSpecialty = () => {
         return Object.keys(newErrors).length === 0;
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         const isValid = validateForm();
 
-        if (isValid) {
+        if (!isValid) {
+            toast.warning("Por favor, completa todos los campos correctamente.");
+            return;
+        }
+
+        setIsLoading(true); // Activar spinner
+
+        try {
+            // AQUI VA LA LLAMADA AL BACKEND
+            // await axios.post('/api/specialties', specialtyData);
+
+            // Simulación de espera
+            await new Promise(resolve => setTimeout(resolve, 1500));
+
             console.log("Datos de la nueva Especialidad a guardar:", specialtyData);
-            alert("Especialidad guardada exitosamente (simulado).");
+
+            toast.success("Especialidad guardada exitosamente.");
+
+            // Limpiar formulario
             setSpecialtyData(initialSpecialtyState);
             setErrors({});
+
+        } catch (error) {
+            console.error("Error al crear especialidad:", error);
+            toast.error("Ocurrió un error al guardar la especialidad.");
+        } finally {
+            setIsLoading(false); // Desactivar spinner
         }
     };
 
@@ -70,6 +94,7 @@ const AdminNewSpecialty = () => {
                     error={errors.name}
                     size="small"
                     required
+                    disable={isLoading}
                 />
                 <div className='col-start-1 col-span-4'>
                     <Input
@@ -83,6 +108,7 @@ const AdminNewSpecialty = () => {
                         error={errors.description}
                         size="small"
                         required
+                        disable={isLoading}
                     />
                 </div>
 
@@ -92,6 +118,7 @@ const AdminNewSpecialty = () => {
                         variant="primary"
                         type="submit"
                         size="big"
+                        isLoading={isLoading}
                     />
                 </div>
 

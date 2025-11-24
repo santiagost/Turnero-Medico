@@ -42,6 +42,7 @@ const PatientVolume = ({ filters }) => {
       console.log("Generando gráfico para:", filters.fromDate, "hasta", filters.toDate);
       
       // 1. AQUÍ IRÍA TU FETCH REAL AL BACKEND
+      // AQUI VA LA LLAMADA AL BACKEND
       // const data = await fetchVolume(filters);
       
       // 2. POR AHORA USAMOS DATOS FALSOS:

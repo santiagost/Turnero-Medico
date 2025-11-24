@@ -26,6 +26,7 @@ const AttendanceAndAbsence = ({ filters }) => {
     const [chartData, setChartData] = useState([]);
 
     useEffect(() => {
+        // AQUI VA LA LLAMADA AL BACKEND
         if (filters.fromDate && filters.toDate) {
             setChartData(generateMockData());
         }

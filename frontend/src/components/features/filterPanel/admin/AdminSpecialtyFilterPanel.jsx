@@ -6,8 +6,8 @@ import { LiaUndoAltSolid, LiaPencilAltSolid, LiaTrashAltSolid } from "react-icon
 import Input from '../../../ui/Input';
 import Button from '../../../ui/Button';
 import IconButton from '../../../ui/IconButton';
-
-
+import { useToast } from '../../../../hooks/useToast';
+import Spinner from '../../../ui/Spinner';
 import { mockSpecialties } from '../../../../utils/mockData';
 
 
@@ -17,29 +17,55 @@ export const initialFiltersState = {
 
 const AdminSpecialtyFilterPanel = ({ specialtyToDelete, specialtyToEdit }) => {
     const [allSpecialties, setAllSpecialties] = useState(mockSpecialties);
-
+    const toast = useToast();
     const [localFilters, setLocalFilters] = useState(initialFiltersState);
     const [searchResults, setSearchResults] = useState([]);
     const [hasSearched, setHasSearched] = useState(false);
+    const [isLoadingSearch, setIsLoadingSearch] = useState(false);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
         setLocalFilters(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleSearchClick = (e) => {
+    const handleSearchClick = async (e) => {
         e.preventDefault();
 
-        let foundSpecialties = [...allSpecialties];
+        setIsLoadingSearch(true);
+        setSearchResults([]); // Limpiar visualmente
+        setHasSearched(false);
 
-        if (localFilters.name) {
-            foundSpecialties = foundSpecialties.filter(sp =>
-                sp.name.toLowerCase().includes(localFilters.name.toLowerCase())
-            );
+        try {
+            // AQUI VA LA LLAMADA AL BACKEND
+            // const response = await axios.get('/api/specialties/search', { params: localFilters });
+
+            // Simulación de delay
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            let foundSpecialties = [...allSpecialties];
+
+            if (localFilters.name) {
+                foundSpecialties = foundSpecialties.filter(sp =>
+                    sp.name.toLowerCase().includes(localFilters.name.toLowerCase())
+                );
+            }
+
+            // Simulación de error (opcional)
+            // throw new Error("Error de conexión");
+
+            setSearchResults(foundSpecialties);
+            setHasSearched(true);
+
+            if (foundSpecialties.length === 0 && localFilters.name) {
+                toast.warning("Búsqueda sin resultados.");
+            }
+
+        } catch (error) {
+            console.error("Error buscando especialidades:", error);
+            toast.error("Ocurrió un error al buscar especialidades.");
+        } finally {
+            setIsLoadingSearch(false);
         }
-
-        setSearchResults(foundSpecialties);
-        setHasSearched(true);
     };
 
     const handleResetClick = () => {
@@ -48,7 +74,7 @@ const AdminSpecialtyFilterPanel = ({ specialtyToDelete, specialtyToEdit }) => {
         setHasSearched(false);
     };
 
-    
+
     return (
         <div className="w-full p-4">
             <form
@@ -63,10 +89,11 @@ const AdminSpecialtyFilterPanel = ({ specialtyToDelete, specialtyToEdit }) => {
                         value={localFilters.name}
                         onChange={handleChange}
                         size="small"
+                        placeholder={"Todas"}
                     />
                 </div>
 
-                
+
                 <div className='col-start-4 flex flex-row items-center justify-end h-full gap-5 text-white'>
                     <Button
                         text={"Buscar"}
@@ -87,11 +114,15 @@ const AdminSpecialtyFilterPanel = ({ specialtyToDelete, specialtyToEdit }) => {
 
             {/* --- 8. Adapta los Resultados --- */}
             <div className="mt-6 flex flex-col gap-3 overflow-y-scroll custom-scrollbar max-h-[30vh]">
-                {hasSearched && searchResults.length === 0 ? (
+                {isLoadingSearch ? (
+                    <div className="flex justify-center py-6 items-center text-custom-blue animate-pulse">
+                        <Spinner />
+                    </div>
+                ) : hasSearched && searchResults.length === 0 ? (
                     <p className="text-center text-custom-gray py-4">
                         No se encontraron Especialidades con ese nombre.
                     </p>
-                ) : (
+                ) : searchResults.length > 0 ? (
                     searchResults.map(sp => (
                         <motion.div
                             key={sp.specialtyId}
@@ -107,21 +138,21 @@ const AdminSpecialtyFilterPanel = ({ specialtyToDelete, specialtyToEdit }) => {
                             <div className="flex items-center gap-3">
                                 <IconButton
                                     icon={<LiaPencilAltSolid size={24} />}
-                                    content onClick={() => specialtyToEdit(sp.specialtyId)}
+                                    onClick={() => specialtyToEdit(sp.specialtyId)}
                                 />
                                 <IconButton
                                     icon={<LiaTrashAltSolid size={24} />}
-                                    s onClick={() => specialtyToDelete(sp.specialtyId)}
+                                    onClick={() => specialtyToDelete(sp.specialtyId)}
                                 />
                             </div>
                         </motion.div>
                     ))
-                )}
-
-                {!hasSearched && (
-                    <p className="text-center text-custom-gray py-2">
-                        Utiliza el filtro de nombre para buscar especialidades.
-                    </p>
+                ) : (
+                    !hasSearched && (
+                        <p className="text-center text-custom-gray py-2">
+                            Utiliza el filtro de nombre para buscar especialidades.
+                        </p>
+                    )
                 )}
             </div>
         </div >

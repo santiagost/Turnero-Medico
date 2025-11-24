@@ -42,9 +42,6 @@ const NotificationSettings = ({ user }) => {
 
                     <div className='px-4 py-2 gap-y-2 flex flex-col'>
                         <div className='flex flex-row items-center justify-between px-2'>
-                            <li>Notificarme sobre registros fallidos</li> <ToggleSwitch/>
-                        </div>
-                        <div className='flex flex-row items-center justify-between px-2'>
                             <li>Enviar reporte de turnos diarios a mi correo electrónico</li>
                             <ToggleSwitch/>
                         </div>

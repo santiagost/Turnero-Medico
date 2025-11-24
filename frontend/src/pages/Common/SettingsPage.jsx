@@ -10,7 +10,7 @@ import { socialWorkOptions } from '../../utils/mockData';
 
 const SettingsPage = () => {
     const { user, profile } = useAuth();
-
+    const socialWorksOptionsWithAll = [{ value: "", label: "" }, ...socialWorkOptions];
     if (!user) {
         return <div>Cargando configuración...</div>;
     }    
@@ -26,7 +26,7 @@ const SettingsPage = () => {
                     <div className='col-start-1 col-span-1 flex flex-col justify-center'>
                         <SectionCard 
                             tittle={"Mis Datos"} 
-                            content={<PersonalDataSettings user={user} profile={profile} socialWorks={socialWorkOptions} />} 
+                            content={<PersonalDataSettings user={user} profile={profile} socialWorks={socialWorksOptionsWithAll} />} 
                         />
                     </div>
                     <div className='col-start-2 col-span-1 flex flex-col justify-center'>

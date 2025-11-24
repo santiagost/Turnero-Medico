@@ -6,6 +6,7 @@ import Button from '../../../ui/Button';
 import { socialWorkOptions } from '../../../../utils/mockData';
 import { adminCreatePatientSchema } from '../../../../validations/adminSchemas';
 import ROLES from '../../../../utils/constants';
+import { useToast } from '../../../../hooks/useToast';
 
 const initialPatientState = {
     firstName: "",
@@ -22,6 +23,9 @@ const initialPatientState = {
 const AdminNewPatient = () => {
     const [patientData, setPatientData] = useState(initialPatientState);
     const [errors, setErrors] = useState({});
+    const [isLoading, setIsLoading] = useState(false);
+    const toast = useToast();
+    const socialWorksOptionsWithAll = [{ value: "", label: "Ninguna" }, ...socialWorkOptions];
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -57,16 +61,42 @@ const AdminNewPatient = () => {
         return Object.keys(newErrors).length === 0;
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
         const isValid = validateForm();
 
-        if (isValid) {
+        if (!isValid) {
+            toast.warning("Por favor, complete correctamente todos los campos requeridos.");
+            return;
+        }
+
+        setIsLoading(true); // Activar spinner
+
+        try {
+            // AQUI VA LA LLAMADA AL BACKEND
+            // await axios.post('/api/patients', patientData);
+
+            // Simulación de espera
+            await new Promise(resolve => setTimeout(resolve, 1500));
+
+            // Simulación de error (Descomentar para probar)
+            // throw new Error("El DNI ya se encuentra registrado en el sistema.");
+
             console.log("Datos del nuevo paciente a guardar:", patientData);
-            alert("Paciente guardado (simulado). Revisa la consola.");
+
+            toast.success("Paciente registrado exitosamente.");
+
+            // Limpiar formulario
             setPatientData(initialPatientState);
             setErrors({});
+
+        } catch (error) {
+            console.error("Error al crear paciente:", error);
+            const errorMessage = error.message || "Ocurrió un error al intentar registrar al paciente.";
+            toast.error(errorMessage);
+        } finally {
+            setIsLoading(false); // Desactivar spinner
         }
     };
 
@@ -82,6 +112,7 @@ const AdminNewPatient = () => {
                     error={errors.firstName}
                     size="small"
                     required
+                    disable={isLoading}
                 />
                 <Input
                     tittle="Apellido"
@@ -92,6 +123,7 @@ const AdminNewPatient = () => {
                     error={errors.lastName}
                     size="small"
                     required
+                    disable={isLoading}
                 />
                 <Input
                     tittle="DNI"
@@ -102,6 +134,7 @@ const AdminNewPatient = () => {
                     error={errors.dni}
                     size="small"
                     required
+                    disable={isLoading}
                 />
 
                 <Input
@@ -121,6 +154,7 @@ const AdminNewPatient = () => {
                     onBlur={handleBlur}
                     error={errors.telephone}
                     size="small"
+                    disable={isLoading}
                 />
                 <Input
                     tittle="Fecha de Nacimiento"
@@ -132,6 +166,7 @@ const AdminNewPatient = () => {
                     error={errors.birthDate}
                     size="small"
                     required
+                    disable={isLoading}
                 />
 
                 <div className='col-start-3 col-span-2'>
@@ -144,6 +179,7 @@ const AdminNewPatient = () => {
                         error={errors.email}
                         size="small"
                         required
+                        disable={isLoading}
                     />
                 </div>
 
@@ -154,7 +190,8 @@ const AdminNewPatient = () => {
                     onChange={handleChange}
                     onBlur={handleBlur}
                     error={errors.membershipNumber}
-                    s size="small"
+                    size="small"
+                    disable={isLoading}
                 />
                 <Select
                     tittle="Obra Social"
@@ -163,9 +200,10 @@ const AdminNewPatient = () => {
                     onChange={handleChange}
                     onBlur={handleBlur}
                     error={errors.socialWorkId}
-                    options={socialWorkOptions}
+                    options={socialWorksOptionsWithAll}
                     size="small"
                     required
+                    disable={isLoading}
                 />
 
                 <div className="col-span-4 flex justify-center mt-6">
@@ -174,6 +212,8 @@ const AdminNewPatient = () => {
                         variant="primary"
                         type="submit"
                         size="big"
+                        isLoading={isLoading}
+                        disable={isLoading}
                     />
                 </div>
             </form>

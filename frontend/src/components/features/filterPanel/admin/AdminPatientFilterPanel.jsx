@@ -3,11 +3,12 @@ import { motion } from 'framer-motion';
 import { FaSearch } from "react-icons/fa";
 import { LiaUndoAltSolid, LiaPencilAltSolid, LiaTrashAltSolid } from "react-icons/lia";
 import { useNavigate, useLocation } from 'react-router-dom';
-
+import { useToast } from '../../../../hooks/useToast';
 import Input from '../../../ui/Input';
 import Select from '../../../ui/Select';
 import Button from '../../../ui/Button';
 import IconButton from '../../../ui/IconButton';
+import Spinner from '../../../ui/Spinner';
 
 import {
     socialWorkOptions,
@@ -28,11 +29,11 @@ const allPatients = mockPatients;
 
 const AdminPatientFilterPanel = ({ patientToDelete, patientToEdit, viewMode = "detail" }) => {
     const navigate = useNavigate();
-
+    const toast = useToast();
     const [localFilters, setLocalFilters] = useState(initialFiltersState);
     const [searchResults, setSearchResults] = useState([]);
     const [searchMessage, setSearchMessage] = useState("Busca un paciente para ver en detalle.");
-
+    const [isLoadingSearch, setIsLoadingSearch] = useState(false);
 
     const orderOptions = [
         { value: "alpha_asc", label: "Orden Alfabético (A-Z)" },
@@ -52,33 +53,63 @@ const AdminPatientFilterPanel = ({ patientToDelete, patientToEdit, viewMode = "d
         }));
     };
 
-    const handleSearchClick = (e) => {
+    const handleSearchClick = async (e) => {
         e.preventDefault();
 
-        let foundPatients = [...allPatients];
+        setIsLoadingSearch(true);
+        setSearchResults([]); // Limpiar resultados previos
+        setSearchMessage(""); // Limpiar mensaje
 
-        if (localFilters.dni) {
-            foundPatients = foundPatients.filter(p => p.dni === localFilters.dni);
-        }
-        if (localFilters.name) {
-            foundPatients = foundPatients.filter(p =>
-                `${p.firstName} ${p.lastName}`.toLowerCase().includes(localFilters.name.toLowerCase())
-            );
-        }
-        if (localFilters.socialWork) {
-            foundPatients = foundPatients.filter(p =>
-                p.socialWork?.socialWorkId === parseInt(localFilters.socialWork)
-            );
-        }
-        // (Lógica de orden)
-        foundPatients.sort((a, b) =>
-            localFilters.order === 'alpha_asc'
-                ? a.lastName.localeCompare(b.lastName)
-                : b.lastName.localeCompare(a.lastName)
-        );
+        try {
+            // 🚨 AQUI VA LA LLAMADA AL BACKEND
+            // const params = { ...localFilters };
+            // const response = await axios.get('/api/patients/search', { params });
+            // const foundPatients = response.data;
 
-        setSearchResults(foundPatients);
-        setSearchMessage(foundPatients.length === 0 ? "No se encontraron pacientes." : `${foundPatients.length} paciente(s) encontrado(s).`);
+            // SIMULACIÓN (Delay de 500ms)
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            // --- Lógica Mock de Filtrado ---
+            let foundPatients = [...allPatients];
+
+            if (localFilters.dni) {
+                foundPatients = foundPatients.filter(p => p.dni === localFilters.dni);
+            }
+            if (localFilters.name) {
+                foundPatients = foundPatients.filter(p =>
+                    `${p.firstName} ${p.lastName}`.toLowerCase().includes(localFilters.name.toLowerCase())
+                );
+            }
+            if (localFilters.socialWork) {
+                foundPatients = foundPatients.filter(p =>
+                    p.socialWork?.socialWorkId === parseInt(localFilters.socialWork)
+                );
+            }
+
+            // Lógica de orden
+            foundPatients.sort((a, b) =>
+                localFilters.order === 'alpha_asc'
+                    ? a.lastName.localeCompare(b.lastName)
+                    : b.lastName.localeCompare(a.lastName)
+            );
+            // --- Fin Lógica Mock ---
+
+            setSearchResults(foundPatients);
+
+            if (foundPatients.length === 0) {
+                setSearchMessage("No se encontraron pacientes con esos criterios.");
+                toast.warning("Búsqueda sin resultados.");
+            } else {
+                setSearchMessage(`${foundPatients.length} paciente(s) encontrado(s).`);
+            }
+
+        } catch (error) {
+            console.error("Error buscando pacientes:", error);
+            toast.error("Ocurrió un error al buscar pacientes.");
+            setSearchMessage("Error en la búsqueda.");
+        } finally {
+            setIsLoadingSearch(false);
+        }
     };
 
     const handleResetClick = () => {
@@ -105,6 +136,7 @@ const AdminPatientFilterPanel = ({ patientToDelete, patientToEdit, viewMode = "d
                     value={localFilters.dni}
                     onChange={handleChange}
                     size="small"
+                    placeholder={"Todos"}
                 />
                 <Input
                     tittle="Nombre y Apellido"
@@ -113,6 +145,7 @@ const AdminPatientFilterPanel = ({ patientToDelete, patientToEdit, viewMode = "d
                     value={localFilters.name}
                     onChange={handleChange}
                     size="small"
+                    placeholder={"Todos"}
                 />
                 <Select
                     tittle="Obra Social"
@@ -145,7 +178,11 @@ const AdminPatientFilterPanel = ({ patientToDelete, patientToEdit, viewMode = "d
 
 
             <div className="mt-6 overflow-y-scroll custom-scrollbar max-h-[60vh]">
-                {searchResults.length > 0 ? (
+                {isLoadingSearch ? (
+                    <div className="flex justify-center py-10 items-center text-custom-blue animate-pulse">
+                        <Spinner />
+                    </div>
+                ) : searchResults.length > 0 ? (
                     <div className="flex flex-col gap-3 p-4">
                         <p className="text-sm text-custom-gray">{searchMessage}</p>
                         {searchResults.map(p => (
@@ -166,7 +203,6 @@ const AdminPatientFilterPanel = ({ patientToDelete, patientToEdit, viewMode = "d
                                 </div>
 
                                 {viewMode === 'admin' ? (
-                                    // VISTA 1: Página de Pacientes (Editar/Eliminar)
                                     <div className="flex items-center gap-3">
                                         <IconButton
                                             icon={<LiaPencilAltSolid size={24} />}
@@ -178,7 +214,6 @@ const AdminPatientFilterPanel = ({ patientToDelete, patientToEdit, viewMode = "d
                                         />
                                     </div>
                                 ) : (
-                                    // VISTA 2: Dashboard/Home (Más Detalle)
                                     <Button
                                         text="Más Detalle"
                                         variant="primary"
@@ -189,7 +224,6 @@ const AdminPatientFilterPanel = ({ patientToDelete, patientToEdit, viewMode = "d
                             </motion.div>
                         ))}
                     </div>
-
                 ) : (
                     <p className="text-center text-custom-gray p-4">
                         {searchMessage}

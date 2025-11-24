@@ -8,7 +8,7 @@ import { IoMdClose } from "react-icons/io";
 import { motion, AnimatePresence } from 'framer-motion';
 import { useParams, useOutletContext } from 'react-router-dom';
 import AdminEditPatient from '../../components/features/adminDataManagement/edit/AdminEditPatient';
-
+import { useToast } from '../../hooks/useToast';
 import Modal from '../../components/ui/Modal';
 import PrincipalCard from '../../components/ui/PrincipalCard';
 
@@ -17,7 +17,7 @@ const AdminPatients = () => {
   const toggleNewPatient = () => setShowNewPatient(prev => !prev);
   const { patientId } = useParams();
   const [selectedPatientId, setSelectedPatientId] = useState(patientId ? parseInt(patientId) : "");
-
+  const toast = useToast();
   const sectionVariants = {
     hidden: {
       opacity: 0,
@@ -32,6 +32,8 @@ const AdminPatients = () => {
       transition: { duration: 0.2, ease: "easeInOut", delay: 0.1 }
     }
   };
+  const [loadingSave, setLoadingSave] = useState(false);
+  const [loadingDelete, setLoadingDelete] = useState(false);
 
   const detailSectionRef = useRef(null);
   const { scrollContainerRef } = useOutletContext();
@@ -73,39 +75,86 @@ const AdminPatients = () => {
     setIsDiscardModalOpen(true);
   }
 
-  const confirmDelete = () => {
-    console.log("Eliminando paciente ID:", patientIdToDelete);
-    // ... Aquí iría tu lógica de API para eliminar al paciente ...
+  const confirmDelete = async () => {
+    setLoadingDelete(true); // Activar spinner
 
-    // Simulación: Muestra alerta y cierra
-    setIsDeleteModalOpen(false);
-    setPatientIdToDelete(null);
-    // Aquí deberías re-ejecutar la búsqueda en AdminPatientFilterPanel
-    // para que la lista se actualice.
+    try {
+      console.log("Eliminando paciente ID:", patientIdToDelete);
+
+      // AQUI VA LA LLAMADA AL BACKEND
+      // await axios.delete(`/api/patients/${patientIdToDelete}`);
+
+      // Simulación de espera
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      // Simulación de error (descomentar para probar)
+      // throw new Error("No se puede eliminar un paciente con historial activo.");
+
+      toast.success("Paciente eliminado del sistema correctamente.");
+
+      setIsDeleteModalOpen(false);
+
+      // Si el paciente eliminado era el seleccionado, cerramos el panel
+      if (selectedPatientId === patientIdToDelete) {
+        setSelectedPatientId(null);
+      }
+      setPatientIdToDelete(null);
+
+      // Aquí deberías disparar una recarga de la lista si usas un contexto global
+
+    } catch (error) {
+      console.error("Error al eliminar:", error);
+      const errorMsg = error.message || "Ocurrió un error al intentar eliminar el paciente.";
+      toast.error(errorMsg);
+    } finally {
+      setLoadingDelete(false); // Desactivar spinner
+    }
   };
 
   const closeDeleteModal = () => {
-    setIsDeleteModalOpen(false);
-    setPatientIdToDelete(null);
+    if (!loadingDelete) {
+      setIsDeleteModalOpen(false);
+      setPatientIdToDelete(null);
+    }
   };
 
-  const confirmSave = () => {
-    console.log("Guardando cambios en el paciente:", dataToSave);
-    // ... Aquí iría tu lógica de API para actualizar al paciente ...
+  const confirmSave = async () => {
+    setLoadingSave(true); // Activar spinner
 
-    setIsSaveModalOpen(false);
-    setDataToSave(null);
-    setSelectedPatientId(null);
+    try {
+      console.log("Guardando cambios en el paciente:", dataToSave);
+
+      // AQUI VA LA LLAMADA AL BACKEND
+      // await axios.put(`/api/patients/${selectedPatientId}`, dataToSave);
+
+      // Simulación de espera
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      toast.success("Datos del paciente actualizados correctamente.");
+
+      setIsSaveModalOpen(false);
+      setDataToSave(null);
+      setSelectedPatientId(null); // Cierra el panel de edición tras guardar
+
+    } catch (error) {
+      console.error("Error al guardar:", error);
+      toast.error("Ocurrió un error al guardar los cambios del paciente.");
+    } finally {
+      setLoadingSave(false); // Desactivar spinner
+    }
   };
 
   const closeSaveModal = () => {
-    setIsSaveModalOpen(false);
-    setDataToSave(null);
+    if (!loadingSave) {
+      setIsSaveModalOpen(false);
+      setDataToSave(null);
+    }
   };
 
   const confirmDiscard = () => {
     setIsDiscardModalOpen(false);
     setSelectedPatientId(null);
+    toast.info("Cambios descartados.");
   };
 
   const closeDiscardModal = () => {
@@ -186,8 +235,8 @@ const AdminPatients = () => {
                 ¿Estás seguro de que deseas guardar los cambios en este paciente?
               </p>
               <div className="flex flex-row gap-10">
-                <Button text="Seguir Editando" variant="secondary" onClick={closeSaveModal} />
-                <Button text="Guardar" variant="primary" onClick={confirmSave} />
+                <Button text="Seguir Editando" variant="secondary" onClick={closeSaveModal} disable={loadingSave} />
+                <Button text="Guardar" variant="primary" onClick={confirmSave} isLoading={loadingSave}/>
               </div>
             </div>
           }
@@ -224,8 +273,8 @@ const AdminPatients = () => {
                 Esta acción no se puede deshacer.
               </p>
               <div className="flex flex-row gap-10">
-                <Button text="Cancelar" variant="secondary" onClick={closeDeleteModal} />
-                <Button text="Eliminar" variant="primary" onClick={confirmDelete} />
+                <Button text="Cancelar" variant="secondary" onClick={closeDeleteModal} disable={loadingDelete} />
+                <Button text="Eliminar" variant="primary" onClick={confirmDelete} isLoading={loadingDelete}/>
               </div>
             </div>
           }

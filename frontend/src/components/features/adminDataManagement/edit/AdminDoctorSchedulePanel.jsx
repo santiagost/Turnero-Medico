@@ -13,7 +13,7 @@ import Select from '../../../ui/Select';
 import { mockDoctorAvailability } from '../../../../utils/mockData';
 import { daysOptions } from '../../../../utils/dateUtils';
 import { WEEKDAYS } from '../../../../utils/constants';
-
+import { useToast } from '../../../../hooks/useToast';
 import { adminDoctorScheduleSchema } from '../../../../validations/adminSchemas';
 
 const START_HOUR_GRILLA = 7; // La grilla empieza a las 07:00
@@ -31,6 +31,7 @@ const initialFormState = {
 };
 
 const AdminDoctorSchedulePanel = ({ doctorId, onSaveSuccess }) => {
+    const toast = useToast();
     // Estado de la disponibilidad (Array de horarios)
     const [schedule, setSchedule] = useState([]);
     const [errors, setErrors] = useState({});
@@ -42,6 +43,7 @@ const AdminDoctorSchedulePanel = ({ doctorId, onSaveSuccess }) => {
     // Estados de Modales
     const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
     const [isDiscardModalOpen, setIsDiscardModalOpen] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
 
     useEffect(() => {
         if (doctorId) {
@@ -86,19 +88,15 @@ const AdminDoctorSchedulePanel = ({ doctorId, onSaveSuccess }) => {
         setErrors(newErrors);
 
         if (isValid) {
-            // --- CORRECCIÓN CRÍTICA: Solo un horario por día ---
-            // Verificamos si YA existe algún slot para el día seleccionado.
-            const existingSlot = schedule.find(s => 
+            const existingSlot = schedule.find(s =>
                 String(s.dayOfWeek) === String(formData.dayOfWeek)
             );
 
             if (existingSlot) {
-                // Si existe, bloqueamos y avisamos.
-                alert("Ya existe un horario asignado para este día. El sistema requiere un horario corrido único por día. Por favor, elimine el horario existente si desea reemplazarlo.");
+                toast.warning("Ya existe un horario para este día. Elimínelo antes de agregar uno nuevo.");
                 return;
             }
 
-            // Generación de ID robusta
             const newSlot = {
                 ...formData,
                 dayOfWeek: Number(formData.dayOfWeek),
@@ -107,18 +105,24 @@ const AdminDoctorSchedulePanel = ({ doctorId, onSaveSuccess }) => {
 
             setSchedule(prev => [...prev, newSlot]);
             setFormData(initialFormState);
+            toast.success("Horario agregado a la grilla temporal.");
+        } else {
+            toast.warning("Por favor, verifique los horarios ingresados.");
         }
     };
 
     const handleDeleteSlot = (idToDelete) => {
         setSchedule(prev => prev.filter(item => item.id !== idToDelete));
+        toast.info("Horario eliminado de la grilla.");
     };
 
-    // --- ACCIONES DE GUARDADO ---
-    const handleConfirmSave = () => {
-        console.log("Guardando horario para médico:", doctorId, schedule);
+    const handleConfirmSave = async () => {
+        setIsSaving(true);
+        if (onSaveSuccess) {
+            await onSaveSuccess(schedule);
+        }
+        setIsSaving(false);
         setIsConfirmModalOpen(false);
-        if (onSaveSuccess) onSaveSuccess(schedule);
     };
 
     const handleDiscard = () => {
@@ -128,6 +132,7 @@ const AdminDoctorSchedulePanel = ({ doctorId, onSaveSuccess }) => {
         }));
         setSchedule(sanitizedData);
         setIsDiscardModalOpen(false);
+        toast.info("Cambios descartados. Se restauró la configuración original.");
     };
 
     // --- LÓGICA DE POSICIONAMIENTO EN LA GRILLA ---
@@ -305,8 +310,8 @@ const AdminDoctorSchedulePanel = ({ doctorId, onSaveSuccess }) => {
                                 ¿Estás seguro de que deseas guardar la nueva disponibilidad horaria?
                             </span>
                             <div className="flex gap-4">
-                                <Button text="Cancelar" variant="secondary" onClick={() => setIsConfirmModalOpen(false)} />
-                                <Button text="Guardar Cambios" variant="primary" onClick={handleConfirmSave} />
+                                <Button text="Cancelar" variant="secondary" onClick={() => setIsConfirmModalOpen(false)} disable={isSaving} />
+                                <Button text="Guardar Cambios" variant="primary" onClick={handleConfirmSave} isLoading={isSaving} />
                             </div>
                         </div>
                     }

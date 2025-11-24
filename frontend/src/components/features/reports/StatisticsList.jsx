@@ -16,14 +16,7 @@ const StatisticsList = () => {
 
     const fetchStatistics = () => {
         console.log("Buscando estadísticas actualizadas...");
-        // En un futuro, aquí harías tu llamada a la API:
-        // try {
-        //   const response = await fetch('/api/admin/statistics');
-        //   const data = await response.json();
-        //   setStatistics(data);
-        // } catch (error) {
-        //   console.error("Error al cargar estadísticas:", error);
-        // }
+        // AQUI VA LA LLAMADA AL BACKEND        
     };
 
     useEffect(() => {

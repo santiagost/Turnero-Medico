@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Input from '../../../ui/Input';
 import Button from '../../../ui/Button';
-
+import { useToast } from '../../../../hooks/useToast';
 import { adminCreateSocialWorkSchema } from '../../../../validations/adminSchemas';
 
 const initialSocialWorkState = {
@@ -15,6 +15,8 @@ const initialSocialWorkState = {
 const AdminNewSocialWork = () => {
     const [socialWorkData, setSocialWorkData] = useState(initialSocialWorkState);
     const [errors, setErrors] = useState({});
+    const [isLoading, setIsLoading] = useState(false);
+    const toast = useToast();
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -48,18 +50,43 @@ const AdminNewSocialWork = () => {
         return Object.keys(newErrors).length === 0;
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         const isValid = validateForm();
 
-        if (isValid) {
+        if (!isValid) {
+            toast.warning("Por favor, completa todos los campos correctamente.");
+            return;
+        }
+
+        setIsLoading(true); // Activar spinner
+
+        try {
+            /// AQUI VA LA LLAMADA AL BACKEND
+            // await axios.post('/api/social-works', socialWorkData);
+
+            // Simulación de espera
+            await new Promise(resolve => setTimeout(resolve, 1500));
+
+            // Simulación de error (opcional)
+            // throw new Error("El CUIT ya existe.");
+
             console.log("Datos de la nueva Obra Social a guardar:", socialWorkData);
-            alert("Obra Social guardada exitosamente (simulado).");
+
+            toast.success("Obra Social registrada exitosamente.");
+
+            // Limpiar formulario
             setSocialWorkData(initialSocialWorkState);
             setErrors({});
+
+        } catch (error) {
+            console.error("Error al crear obra social:", error);
+            const errorMsg = error.message || "Ocurrió un error al registrar la obra social.";
+            toast.error(errorMsg);
+        } finally {
+            setIsLoading(false); // Desactivar spinner
         }
     };
-
     return (
         <div className="p-4">
             <form onSubmit={handleSubmit} className="grid grid-cols-4 gap-4" noValidate>
@@ -72,6 +99,7 @@ const AdminNewSocialWork = () => {
                     error={errors.name}
                     size="small"
                     required
+                    disable={isLoading}
                 />
                 <Input
                     tittle="CUIT"
@@ -82,6 +110,7 @@ const AdminNewSocialWork = () => {
                     error={errors.cuit}
                     size="small"
                     required
+                    disable={isLoading}
                 />
                 <Input
                     tittle="Teléfono"
@@ -93,6 +122,7 @@ const AdminNewSocialWork = () => {
                     error={errors.telephone}
                     size="small"
                     required
+                    disable={isLoading}
                 />
 
 
@@ -106,6 +136,7 @@ const AdminNewSocialWork = () => {
                         error={errors.address}
                         size="small"
                         required
+                        disable={isLoading}
                     />
                 </div>
                 <div className="col-span-2">
@@ -119,6 +150,7 @@ const AdminNewSocialWork = () => {
                         error={errors.email}
                         size="small"
                         required
+                        disable={isLoading}
                     />
                 </div>
 
@@ -128,6 +160,7 @@ const AdminNewSocialWork = () => {
                         variant="primary"
                         type="submit"
                         size="big"
+                        isLoading={isLoading}
                     />
                 </div>
 
