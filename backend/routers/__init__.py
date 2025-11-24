@@ -10,6 +10,7 @@ from .obra_social_router import router as obra_social_router
 from .estado_turno_router import router as estado_turno_router
 from .usuario_router import router as usuario_router
 from .medico_router import router as medico_router
+from .turno_router import router as turno_router
 
 # Lista de todos los routers disponibles
-__all__ = ["path_router", "paciente_router", "rol_router", "especialidad_router", "obra_social_router", "estado_turno_router", "usuario_router", "medico_router"]
+__all__ = ["path_router", "paciente_router", "rol_router", "especialidad_router", "obra_social_router", "estado_turno_router", "usuario_router", "medico_router", "turno_router"]

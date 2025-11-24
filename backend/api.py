@@ -5,13 +5,41 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 
+# Inicializar la conexión a la base de datos
+from database import DatabaseConnection, database_url
+from services.turno_service import TurnoService
+import sqlite3
+
+DatabaseConnection()
+
+
+
+
 def chequear_recordatorios_background(): # para testear el scheduler
-    print("Esta es una tarea de ejemplo que se ejecuta cada 10 segundos")
-    
-    ## para continuar con la implementacion de las notificaciones hay que tener primero 
-    ## los routers y servicios hechos para los usuarios, pacientes, medicos y turnos
-    ## TurnoService.chequear_y_enviar_recordatorios() METODO ESTATICO A IMPLEMENTAR
-    
+    # turno_router.notificar_recordatorios()
+    conn = None
+    try:
+        # 1. Crear conexión independiente (check_same_thread=False es CLAVE)
+        conn = sqlite3.connect(database_url, check_same_thread=False)
+        conn.row_factory = sqlite3.Row # Para manejar diccionarios
+        
+        # 2. Instanciar el servicio con esta conexión
+        service = TurnoService(conn)
+        
+        # 3. Ejecutar la lógica de notificación
+        # (Esto imprimirá en consola si manda mails)
+        cantidad = service.notificar_recordatorios_turnos()
+
+        if cantidad > 0:
+            print(f"[NOTIFICADOR] Se enviaron {cantidad} recordatorios de turnos.")
+            
+    except Exception as e:
+        print(f"[NOTIFICADOR] Error: {e}")
+        
+    finally:
+        # 4. Cerrar la conexión siempre
+        if conn:
+            conn.close()
 
 
 # --- LIFESPAN (Ciclo de vida de FastAPI) ---
@@ -21,10 +49,9 @@ async def lifespan(app: FastAPI):
     scheduler = BackgroundScheduler()
     
     # Configuramos para que corra cada 10 o 30 segundos
-    # scheduler.add_job(chequear_recordatorios_background, 'interval', seconds=30)
     scheduler.add_job(chequear_recordatorios_background, 'interval', seconds=10)
-    
     scheduler.start()
+
     print("Scheduler de notificaciones INICIADO")
     
     yield # Aquí corre tu API
@@ -71,12 +98,13 @@ class FastAPIApp:
 # Instancia global de la aplicación
 app = FastAPIApp.get_app()
 
-# Inicializar la conexión a la base de datos
-from database import DatabaseConnection
-DatabaseConnection()
+# # Inicializar la conexión a la base de datos
+# from database import DatabaseConnection
+# DatabaseConnection()
 
 # Registrar los routers de los controladores
-from routers import path_router, paciente_router, rol_router, especialidad_router, obra_social_router, estado_turno_router, usuario_router, medico_router
+# from routers import path_router, paciente_router, rol_router, especialidad_router, obra_social_router, estado_turno_router, usuario_router, medico_router
+from routers import *
 
 
 FastAPIApp.include_router(path_router)
@@ -87,6 +115,7 @@ FastAPIApp.include_router(obra_social_router)
 FastAPIApp.include_router(estado_turno_router)
 FastAPIApp.include_router(usuario_router)
 FastAPIApp.include_router(medico_router)
+FastAPIApp.include_router(turno_router)
 
 # Evento de cierre: cerrar la conexión a la base de datos
 @app.on_event("shutdown")

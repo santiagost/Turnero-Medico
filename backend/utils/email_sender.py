@@ -55,8 +55,6 @@ class EmailSender:
             return False
         
 
-
-
 if __name__ == "__main__":
     # Esto solo se ejecuta si corres este archivo directamente
     # python backend/utils/email_sender.py

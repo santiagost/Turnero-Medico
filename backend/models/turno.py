@@ -6,12 +6,15 @@ class TurnoBase:
                  id_paciente: int,
                  id_medico: int,
                  fecha_hora_inicio: str,
-                 fecha_hora_fin: str):
+                 fecha_hora_fin: str,
+                 recordatorio_notificado: Optional[bool] = None,
+                 reserva_notificada: Optional[bool] = None):
         self.id_paciente = id_paciente
         self.id_medico = id_medico
         self.fecha_hora_inicio = fecha_hora_inicio
         self.fecha_hora_fin = fecha_hora_fin
-
+        self.recordatorio_notificado = recordatorio_notificado
+        self.reserva_notificada = reserva_notificada
 
 class TurnoCreate(TurnoBase):
     def __init__(self,
@@ -47,15 +50,15 @@ class TurnoResponse(TurnoBase):
                  fecha_hora_inicio: str,
                  fecha_hora_fin: str,
                  motivo_consulta: Optional[str] = None,
+                 recordatorio_notificado: Optional[bool] = None,
+                 reserva_notificada: Optional[bool] = None,
                  paciente = None,  # PacienteResponse 
                  medico = None,  # MedicoResponse 
                  estado_turno = None):  # EstadoTurnoResponse 
-        super().__init__(id_paciente, id_medico, fecha_hora_inicio, fecha_hora_fin)
+        super().__init__(id_paciente, id_medico, fecha_hora_inicio, fecha_hora_fin, recordatorio_notificado, reserva_notificada)
         self.id_turno = id_turno
         self.id_estado_turno = id_estado_turno
         self.motivo_consulta = motivo_consulta
         self.paciente = paciente
-        self.medico = medico
-        self.estado_turno = estado_turno
         self.medico = medico
         self.estado_turno = estado_turno
