@@ -13,7 +13,7 @@ const TooltipDropdown = ({ text }) => {
 const Input = ({
     tittle, description, type, icon, useButton, disable = false,
     value, onChange, required, name, tooltip, tooltipText, size = "big",
-    error, onBlur, multiline = false, rows = 4 }) => {
+    error, onBlur, multiline = false, rows = 4, placeholder }) => {
 
     const [isTooltipOpen, setIsTooltipOpen] = useState(false);
     const tooltipRef = useRef(null);
@@ -61,6 +61,7 @@ const Input = ({
             name={name}
             onBlur={onBlur}
             rows={rows} // Usa la prop 'rows' para la altura
+            placeholder={placeholder}
         />
     ) : (
         <input
@@ -72,6 +73,7 @@ const Input = ({
             required={required}
             name={name}
             onBlur={onBlur}
+            placeholder={placeholder}
         />
     );
 

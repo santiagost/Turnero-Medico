@@ -57,6 +57,7 @@ const PatientFilterPanel = ({ onSearch }) => {
                 value={localFilters.dni}
                 onChange={handleChange}
                 size="small"
+                placeholder="Todos"
             />
 
             <Input
@@ -66,6 +67,7 @@ const PatientFilterPanel = ({ onSearch }) => {
                 value={localFilters.name}
                 onChange={handleChange}
                 size="small"
+                placeholder="Todos"
             />
 
             <Input
