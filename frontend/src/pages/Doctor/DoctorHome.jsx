@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import AnimatedPage from '../../components/layout/AnimatedPage';
 // User Context
 import { useAuth } from '../../hooks/useAuth';
+import { useToast } from '../../hooks/useToast';
 // Feature
 import ShiftList from '../../components/features/medicalShift/ShiftList';
 import ShiftAttention from '../../components/features/medicalShift/ShiftAttention';
@@ -20,6 +21,8 @@ const DoctorHome = () => {
   const { user } = useAuth();
   const { shiftId } = useParams();
   const navigate = useNavigate();
+  const toast = useToast();
+
   const [doctorSchedule, setDoctorSchedule] = useState(doctorScheduleMock);
 
   // Atencion de Turno
@@ -29,10 +32,12 @@ const DoctorHome = () => {
   // Cancelar Turno
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [shiftToCancel, setShiftToCancel] = useState(null);
+  const [loadingCancel, setLoadingCancel] = useState(false);
 
   // Registrar Consulta
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
   const [dataToSave, setDataToSave] = useState(null);
+  const [loadingSave, setLoadingSave] = useState(false);
 
   // Descartar
   const [isDiscardModalOpen, setIsDiscardModalOpen] = useState(false);
@@ -54,70 +59,103 @@ const DoctorHome = () => {
   //  ----------------- Cancelar Turno ---------------
   const handleCancelShift = (id) => {
     const shift = doctorSchedule.find(s => s.shiftId === id);
+
+    // Validaciones con Toast Warning
     if (shift && (shift.status.name === "Atendido" || shift.status.name === "Cancelado")) {
-      alert(`Este turno ya ha sido ${shift.status.name.toLowerCase()} y no se puede modificar.`);
+      toast.warning(`Este turno ya está ${shift.status.name.toLowerCase()} y no se puede cancelar.`);
       return;
     }
     if (selectedShift && selectedShift.shiftId === id) {
-      alert("No puedes cancelar un turno que estás atendiendo.");
+      toast.warning("No puedes cancelar un turno que estás atendiendo actualmente.");
       return;
     }
+
     setShiftToCancel(id);
     setIsCancelModalOpen(true);
   };
 
-  const confirmCancel = () => {
-    alert(`Cancelando turno ID: ${shiftToCancel}`);
+  const confirmCancel = async () => {
+    setLoadingCancel(true); // Activar spinner
 
-    setDoctorSchedule(prevSchedule =>
-      prevSchedule.map(shift =>
-        shift.shiftId === shiftToCancel
-          ? { ...shift, status: mockShiftStatus.cancelled }
-          : shift
-      )
-    );
-    setIsCancelModalOpen(false);
-    setShiftToCancel(null);
+    try {
+      // AQUI VA LA LLAMADA AL BACKEND
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      // Simulación de error (Descomentar para probar)
+      // await new Promise((_, reject) => setTimeout(() => reject(new Error("Fallo de red")), 2000));
+
+      setDoctorSchedule(prevSchedule =>
+        prevSchedule.map(shift =>
+          shift.shiftId === shiftToCancel
+            ? { ...shift, status: mockShiftStatus.cancelled }
+            : shift
+        )
+      );
+
+      toast.success("Turno cancelado exitosamente.");
+      setIsCancelModalOpen(false);
+      setShiftToCancel(null);
+
+    } catch (error) {
+      console.error(error);
+      toast.error("Ocurrió un error al intentar cancelar el turno.");
+    } finally {
+      setLoadingCancel(false); // Desactivar spinner
+    }
   };
 
   const closeCancelModal = () => {
-    setIsCancelModalOpen(false);
-    setShiftToCancel(null);
+    if (!loadingCancel) { // Evitar cerrar si está cargando
+      setIsCancelModalOpen(false);
+      setShiftToCancel(null);
+    }
   };
 
   //  ----------------- Registrar Consulta ---------------
   const handleSaveAttention = (attentionData) => {
-    console.log("Datos listos para guardar:", attentionData);
+        console.log("Datos listos para guardar:", attentionData);
     setDataToSave(attentionData);
     setIsSaveModalOpen(true);
   };
 
-  const confirmSave = () => {
-    console.log("Guardando datos...", dataToSave);
+  const confirmSave = async () => {
+    setLoadingSave(true); // Activar spinner
 
-    // --- AQUÍ VA TU LÓGICA DE BACKEND ---
-    // (Ej: axios.post(`/api/consultations`, { shiftId: selectedShift.id, ...dataToSave }))
+    try {
+      // AQUI VA LA LLAMADA AL BACKEND
+      await new Promise(resolve => setTimeout(resolve, 2000));
 
-    setDoctorSchedule(prevSchedule =>
-      prevSchedule.map(shift =>
-        shift.shiftId === selectedShift.shiftId
-          ? { ...shift, status: mockShiftStatus.attended }
-          : shift
-      )
-    );
+      // Actualizar estado local
+      setDoctorSchedule(prevSchedule =>
+        prevSchedule.map(shift =>
+          shift.shiftId === selectedShift.shiftId
+            ? { ...shift, status: mockShiftStatus.attended }
+            : shift
+        )
+      );
 
-    setAttendingShift(false);
-    setSelectedShift(null);
-    setIsSaveModalOpen(false);
-    setDataToSave(null);
-    navigate("/doctor/home")
+      toast.success("Consulta registrada con éxito.");
 
-    alert("Consulta registrada con éxito.");
+      // Limpieza y redirección
+      setAttendingShift(false);
+      setSelectedShift(null);
+      setIsSaveModalOpen(false);
+      setDataToSave(null);
+      navigate("/doctor/home");
+
+    } catch (error) {
+      console.error(error);
+      toast.error("Error al guardar la consulta médica.");
+    } finally {
+      setLoadingSave(false); // Desactivar spinner
+    }
   };
 
   const closeSaveModal = () => {
-    setIsSaveModalOpen(false);
-    setDataToSave(null);
+    if (!loadingSave) {
+      setIsSaveModalOpen(false);
+      setDataToSave(null);
+    }
   };
 
   //  ----------------- Atender Turno ---------------
@@ -128,7 +166,7 @@ const DoctorHome = () => {
       setAttendingShift(true);
       setSelectedShift(shiftToAttend);
     } else {
-      console.error("Error: No se encontró el turno con el ID:", id);
+      toast.error("Error: No se encontró el turno solicitado.");
     }
   };
 
@@ -141,7 +179,8 @@ const DoctorHome = () => {
     setAttendingShift(false);
     setSelectedShift(null);
     setIsDiscardModalOpen(false);
-    navigate("/doctor/home")
+    navigate("/doctor/home");
+    toast.info("Has salido sin guardar cambios.");
   };
 
   const closeDiscardModal = () => {
@@ -187,8 +226,8 @@ const DoctorHome = () => {
                 Esta acción no se puede deshacer.
               </p>
               <div className="flex flex-row gap-10">
-                <Button text="Volver" variant="secondary" onClick={closeCancelModal} />
-                <Button text="Confirmar" variant="primary" onClick={confirmCancel} />
+                <Button text="Volver" variant="secondary" onClick={closeCancelModal} disable={loadingCancel}/>
+                <Button text="Confirmar" variant="primary" onClick={confirmCancel} isLoading={loadingCancel}/>
               </div>
             </div>
           }
@@ -206,8 +245,8 @@ const DoctorHome = () => {
                 Los datos se guardarán en el historial del paciente.
               </p>
               <div className="flex flex-row gap-10">
-                <Button text="Seguir Editando" variant="secondary" onClick={closeSaveModal} />
-                <Button text="Registrar" variant="primary" onClick={confirmSave} />
+                <Button text="Seguir Editando" variant="secondary" onClick={closeSaveModal} disable={loadingSave}/>
+                <Button text="Registrar" variant="primary" onClick={confirmSave} isLoading={loadingSave}/>
               </div>
             </div>
           }

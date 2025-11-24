@@ -4,11 +4,7 @@ import { commonRules } from "./commonRules";
 // --- Esquema de Registro ---
 export const registerValidationSchema = {
   name: commonRules.name,
-  lastname: (value) => {
-    if (!value) return "El apellido es requerido.";
-    if (!REGEX.name.test(value)) return "Apellido inválido (solo letras).";
-    return null;
-  },
+  lastname: commonRules.lastname,
   dni: commonRules.dni,
   telephone: commonRules.telephone,
   birthDate: commonRules.birthDate,

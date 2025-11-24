@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { addDays, format } from "date-fns";
+import { useToast } from "../../../hooks/useToast";
 
 import Calendar from "../../ui/Calendar";
 import WeeklySlots from "./WeeklySlots";
@@ -41,7 +42,7 @@ const sectionVariants = {
     },
 };
 
-const NewMedicalShift = () => {
+const NewMedicalShift = ({ onShiftCreated }) => {
     const [formData, setFormData] = useState({
         specialty: "",
         doctor: "",
@@ -49,6 +50,8 @@ const NewMedicalShift = () => {
         time: "",
         reason: "",
     });
+
+    const toast = useToast();
 
     const [errors, setErrors] = useState({});
     const [doctorScheduleConfig, setDoctorScheduleConfig] = useState([]);
@@ -58,8 +61,10 @@ const NewMedicalShift = () => {
     const [selectedWeek, setSelectedWeek] = useState();
     const [selectedShift, setSelectedShift] = useState();
     const [currentWeekShifts, setCurrentWeekShifts] = useState([]);
+    const [isLoading, setIsLoading] = useState(false);
 
     const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+    const isReasonValid = formData.reason && formData.reason.replace(/\s/g, "").length >= 5 && !errors.reason;
 
     const specialtyOptionsWithAll = [{ value: "", label: "" }, ...specialties];
     const doctorOptionsWithAll = [{ value: "", label: "" }, ...filteredDoctorOptions];
@@ -114,7 +119,7 @@ const NewMedicalShift = () => {
 
     useEffect(() => {
         if (formData.doctor) {
-            // SIMULACION: En la vida real harías un fetch al backend: 
+            // AQUI VA LA LLAMADA AL BACKEND
             // api.get(`/doctors/${formData.doctor}/availability`)
 
             // Por ahora, usaremos el mock. Puedes filtrar si el mock tiene ID de doctor, 
@@ -194,39 +199,65 @@ const NewMedicalShift = () => {
         if (validateStep1()) {
             setIsConfirmModalOpen(true);
         } else {
+            toast.warning("Por favor, complete correctamente todos los campos.");
             console.log("Errores en el formulario:", errors);
         }
     };
 
-    const handleConfirmShift = () => {
+    const handleConfirmShift = async () => {
         const reasonRule = newShiftSchema.reason;
         const reasonError = reasonRule ? reasonRule(formData.reason, formData) : null;
 
         if (reasonError) {
             setErrors((prev) => ({ ...prev, reason: reasonError }));
+            toast.error("El motivo de consulta es obligatorio.");
             return;
         }
 
-        // Si todo ok:
-        console.log("Datos Confirmados y Enviados al Backend:", formData);
-        // AQUI IRÍA TU LLAMADA A LA API
+        setIsLoading(true); // Activar spinner
 
-        setFormData({
-            specialty: "",
-            doctor: "",
-            date: "",
-            time: "",
-            reason: "",
-        });
-        setSelectedWeek()
-        setSelectedShift()
-        setIsConfirmModalOpen(false);
-        setErrors({});
+        try {
+            // AQUI VA LA LLAMADA AL BACKEND
+            // await axios.post('/api/shifts', formData);
+            await new Promise(resolve => setTimeout(resolve, 2000));
+
+            // Simulación de error (Descomentar para probar)
+            // await new Promise((_, reject) => setTimeout(() => reject(new Error("Cupo no disponible")), 2000));
+
+            // Éxito
+            toast.success("Turno reservado con éxito. Revise su agenda.");
+            if (onShiftCreated) {
+            onShiftCreated(); 
+        }
+
+            // Limpiar formulario y cerrar modal
+            setFormData({
+                specialty: "",
+                doctor: "",
+                date: "",
+                time: "",
+                reason: "",
+            });
+            setSelectedWeek();
+            setSelectedShift();
+            setIsConfirmModalOpen(false);
+            setErrors({});
+
+        } catch (error) {
+            console.error("Error al confirmar turno:", error);
+            const errorMessage = error.response?.data?.message || "Ocurrió un error al reservar el turno. Intente nuevamente.";
+            toast.error(errorMessage);
+        } finally {
+            setIsLoading(false); // Desactivar spinner
+        }
     };
 
     const closeConfirmModal = () => {
-        setIsConfirmModalOpen(false);
-        setErrors((prev) => ({ ...prev, reason: null }));
+        if (!isLoading) { // Bloquear cierre si está cargando
+            setIsConfirmModalOpen(false);
+            setFormData((prev) => ({ ...prev, reason: "" }));
+            setErrors((prev) => ({ ...prev, reason: null }));
+        }
     };
 
     const handleBlur = (e) => {
@@ -389,12 +420,15 @@ const NewMedicalShift = () => {
                                     variant="secondary"
                                     onClick={closeConfirmModal}
                                     className="w-full"
+                                    disable={isLoading}
                                 />
                                 <Button
                                     text="Confirmar Turno"
                                     variant="primary"
                                     onClick={handleConfirmShift}
                                     className="w-full"
+                                    disable={!isReasonValid}
+                                    isLoading={isLoading}
                                 />
                             </div>
                         </div>

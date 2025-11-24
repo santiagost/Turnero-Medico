@@ -7,7 +7,8 @@ const ROLES = {
 export default ROLES;
 
 export const REGEX = {
-  name: /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]{2,}$/,
+  name: /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/,
+  lastname: /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/,
   email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
   dni: /^\d{7,8}$/,
   phone: /^\d{10,13}$/,

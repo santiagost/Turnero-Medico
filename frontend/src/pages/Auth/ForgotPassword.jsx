@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useToast } from '../../hooks/useToast';
 
 // Importa los componentes y el nuevo esquema
 import PrincipalCard from '../../components/ui/PrincipalCard';
@@ -9,12 +10,14 @@ import { forgotPasswordValidationSchema } from '../../validations/authSchemas';
 
 const ForgotPasswordPage = () => {
     const navigate = useNavigate();
+    const toast = useToast();
 
     // --- Estado (solo email) ---
     const [formData, setFormData] = useState({
         email: "",
     });
     const [errors, setErrors] = useState({});
+    const [loading, setLoading] = useState(false);
 
     // --- Navegación ---
     const handleToLogin = () => {
@@ -37,7 +40,7 @@ const ForgotPasswordPage = () => {
     const handleBlur = (e) => {
         const { name, value } = e.target;
         // Usa el nuevo esquema de validación
-        const rule = forgotPasswordValidationSchema[name]; 
+        const rule = forgotPasswordValidationSchema[name];
         if (rule) {
             const error = rule(value, formData);
             setErrors(prevErrors => ({ ...prevErrors, [name]: error }));
@@ -47,7 +50,7 @@ const ForgotPasswordPage = () => {
     const validateForm = () => {
         const newErrors = {};
         // Itera sobre el nuevo esquema
-        for (const name in forgotPasswordValidationSchema) { 
+        for (const name in forgotPasswordValidationSchema) {
             const value = formData[name];
             const rule = forgotPasswordValidationSchema[name];
             const error = rule(value, formData);
@@ -59,27 +62,45 @@ const ForgotPasswordPage = () => {
         return Object.keys(newErrors).length === 0;
     };
 
-    // --- Lógica de Envío ---
-    const handleOnSubmit = (e) => {
+    const handleOnSubmit = async (e) => {
         e.preventDefault();
         const isValid = validateForm();
 
         if (isValid) {
+            setLoading(true);
             console.log("Email para recuperar:", formData.email);
-            alert("¡Correo de recuperación enviado! (Revisa la consola)");
-            // Aquí iría tu lógica de 'fetch' o 'axios.post' a tu API
-            // ...
-            // Luego, puedes redirigir al login
-            navigate("/");
+
+            try {
+                // AQUI VA LA LLAMADA AL BACKEND                
+                await new Promise(resolve => setTimeout(resolve, 2000));
+
+                // Para probar error descomenta esta línea:
+                // await new Promise((_, reject) => setTimeout(() => reject({ response: { data: { message: "El correo no existe" } } }), 2000));
+
+                toast.success("¡Correo enviado! Revisa tu bandeja de entrada.");
+                setTimeout(() => {
+                    handleToLogin();
+                }, 2000);
+
+            } catch (error) {
+                console.error(error);
+                if (error.response?.data?.message) {
+                    toast.error(error.response.data.message);
+                } else {
+                    toast.error("Hubo un error al enviar la solicitud.");
+                }
+            } finally {
+                setLoading(false);
+            }
+
         } else {
+            toast.warning("Por favor, ingresa un correo válido.");
             console.log("Formulario inválido:", errors);
         }
     };
 
-    // --- Contenido del Formulario (JSX) ---
     const forgotPasswordContent = (
         <form
-            // Usa 'max-w-lg' para ser consistente con LoginPage
             className='flex flex-col items-center justify-center h-full w-full max-w-lg gap-6'
             onSubmit={handleOnSubmit}
             noValidate
@@ -104,13 +125,15 @@ const ForgotPasswordPage = () => {
                 <Button
                     text={"Enviar"}
                     variant={"primary"}
-                    type={"submit"} 
+                    type={"submit"}
+                    isLoading={loading}
                 />
                 <Button
                     text={"Volver"}
                     variant={"secondary"}
                     type={"button"}
-                    onClick={handleToLogin} 
+                    onClick={handleToLogin}
+                    disable={loading}
                 />
             </div>
         </form>
@@ -130,7 +153,7 @@ const ForgotPasswordPage = () => {
                 <div className='flex flex-col items-center justify-center'>
                     <img
                         // Nota: w-120 (480px) es grande, 'w-96' (384px) suele ser más estándar
-                        className="w-96 m-2 p-1" 
+                        className="w-96 m-2 p-1"
                         src="/icono.png"
                         alt="Logo" />
                     <h1 className='text-4xl font-extrabold text-custom-dark-blue text-center'>

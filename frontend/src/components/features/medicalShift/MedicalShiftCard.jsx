@@ -11,8 +11,8 @@ const MedicalShiftCard = ({ type, medicalShift, onCancel, onAttend }) => {
         doctor, 
         patient, 
         reason, 
-        startTime, // 'date' y 'time' ahora vienen de 'startTime'
-        status     // 'status' es un objeto, no un string
+        startTime,
+        status
     } = medicalShift;
 
     const displayDate = getFormattedDate(startTime);
@@ -53,7 +53,7 @@ const MedicalShiftCard = ({ type, medicalShift, onCancel, onAttend }) => {
                     <h3 className="text-xl font-bold text-custom-dark-blue">{doctor.specialty.name}</h3>
                     <p className="text-sm text-gray-500">Dr/a. {doctor.firstName} {doctor.lastName}</p>
                 </div>
-                <button onClick={() => onCancel(shiftId)} className="text-gray-400 hover:text-custom-dark-blue">
+                <button onClick={() => onCancel(shiftId)} className="text-custom-gray hover:text-custom-dark-blue">
                     <IoClose size={24} />
                 </button>
             </div>

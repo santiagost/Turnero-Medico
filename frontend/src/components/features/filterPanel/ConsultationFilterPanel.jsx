@@ -15,6 +15,23 @@ export const initialFiltersState = {
     order: "date_desc"
 };
 
+export const hasActiveFilters = (currentFilters, consultationId) => {
+    // 1. Chequea si existe un ID de consulta en la URL (si existe, SIEMPRE hay filtro activo)
+    if (!!consultationId) {
+        return true;
+    }
+    
+    // 2. Compara cada clave del filtro local con el estado inicial
+    for (const key in initialFiltersState) {
+        // Solo verificamos las claves que no son 'order' (ya que el orden siempre tiene un valor por defecto)
+        if (key !== 'order') {
+            if (currentFilters[key] && currentFilters[key] !== initialFiltersState[key]) {
+                return true; // Hay un filtro activo
+            }
+        }
+    }
+    return false;
+};
 
 const ConsultationFilterPanel = ({ onSearch, specialties = [], doctors = [] }) => {
     const [localFilters, setLocalFilters] = useState(initialFiltersState);

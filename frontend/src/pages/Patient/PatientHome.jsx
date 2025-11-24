@@ -1,92 +1,167 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import AnimatedPage from '../../components/layout/AnimatedPage';
 import { useAuth } from '../../hooks/useAuth';
+import { useToast } from '../../hooks/useToast';
 
 import SectionCard from '../../components/ui/SectionCard'
 import ShiftList from '../../components/features/medicalShift/ShiftList';
+import Spinner from '../../components/ui/Spinner';
 
-// Importamos mock data y mock status
-import { patientScheduleMock, mockShiftStatus } from '../../utils/mockData'; // <--- 1. Asegurate de importar mockShiftStatus
+
+import { patientScheduleMock, mockShiftStatus } from '../../utils/mockData'; 
 import NewMedicalShift from '../../components/features/schedule/newMedicalShift';
 
 import Modal from '../../components/ui/Modal';
 import PrincipalCard from '../../components/ui/PrincipalCard';
 import Button from '../../components/ui/Button';
 
+
 const PatientHome = () => {
-  const { user } = useAuth()  
-  const [patientSchedule, setPatientSchedule] = useState(patientScheduleMock);
+    const { user } = useAuth();
+    const toast = useToast();
 
-  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
-  const [shiftToCancel, setShiftToCancel] = useState(null);
+    const [patientSchedule, setPatientSchedule] = useState([]); 
+    const [isLoadingShifts, setIsLoadingShifts] = useState(true); 
 
-  const handleCancelShift = (id) => {
-    const shift = patientSchedule.find(s => s.shiftId === id);
-    
-    if (shift && (shift.status.name === "Atendido" || shift.status.name === "Cancelado")) {
-      alert(`Este turno ya ha sido ${shift.status.name.toLowerCase()} y no se puede modificar.`);
-      return;
-    }
-    setShiftToCancel(id);
-    setIsCancelModalOpen(true);
-  };
+    const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+    const [shiftToCancel, setShiftToCancel] = useState(null);
+    const [loadingCancel, setLoadingCancel] = useState(false); 
 
-  const confirmCancel = () => {
-    setPatientSchedule(prevSchedule =>
-      prevSchedule.map(shift =>
-        shift.shiftId === shiftToCancel
-          ? { ...shift, status: mockShiftStatus.cancelled }
-          : shift
-      )
-    );
-    setIsCancelModalOpen(false);
-    setShiftToCancel(null);
-  };
 
-  const closeCancelModal = () => {
-    setIsCancelModalOpen(false);
-    setShiftToCancel(null);
-  };
+    const fetchPatientShifts = useCallback(async () => {
+        if (!user || !user.userId) {
+            setIsLoadingShifts(false);
+            return;
+        }
 
-  return (
-    <AnimatedPage>
-      <div className="px-8">
-        <h1 className="text-2xl font-bold text-custom-dark-blue mb-6">
-          Mis Próximos Turnos
-        </h1>
+        setIsLoadingShifts(true);
 
-        <SectionCard content={
-          <ShiftList
-            shifts={patientSchedule}
-            type={user.role}
-            onCancel={handleCancelShift}
-          />
-        } />
-        <SectionCard tittle={"Solicitar Nuevo Turno"} content={
-          <NewMedicalShift user={user} />
-        } />
-      </div>
+        try {
+            // AQUI VA LA LLAMADA AL BACKEND
+            // const response = await axios.get(`/api/shifts/patient/${user.id}`);
+            
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            const responseData = patientScheduleMock;
+            
+            setPatientSchedule(responseData);
 
-      {/* Modal de Cancelación */}
-      <Modal isOpen={isCancelModalOpen} onClose={closeCancelModal}>
-        <PrincipalCard
-          title="Confirmar Cancelación"
-          content={
-            <div className="flex flex-col items-center gap-6 p-2">
-              <p className="text-center text-custom-dark-blue">
-                ¿Estás seguro de que deseas cancelar este turno?
-                Esta acción no se puede deshacer.
-              </p>
-              <div className="flex flex-row gap-10">
-                <Button text="Volver" variant="secondary" onClick={closeCancelModal} />
-                <Button text="Confirmar" variant="primary" onClick={confirmCancel} />
-              </div>
+        } catch (error) {
+            console.error("Error al cargar turnos:", error);
+            toast.error("Error al cargar tus próximos turnos.");
+            setPatientSchedule([]); 
+        } finally {
+            setIsLoadingShifts(false);
+        }
+    }, [user?.userId]);
+
+
+    useEffect(() => {
+        fetchPatientShifts();
+    }, [fetchPatientShifts]);
+
+
+    const handleShiftCreationSuccess = () => {
+        fetchPatientShifts(); 
+    };
+
+    const handleCancelShift = (id) => {
+        const shift = patientSchedule.find(s => s.shiftId === id);
+
+        if (shift && (shift.status.name === "Atendido" || shift.status.name === "Cancelado")) {
+            toast.warning(`Este turno ya ha sido ${shift.status.name.toLowerCase()} y no se puede modificar.`);
+            return;
+        }
+        setShiftToCancel(id);
+        setIsCancelModalOpen(true);
+    };
+
+    const confirmCancel = async () => {
+        setLoadingCancel(true);
+
+        try {
+            // AQUI VA LA LLAMADA AL BACKEND
+            await new Promise(resolve => setTimeout(resolve, 2000));
+
+            // Simulación de éxito. En una app real, el backend devolvería el éxito,
+            // pero la línea clave aquí es la recarga:
+            toast.success("Turno cancelado exitosamente.");
+            await fetchPatientShifts(); 
+
+        } catch (error) {
+            console.error(error);
+            const errorMessage = error.response?.data?.message || "Ocurrió un error al intentar cancelar el turno.";
+            toast.error(errorMessage);
+            
+        } finally {
+            setLoadingCancel(false);
+            setIsCancelModalOpen(false);
+            setShiftToCancel(null);
+        }
+    };
+
+    const closeCancelModal = () => {
+        if (!loadingCancel) {
+            setIsCancelModalOpen(false);
+            setShiftToCancel(null);
+        }
+    };
+
+    return (
+        <AnimatedPage>
+            <div className="px-8">
+                <h1 className="text-2xl font-bold text-custom-dark-blue mb-6">
+                    Mis Próximos Turnos
+                </h1>
+
+                <SectionCard content={                    
+                    isLoadingShifts ? (
+                        <div className="flex justify-center items-center py-10 min-h-[150px]">
+                             <Spinner />
+                        </div>
+                    ) : (
+                        <ShiftList
+                            shifts={patientSchedule}
+                            type={user.role}
+                            onCancel={handleCancelShift}
+                        />
+                    )
+                } />
+                
+                <SectionCard tittle={"Solicitar Nuevo Turno"} content={
+                    <NewMedicalShift user={user} onShiftCreated={handleShiftCreationSuccess} />
+                } />
             </div>
-          }
-        />
-      </Modal>
-    </AnimatedPage>
-  );
+
+            {/* Modal de Cancelación */}
+            <Modal isOpen={isCancelModalOpen} onClose={closeCancelModal}>
+                <PrincipalCard
+                    title="Confirmar Cancelación"
+                    content={
+                        <div className="flex flex-col items-center gap-6 p-2">
+                            <p className="text-center text-custom-dark-blue">
+                                ¿Estás seguro de que deseas cancelar este turno?
+                                Esta acción no se puede deshacer.
+                            </p>
+                            <div className="flex flex-row gap-10">
+                                <Button 
+                                    text="Volver" 
+                                    variant="secondary" 
+                                    onClick={closeCancelModal} 
+                                    disable={loadingCancel} 
+                                />
+                                <Button 
+                                    text="Confirmar" 
+                                    variant="primary" 
+                                    onClick={confirmCancel} 
+                                    isLoading={loadingCancel} 
+                                />
+                            </div>
+                        </div>
+                    }
+                />
+            </Modal>
+        </AnimatedPage>
+    );
 }
 
 export default PatientHome;

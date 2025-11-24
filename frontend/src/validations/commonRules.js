@@ -1,4 +1,5 @@
 import { REGEX } from "../utils/constants";
+import { calculateAge } from "../utils/dateUtils";
 
 /**
  * Reglas de validación atómicas reutilizables para toda la aplicación.
@@ -6,6 +7,13 @@ import { REGEX } from "../utils/constants";
 export const commonRules = {
   name: (value) => {
     if (!value) return "Este campo es requerido.";
+    if (value.length < 2) return "Debe tener al menos 2 caracteres.";
+    if (!REGEX.name.test(value)) return "Inválido (solo letras).";
+    return null;
+  },
+  lastname: (value) => {
+    if (!value) return "Este campo es requerido.";
+    if (value.length < 2) return "Debe tener al menos 2 caracteres.";
     if (!REGEX.name.test(value)) return "Inválido (solo letras).";
     return null;
   },
@@ -42,20 +50,29 @@ export const commonRules = {
 
   birthDate: (value) => {
     if (!value) return "La fecha es requerida.";
+    const MIN_AGE = 15;
+    const [year, month, day] = value.split("-").map(Number);
+    const selectedDate = new Date(year, month - 1, day);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const [year, month, day] = value.split("-").map(Number);
-    // Nota: month - 1 porque en JS los meses van de 0 a 11
-    const selectedDate = new Date(year, month - 1, day);
+    const minAgeDate = new Date();
+    minAgeDate.setFullYear(today.getFullYear() - MIN_AGE);
+    const minDate = new Date();
+    minDate.setFullYear(today.getFullYear() - 120);
     if (selectedDate > today) {
       return "La fecha no puede ser futura.";
+    }
+    if (selectedDate < minDate) {
+      return "Fecha inválida (demasiado antigua).";
+    }
+    if (selectedDate > minAgeDate) {
+      return `Debes ser mayor de ${MIN_AGE} años para registrarte.`;
     }
     return null;
   },
 
   dateRange: (fromDateValue) => (toDateValue) => {
-    // Si falta alguna de las dos fechas, no validamos rango (dejamos que 'required' se encargue)
-    if (!fromDateValue || !toDateValue) return null;
+    if (!fromDateValue || !toDateValue) return "La fecha es requerida.";
 
     // Convertimos a objetos Date para comparar correctamente
     // Asumimos formato YYYY-MM-DD (input type="date" estándar)

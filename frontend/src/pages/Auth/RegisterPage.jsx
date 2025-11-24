@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { registerValidationSchema } from "../../validations/authSchemas";
+import { useToast } from "../../hooks/useToast";
 
 import PrincipalCard from "../../components/ui/PrincipalCard";
 import Input from "../../components/ui/Input";
@@ -9,8 +10,10 @@ import { FaRegEye, FaRegEyeSlash } from "react-icons/fa6";
 import Button from "../../components/ui/Button";
 
 const RegisterPage = () => {
+  const toast = useToast();
   const navigate = useNavigate();
   const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -82,23 +85,48 @@ const RegisterPage = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleOnSubmit = (e) => {
+  const handleOnSubmit = async (e) => {
     e.preventDefault();
-
-    // Valida el formulario ANTES de enviar
     const isValid = validateForm();
 
     if (isValid) {
-      console.log("Datos del formulario:", formData);
-      const dataToSend = {
-        ...formData,
-        role: "Patient",
-      };
-      alert("¡Formulario enviado con éxito! (Revisa la consola)");
-      // Aquí iría tu lógica de 'fetch', 'axios.post', etc.
+      setLoading(true);
+      const { confirmPassword, confirmEmail, ...cleanData } = formData;
+
+      const dataToSend = { ...cleanData, role: "Patient", };
+      console.log("Enviando al backend:", dataToSend);
+
+      try {
+        // AQUI VA LA LLAMADA AL BACKEND
+        // await api.register(dataToSend);
+
+        // SIMULACION DE EXITO
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
+        // SIMULACION DE ERROR
+        // await new Promise((_, reject) => setTimeout(() => reject({ response: { data: { message: "El email ya se encuentra registrado" } } }), 2000));
+
+
+        toast.success("¡Cuenta creada exitosamente! Redirigiendo...");
+        setTimeout(() => {
+          handleToLogin();
+        }, 2000);
+
+      } catch (error) {
+        console.error(error);
+        if (error.response?.data?.message) {
+          toast.error(`Error: ${error.response.data.message}`);
+        } else {
+          toast.error("Ocurrió un error al intentar registrarse.");
+        }
+
+      } finally {
+        setLoading(false);
+      }
+
     } else {
-      console.log("Formulario inválido, revisa los errores:", errors);
-      alert("Por favor, corrige los errores en el formulario.");
+      toast.warning("Por favor, corrige los errores en el formulario.");
+      console.log(errors);
     }
   };
 
@@ -253,8 +281,9 @@ const RegisterPage = () => {
           variant="secondary"
           onClick={handleToLogin}
           type="button"
+          disable={loading}
         />
-        <Button text={"Crear Perfil"} variant="primary" type="submit" />
+        <Button text={"Crear Perfil"} variant="primary" type="submit" isLoading={loading} />
       </div>
     </form>
   );

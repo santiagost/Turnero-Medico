@@ -9,7 +9,7 @@ const MedicationCard = ({ name, onDelete }) => {
             className="
                 group relative 
                 bg-custom-mid-light-blue text-custom-dark-blue text-md p-2 rounded-2xl text-center font-medium
-                hover:bg-custom-red/20 hover:text-custom-red hover:cursor-pointer
+                hover:bg-custom-red hover:border-custom-red hover:text-white hover:cursor-pointer
                 transition-colors duration-150
                 w-auto
             "

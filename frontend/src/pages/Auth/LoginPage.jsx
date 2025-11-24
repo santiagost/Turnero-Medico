@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useToast } from '../../hooks/useToast';
 
 import PrincipalCard from '../../components/ui/PrincipalCard';
 import Input from '../../components/ui/Input';
@@ -14,6 +15,7 @@ import Button from '../../components/ui/Button';
 
 const LoginPage = () => {
     const { login, user, logout } = useAuth();
+    const toast = useToast();
     const navigate = useNavigate();
     const location = useLocation();
 
@@ -24,6 +26,7 @@ const LoginPage = () => {
     })
 
     const [errors, setErrors] = useState({});
+    const [loading, setLoading] = useState(false);
 
     const rolesOptions = Object.entries(ROLES).map(([value, label]) => ({ value, label }));
 
@@ -90,26 +93,38 @@ const LoginPage = () => {
         return Object.keys(newErrors).length === 0;
     };
 
-    const handleOnSubmit = (e) => {
+    const handleOnSubmit = async (e) => {
         e.preventDefault();
         const isValid = validateForm();
 
         if (isValid) {
-            // 1. Llama a 'login' con el 'formData' completo
-            const loginSuccess = login(formData);
+            setLoading(true);
 
-            // 2. Comprueba la respuesta
-            if (!loginSuccess) {
-                // Muestra un error si el login falló
-                alert("Email o Rol incorrectos. Por favor, verifica tus datos.");
-                // Opcional: setErrors(prev => ({...prev, email: "Email o Rol incorrectos"}))
+            try {
+                // AQUI VA LA LLAMADA AL BACKEND
+
+
+                // Simula la espera del backend (2 segundos)
+                await new Promise(resolve => setTimeout(resolve, 1000));
+
+                const loginSuccess = login(formData);
+
+                if (loginSuccess) {
+                    toast.success(`¡Bienvenido de nuevo!`);
+                } else {
+                    toast.error("Email, contraseña o rol incorrectos.");
+                }
+
+            } catch (error) {
+                console.error(error);
+                toast.error("Error de conexión al intentar ingresar.");
+            } finally {
+                setLoading(false);
             }
-            // Si loginSuccess es 'true', el 'useEffect' en AuthProvider
-            // se encargará de la redirección automáticamente.
 
         } else {
+            toast.warning("Por favor completa todos los campos requeridos.");
             console.log("Formulario inválido:", errors);
-            alert("Por favor, corrige los campos.");
         }
     };
 
@@ -167,12 +182,14 @@ const LoginPage = () => {
                 <Button
                     text={"Ingresar"}
                     variant={"primary"}
-                    type={"submit"} />
+                    type={"submit"} 
+                    isLoading={loading} />
                 <Button
                     text={"Registrarse"}
                     variant={"secondary"}
                     type={"button"}
-                    onClick={habldeToRegister} />
+                    onClick={habldeToRegister}
+                    disable={loading} />
             </div>
 
             <p

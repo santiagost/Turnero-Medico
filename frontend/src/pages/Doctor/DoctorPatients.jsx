@@ -5,7 +5,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 
 import {
   completedConsultationsMock,
-  doctorScheduleMock
+
 } from '../../utils/mockData';
 
 import { calculateAge } from '../../utils/dateUtils';
@@ -17,50 +17,78 @@ import IconButton from '../../components/ui/IconButton';
 
 import { IoMdArrowBack } from "react-icons/io";
 
-// Simulamos la lista de pacientes únicos que este doctor atiende
-// (En una app real, la API te daría esto)
-const uniquePatients = [...new Map(doctorScheduleMock.map(shift => [shift.patient.patientId, shift.patient])).values()];
-
-const CURRENT_DOCTOR_ID = 1; // ID de Dr. Martin Sanchez
+import { useAuth } from '../../hooks/useAuth';
 
 const DoctorPatients = () => {
+  const { profile } = useAuth();
+  const CURRENT_DOCTOR_ID = profile.doctorId;
+
+  // Simulamos la lista de pacientes únicos que este doctor atiende
+  // (En una app real, la API te daría esto)
+  const uniquePatients = [...new Map(
+    completedConsultationsMock
+      .filter(c => c.shift?.doctor?.doctorId === CURRENT_DOCTOR_ID) // 1. Filtramos por Doctor
+      .map(c => [c.shift.patient.patientId, c.shift.patient])       // 2. Extraemos Pacientes
+  ).values()];
+
+
   const { patientId } = useParams();
   const navigate = useNavigate();
   const [patient, setPatient] = useState(null);
   const [consultations, setConsultations] = useState([]);
-  const [searchMessage, setSearchMessage] = useState("Busca un paciente por DNI o nombre para ver su historial.");
+  const [searchMessage, setSearchMessage] = useState(
+    uniquePatients.length > 0
+      ? "Busca un paciente por DNI o nombre para ver su historial."
+      : "No tienes pacientes con historial clínico aún."
+  );
   const [searchResults, setSearchResults] = useState(uniquePatients);
+  const [currentOrder, setCurrentOrder] = useState('date_desc');
 
 
   const handleFilteredSearch = (filters) => {
     console.log("Buscando paciente con:", filters);
     setPatient(null);
 
-
-    if (!filters.dni && !filters.name && !filters.attentionDate) {
-      setSearchResults(uniquePatients); // Muestra todos
-      setSearchMessage(""); // Limpia cualquier mensaje de "no encontrado"
-      return; // Termina la función aquí
+    // 1. ACTUALIZAMOS EL ORDEN SIEMPRE QUE SE BUSCA
+    // Esto asegura que el useEffect tenga el valor correcto
+    if (filters.order) {
+      setCurrentOrder(filters.order);
     }
 
+    // Si no hay filtros de búsqueda de paciente (solo orden), reseteamos la lista de pacientes
+    // pero mantenemos el orden guardado para cuando seleccionen uno.
+    if (!filters.dni && !filters.name && !filters.attentionDate) {
+      setSearchResults(uniquePatients);
+      setSearchMessage("");
+      return;
+    }
 
     let foundPatients = [];
+
     if (filters.dni) {
       foundPatients = uniquePatients.filter(p => p.dni === filters.dni);
     } else if (filters.name) {
       foundPatients = uniquePatients.filter(p =>
         `${p.firstName} ${p.lastName}`.toLowerCase().includes(filters.name.toLowerCase())
       );
+    } else if (filters.attentionDate) {
+      foundPatients = uniquePatients.filter(p => {
+        return completedConsultationsMock.some(c => {
+          const isPatient = c.shift?.patient?.patientId === p.patientId;
+          const isDoctor = c.shift?.doctor?.doctorId === CURRENT_DOCTOR_ID;
+          const consultDate = c.consultationDate?.split('T')[0];
+          const isDateMatch = consultDate === filters.attentionDate;
+          return isPatient && isDoctor && isDateMatch;
+        });
+      });
     }
-    // (Nota: Aún no has implementado el filtro por 'attentionDate', 
-    // pero eso no afecta la lógica del reset)
 
     setSearchResults(foundPatients);
 
     if (foundPatients.length > 0) {
       setSearchMessage(`${foundPatients.length} paciente(s) encontrado(s).`);
     } else {
-      setSearchMessage("No se encontró ningún paciente con esos datos.");
+      setSearchMessage("No se encontró ningún paciente con esos criterios en tu historial.");
     }
   }
 
@@ -77,15 +105,43 @@ const DoctorPatients = () => {
 
   useEffect(() => {
     if (patient) {
-      const results = completedConsultationsMock.filter(c =>
+      // A) Obtener consultas sin ordenar
+      let results = completedConsultationsMock.filter(c =>
         c.shift.patient.patientId === patient.patientId &&
         c.shift.doctor.doctorId === CURRENT_DOCTOR_ID
       );
+
+      // B) Aplicar el ordenamiento
+      // Nota: .sort() muta el array, pero como 'results' es nuevo (.filter crea uno nuevo), es seguro.
+      results.sort((a, b) => {
+        const dateA = new Date(a.consultationDate);
+        const dateB = new Date(b.consultationDate);
+        const nameA = `${a.lastName}, ${a.firstName}`;
+        const nameB = `${b.lastName}, ${b.firstName}`;
+
+        switch (currentOrder) {
+          case 'date_asc': // Más antiguo primero
+            return dateA - dateB;
+
+          case 'date_desc': // Más reciente primero
+            return dateB - dateA;
+
+          case 'alpha_asc': // A-Z
+            return nameA.localeCompare(nameB);
+
+          case 'alpha_desc': // Z-A
+            return nameB.localeCompare(nameA);
+
+          default:
+            return 0;
+        }
+      });
+
       setConsultations(results);
     } else {
       setConsultations([]);
     }
-  }, [patient]);
+  }, [patient, currentOrder]);
 
   useEffect(() => {
     if (patientId) {

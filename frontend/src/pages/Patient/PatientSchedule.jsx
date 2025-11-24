@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { startOfMonth, endOfMonth, parseISO, isWithinInterval, startOfDay, endOfDay, format } from 'date-fns';
 import { IoMdArrowBack } from "react-icons/io";
-
+import { useToast } from '../../hooks/useToast';
 import { useAuth } from '../../hooks/useAuth';
 import { patientScheduleMock, getConsultationByShiftId } from '../../utils/mockData';
 
@@ -21,6 +21,7 @@ import WeekCalendar from '../../components/ui/WeekCalendar';
 const PatientSchedule = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const toast = useToast();
 
   const [filters, setFilters] = useState({ view: "month" });
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -35,6 +36,7 @@ const PatientSchedule = () => {
 
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [shiftToCancel, setShiftToCancel] = useState(null);
+  const [loadingCancel, setLoadingCancel] = useState(false);
 
   const handleFilterChange = (name, value) => {
     setFilters((prev) => ({ ...prev, [name]: value }));
@@ -156,41 +158,72 @@ const PatientSchedule = () => {
   };
 
   const handleAttemptCancel = (id) => {
+    const targetShift = calendarEvents.find(ev => ev.id === id)?.resource?.shift;
+    if (targetShift && (targetShift.status.name === 'Cancelado' || targetShift.status.name === 'Atendido')) {
+      toast.warning(`Este turno ya está ${targetShift.status.name.toLowerCase()} y no se puede cancelar.`);
+      return;
+    }
     setShiftToCancel(id);
     setIsCancelModalOpen(true);
   };
 
   const closeCancelModal = () => {
-    setIsCancelModalOpen(false);
-    setShiftToCancel(null);
+    if (!loadingCancel) {
+      setIsCancelModalOpen(false);
+      setShiftToCancel(null);
+    }
   };
 
-  const confirmCancel = () => {
-    setCalendarEvents(prev => prev.map(ev => {
-      if (ev.resource.type === 'single' && ev.resource.shift.shiftId === shiftToCancel) {
-        return { ...ev, resource: { ...ev.resource, shift: { ...ev.resource.shift, status: { name: 'Cancelado' } } } };
-      }
-      if (ev.resource.type === 'cluster') {
-        const updatedShifts = ev.resource.shifts.map(s =>
-          s.shiftId === shiftToCancel ? { ...s, status: { name: 'Cancelado' } } : s
-        );
-        return { ...ev, resource: { ...ev.resource, shifts: updatedShifts } };
-      }
-      return ev;
-    }));
+  const confirmCancel = async () => {
+    setLoadingCancel(true);
+    try {
+        // AQUI VA LA LLAMADA AL BACKEND
+        await new Promise(resolve => setTimeout(resolve, 2000)); 
 
-    if (selectedShift && selectedShift.id === shiftToCancel) {
-      setSelectedShift(prev => ({ ...prev, status: 'Cancelado' }));
+        // Simulación de error: Descomentar para probar el Toast de error
+        // throw { response: { data: { message: "El turno ya fue procesado." } } }; 
+
+        // --- Mockeo de la Actualización de la UI ---
+        setCalendarEvents(prev => prev.map(ev => {
+            if (ev.resource.type === 'single' && ev.resource.shift.shiftId === shiftToCancel) {
+                // Actualiza el estado dentro del evento para vista de calendario
+                return { ...ev, resource: { ...ev.resource, shift: { ...ev.resource.shift, status: { name: 'Cancelado' } } } };
+            }
+            if (ev.resource.type === 'cluster') {
+                // Actualiza el estado dentro del cluster para vista de calendario
+                const updatedShifts = ev.resource.shifts.map(s =>
+                    s.shiftId === shiftToCancel ? { ...s, status: { name: 'Cancelado' } } : s
+                );
+                return { ...ev, resource: { ...ev.resource, shifts: updatedShifts } };
+            }
+            return ev;
+        }));
+
+        if (selectedShift && selectedShift.id === shiftToCancel) {
+            // Actualiza el estado en la sidebar
+            setSelectedShift(prev => ({ ...prev, status: 'Cancelado' }));
+        }
+
+        if (dayShifts.length > 0) {
+            // Actualiza el estado en la lista del día
+            setDayShifts(prev => prev.map(s =>
+                s.shiftId === shiftToCancel ? { ...s, status: { name: 'Cancelado' } } : s
+            ));
+        }
+        // --- FIN Mockeo ---
+
+        toast.success("Turno cancelado con éxito.");
+
+    } catch (error) {
+        console.error("Error al cancelar turno:", error);
+        const errorMessage = error.response?.data?.message || "Ocurrió un error en el servidor. No se pudo cancelar el turno.";
+        toast.error(errorMessage);
+        
+    } finally {
+        setLoadingCancel(false);
+        closeCancelModal();
     }
-
-    if (dayShifts.length > 0) {
-      setDayShifts(prev => prev.map(s =>
-        s.shiftId === shiftToCancel ? { ...s, status: { name: 'Cancelado' } } : s
-      ));
-    }
-
-    closeCancelModal();
-  };
+  };
 
   const handleGoToPatientHistory = () => {
     navigate(`/patient/history/${relatedConsultation.consultationId}`)
@@ -391,8 +424,8 @@ const PatientSchedule = () => {
                 ¿Estás seguro de que deseas cancelar este turno?
               </p>
               <div className="flex flex-row gap-10">
-                <Button text="Volver" variant="secondary" onClick={closeCancelModal} />
-                <Button text="Confirmar" variant="primary" onClick={confirmCancel} />
+                <Button text="Volver" variant="secondary" onClick={closeCancelModal} disable={loadingCancel}/>
+                <Button text="Confirmar" variant="primary" onClick={confirmCancel} isLoading={loadingCancel}/>
               </div>
             </div>
           }
