@@ -12,12 +12,17 @@ import AdminEditDoctor from '../../components/features/adminDataManagement/edit/
 import Modal from '../../components/ui/Modal';
 import PrincipalCard from '../../components/ui/PrincipalCard';
 import AdminDoctorSchedulePanel from '../../components/features/adminDataManagement/edit/AdminDoctorSchedulePanel';
+import { useToast } from '../../hooks/useToast';
 
 const AdminDoctors = () => {
   const [showNewDoctor, setShowNewDoctor] = useState(false);
   const toggleNewDoctor = () => setShowNewDoctor(prev => !prev);
   const { doctorId } = useParams();
+  const toast = useToast();
   const [selectedDoctorId, setSelectedDoctorId] = useState(doctorId ? parseInt(doctorId) : "");
+
+  const [loadingSave, setLoadingSave] = useState(false);   // Para editar datos personales
+  const [loadingDelete, setLoadingDelete] = useState(false);
 
   const sectionVariants = {
     hidden: {
@@ -65,59 +70,112 @@ const AdminDoctors = () => {
     setSelectedDoctorId(id)
   }
 
-  // Este handleSave es para editar los DATOS PERSONALES del médico
   const handleSave = (doctorData) => {
     setDataToSave(doctorData);
     setIsSaveModalOpen(true);
   }
 
-  // --- NUEVA FUNCIÓN: Manejar el guardado de HORARIOS ---
-  const handleScheduleSave = (updatedSchedule) => {
-    console.log("API CALL: Guardando nueva grilla de horarios para doctor ID:", selectedDoctorId);
-    console.log("Datos a enviar al backend:", updatedSchedule);
 
-    // Aquí iría tu llamada al backend (ej. axios.put(`/doctors/${selectedDoctorId}/schedule`, updatedSchedule))
-    // Podrías agregar una notificación toast de éxito aquí
-    // toast.success("Horarios actualizados correctamente");
-    setSelectedDoctorId(null);
+  const handleScheduleSave = async (updatedSchedule) => {
+    console.log("Guardando horario...", updatedSchedule);
+
+    try {
+      // AQUI VA LA LLAMADA AL BACKEND
+      // await axios.put(...)
+      toast.info("Guardando configuración horaria...");
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      toast.success("Horarios actualizados correctamente.");
+      setSelectedDoctorId(null); 
+
+    } catch (error) {
+      console.error(error);
+      toast.error("Error al actualizar los horarios.");
+    }
   };
 
   const handleCancel = () => {
     setIsDiscardModalOpen(true);
   }
 
-  const confirmSave = () => {
-    console.log("Guardando cambios en datos personales del doctor:", dataToSave);
-    // ... Aquí iría tu lógica de API para actualizar al paciente ...
+  const confirmSave = async () => {
+    setLoadingSave(true); // Activar spinner
 
-    setIsSaveModalOpen(false);
-    setDataToSave(null);
-    setSelectedDoctorId(null);
+    try {
+      // AQUI VA LA LLAMADA AL BACKEND
+      // await axios.put(`/api/doctors/${selectedDoctorId}`, dataToSave);
+
+      await new Promise(resolve => setTimeout(resolve, 1500)); // Simulación
+
+      // Simulación de error
+      // throw new Error("Email duplicado");
+
+      console.log("Datos guardados:", dataToSave);
+
+      toast.success("Datos del médico actualizados correctamente.");
+
+      setIsSaveModalOpen(false);
+      setDataToSave(null);
+      setSelectedDoctorId(null); // Cierra el panel de edición
+
+    } catch (error) {
+      console.error("Error al guardar:", error);
+      const errorMsg = error.response?.data?.message || "Ocurrió un error al guardar los cambios.";
+      toast.error(errorMsg);
+    } finally {
+      setLoadingSave(false); // Desactivar spinner
+    }
   };
 
-  const confirmDelete = () => {
-    console.log("Eliminando doctor ID:", doctorIdToDelete);
-    // ... Aquí iría tu lógica de API para eliminar al paciente ...
+  const confirmDelete = async () => {
+    setLoadingDelete(true); // Activar spinner
 
-    // Simulación: Muestra alerta y cierra
-    setIsDeleteModalOpen(false);
-    setDoctorIdToDelete(null);
-    // Aquí deberías re-ejecutar la búsqueda en AdminDoctorFilterPanel
+    try {
+      // AQUI VA LA LLAMADA AL BACKEND
+      // await axios.delete(`/api/doctors/${doctorIdToDelete}`);
+
+      await new Promise(resolve => setTimeout(resolve, 1500)); // Simulación
+
+      console.log("Doctor eliminado ID:", doctorIdToDelete);
+
+      toast.success("Médico eliminado del sistema.");
+
+      setIsDeleteModalOpen(false);
+      setDoctorIdToDelete(null);
+
+      // Si el doctor eliminado era el que se estaba editando, cerramos el panel
+      if (selectedDoctorId === doctorIdToDelete) {
+        setSelectedDoctorId(null);
+      }
+
+      // Aquí podrías disparar un refresh de la lista si tuvieras un estado global o context
+
+    } catch (error) {
+      console.error("Error al eliminar:", error);
+      toast.error("No se pudo eliminar al médico. Verifica que no tenga turnos pendientes.");
+    } finally {
+      setLoadingDelete(false); // Desactivar spinner
+    }
   };
 
   const closeDeleteModal = () => {
-    setIsDeleteModalOpen(false);
-    setDoctorIdToDelete(null);
+    if (!loadingDelete) {
+      setIsDeleteModalOpen(false);
+      setDoctorIdToDelete(null);
+    }
   };
 
   const closeSaveModal = () => {
-    setIsSaveModalOpen(false);
-    setDataToSave(null);
+    if (!loadingSave) {
+      setIsSaveModalOpen(false);
+      setDataToSave(null);
+    }
   };
 
   const confirmDiscard = () => {
     setIsDiscardModalOpen(false);
     setSelectedDoctorId(null);
+    toast.info("Cambios descartados.");
   };
 
   const closeDiscardModal = () => {
@@ -209,8 +267,8 @@ const AdminDoctors = () => {
                 ¿Estás seguro de que deseas guardar los cambios en este médico?
               </p>
               <div className="flex flex-row gap-10">
-                <Button text="Seguir Editando" variant="secondary" onClick={closeSaveModal} />
-                <Button text="Guardar" variant="primary" onClick={confirmSave} />
+                <Button text="Seguir Editando" variant="secondary" onClick={closeSaveModal} disable={loadingSave} />
+                <Button text="Guardar" variant="primary" onClick={confirmSave} isLoading={loadingSave} />
               </div>
             </div>
           }
@@ -247,8 +305,8 @@ const AdminDoctors = () => {
                 Esta acción no se puede deshacer.
               </p>
               <div className="flex flex-row gap-10">
-                <Button text="Cancelar" variant="secondary" onClick={closeDeleteModal} />
-                <Button text="Eliminar" variant="primary" onClick={confirmDelete} />
+                <Button text="Cancelar" variant="secondary" onClick={closeDeleteModal} disable={loadingDelete} />
+                <Button text="Eliminar" variant="primary" onClick={confirmDelete} isLoading={loadingDelete} />
               </div>
             </div>
           }

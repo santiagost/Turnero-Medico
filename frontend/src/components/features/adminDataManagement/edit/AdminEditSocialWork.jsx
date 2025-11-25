@@ -5,6 +5,7 @@ import Button from '../../../ui/Button';
 // 1. Importa los mocks y el esquema de Obra Social
 import { mockSocialWorks } from '../../../../utils/mockData';
 import { adminCreateSocialWorkSchema } from '../../../../validations/adminSchemas';
+import { useToast } from '../../../../hooks/useToast';
 
 // 2. Define el estado inicial para Obra Social
 const initialSocialWorkState = {
@@ -15,19 +16,17 @@ const initialSocialWorkState = {
     email: ""
 };
 
-/**
- * Componente para EDITAR una Obra Social existente.
- * @param {number} socialWorkId El ID de la obra social a editar.
- * @param {function} onSave Función para llamar al guardar.
- * @param {function} onCancel Función para llamar al cancelar.
- */
 const AdminEditSocialWork = ({ socialWorkId, onSave, onCancel }) => {
     // 3. Renombra los estados
     const [socialWorkData, setSocialWorkData] = useState(initialSocialWorkState);
     const [errors, setErrors] = useState({});
+    const toast = useToast();
 
     // 4. useEffect para cargar los datos de la Obra Social
     useEffect(() => {
+
+        // AQUI VA LA LLAMADA AL BACKEND
+        // getSocialWorkById(socialWorkId)
         console.log("Cargando datos de la Obra Social ID:", socialWorkId);
 
         // Simulación con Mocks
@@ -76,16 +75,17 @@ const AdminEditSocialWork = ({ socialWorkId, onSave, onCancel }) => {
         return Object.keys(newErrors).length === 0;
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         const isValid = validateForm();
 
-        if (isValid) {
-            console.log("Datos de la Obra Social a actualizar:", socialWorkData);
+        if (!isValid) {
+            toast.warning("Por favor, corrige los errores en el formulario antes de guardar.");
+            return;
+        }
 
-            if (onSave) {
-                onSave(socialWorkData);
-            }
+        if (onSave) {
+            onSave(socialWorkData);
         }
     };
 

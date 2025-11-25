@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { FaSearch } from "react-icons/fa";
-import { LiaUndoAltSolid, LiaPencilAltSolid, LiaTrashAltSolid  } from "react-icons/lia";
+import { LiaUndoAltSolid, LiaPencilAltSolid, LiaTrashAltSolid } from "react-icons/lia";
 
 
 import Input from '../../../ui/Input';
 import Button from '../../../ui/Button';
 import IconButton from '../../../ui/IconButton';
-
+import { useToast } from '../../../../hooks/useToast';
+import Spinner from '../../../ui/Spinner';
 import { mockSocialWorks } from '../../../../utils/mockData';
 
 export const initialFiltersState = {
@@ -16,33 +17,60 @@ export const initialFiltersState = {
 };
 
 const AdminSocialWorkFilterPanel = ({ socialWorkToDelete, socialWorkToEdit }) => {
+    const toast = useToast();
     const [allSocialWorks, setAllSocialWorks] = useState(mockSocialWorks);
-    
     const [localFilters, setLocalFilters] = useState(initialFiltersState);
     const [searchResults, setSearchResults] = useState([]);
     const [hasSearched, setHasSearched] = useState(false);
+
+    const [isLoadingSearch, setIsLoadingSearch] = useState(false);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
         setLocalFilters(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleSearchClick = (e) => {
+    const handleSearchClick = async (e) => {
         e.preventDefault();
-        
-        let foundSocialWorks = [...allSocialWorks];
 
-        if (localFilters.name) {
-            foundSocialWorks = foundSocialWorks.filter(sw =>
-                sw.name.toLowerCase().includes(localFilters.name.toLowerCase())
-            );
-        }
-        if (localFilters.cuit) {
-            foundSocialWorks = foundSocialWorks.filter(sw => sw.cuit.includes(localFilters.cuit));
-        }
+        setIsLoadingSearch(true);
+        setSearchResults([]); // Limpiar visualmente
+        setHasSearched(false);
 
-        setSearchResults(foundSocialWorks);
-        setHasSearched(true);
+        try {
+            // AQUI VA LA LLAMADA AL BACKEND
+            // const response = await axios.get('/api/social-works/search', { params: localFilters });
+
+            // Simulación de delay
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            let foundSocialWorks = [...allSocialWorks];
+
+            if (localFilters.name) {
+                foundSocialWorks = foundSocialWorks.filter(sw =>
+                    sw.name.toLowerCase().includes(localFilters.name.toLowerCase())
+                );
+            }
+            if (localFilters.cuit) {
+                foundSocialWorks = foundSocialWorks.filter(sw => sw.cuit.includes(localFilters.cuit));
+            }
+
+            // Simulación de error (opcional)
+            // throw new Error("Error de red");
+
+            setSearchResults(foundSocialWorks);
+            setHasSearched(true);
+
+            if (foundSocialWorks.length === 0 && (localFilters.name || localFilters.cuit)) {
+                toast.warning("Búsqueda sin resultados.");
+            }
+
+        } catch (error) {
+            console.error("Error buscando obras sociales:", error);
+            toast.error("Ocurrió un error al buscar obras sociales.");
+        } finally {
+            setIsLoadingSearch(false);
+        }
     };
 
     const handleResetClick = () => {
@@ -51,7 +79,7 @@ const AdminSocialWorkFilterPanel = ({ socialWorkToDelete, socialWorkToEdit }) =>
         setHasSearched(false);
     };
 
-    
+
     return (
         <div className="w-full p-4">
             <form
@@ -65,6 +93,7 @@ const AdminSocialWorkFilterPanel = ({ socialWorkToDelete, socialWorkToEdit }) =>
                     value={localFilters.name}
                     onChange={handleChange}
                     size="small"
+                    placeholder={"Todas"}
                 />
                 <Input
                     tittle="CUIT"
@@ -73,14 +102,15 @@ const AdminSocialWorkFilterPanel = ({ socialWorkToDelete, socialWorkToEdit }) =>
                     value={localFilters.cuit}
                     onChange={handleChange}
                     size="small"
+                    placeholder={"Cualquiera"}
                 />
-                
+
                 <div className='col-start-4 flex flex-row items-center justify-end h-full gap-5 text-white'>
-                    <Button 
-                        text={"Buscar"} 
-                        icon={<FaSearch />} 
-                        variant={"primary"} 
-                        type={"submit"} 
+                    <Button
+                        text={"Buscar"}
+                        icon={<FaSearch />}
+                        variant={"primary"}
+                        type={"submit"}
                         size={"medium"}
                     />
                     <motion.div whileTap={{ scale: 0.9, rotate: -180 }}>
@@ -94,13 +124,17 @@ const AdminSocialWorkFilterPanel = ({ socialWorkToDelete, socialWorkToEdit }) =>
             </form>
 
             <div className="mt-6 flex flex-col gap-3 overflow-y-scroll custom-scrollbar max-h-[30vh]">
-                {hasSearched && searchResults.length === 0 ? (
+                {isLoadingSearch ? (
+                    <div className="flex justify-center py-6 items-center text-custom-blue animate-pulse">
+                        <Spinner />
+                    </div>
+                ) : hasSearched && searchResults.length === 0 ? (
                     <p className="text-center text-custom-gray py-4">
                         No se encontraron Obras Sociales con esos criterios.
                     </p>
-                ) : (
+                ) : searchResults.length > 0 ? (
                     searchResults.map(sw => (
-                        <motion.div 
+                        <motion.div
                             key={sw.socialWorkId}
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
@@ -115,25 +149,25 @@ const AdminSocialWorkFilterPanel = ({ socialWorkToDelete, socialWorkToEdit }) =>
                                 <span className="w-36 font-medium">{sw.cuit}</span>
                                 <span className="w-36">{sw.telephone}</span>
                             </div>
-                            
+
                             <div className="flex items-center gap-3">
-                                <IconButton 
+                                <IconButton
                                     icon={<LiaPencilAltSolid size={24} />}
                                     onClick={() => socialWorkToEdit(sw.socialWorkId)}
                                 />
-                                <IconButton 
+                                <IconButton
                                     icon={<LiaTrashAltSolid size={24} />}
                                     onClick={() => socialWorkToDelete(sw.socialWorkId)}
                                 />
                             </div>
                         </motion.div>
                     ))
-                )}
-                
-                {!hasSearched && (
-                    <p className="text-center text-custom-gray py-2">
-                        Utiliza los filtros para buscar Obras Sociales.
-                    </p>
+                ) : (
+                    !hasSearched && (
+                        <p className="text-center text-custom-gray py-2">
+                            Utiliza los filtros para buscar Obras Sociales.
+                        </p>
+                    )
                 )}
             </div>
         </div>

@@ -64,11 +64,11 @@ const ShiftForDoctor = ({ filters }) => {
 
             try {
                 /*
-                const response = await fetch(
-                    `/api/reports/shifts-by-doctor?doctorId=${selectedDoctor}&from=${filters.fromDate}&to=${filters.toDate}`
-                );
-                if (!response.ok) throw new Error("Error al obtener datos");
-                const rawData = await response.json();
+                // AQUI VA LA LLAMADA AL BACKEND
+                Doctores Options
+
+
+                Estadisticas para ese doctor
                 */
 
                 // 2. CÓDIGO ACTUAL (Mock Service):
@@ -95,6 +95,7 @@ const ShiftForDoctor = ({ filters }) => {
     };
 
     const handleExportPDF = () => {
+        // AQUI VA LA LLAMADA AL BACKEND
         const docLabel = doctorOptions.find(d => d.value.toString() === selectedDoctor)?.label;
         // Aquí luego llamarás a tu endpoint de descarga de PDF
         alert(`Generando PDF para: ${docLabel}`);

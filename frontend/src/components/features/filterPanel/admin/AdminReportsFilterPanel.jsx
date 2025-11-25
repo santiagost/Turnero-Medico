@@ -10,6 +10,7 @@ import Select from '../../../ui/Select';
 
 import { commonRules } from '../../../../validations/commonRules';
 import { getDateRange } from '../../../../utils/dateUtils';
+import { useToast } from '../../../../hooks/useToast';
 
 
 const defaultMonthRange = getDateRange('month');
@@ -23,6 +24,7 @@ const AdminReportsFilterPanel = ({ setFiltersData }) => {
     const [localFilters, setLocalFilters] = useState(initialFiltersState);
     const [selectedRange, setSelectedRange] = useState("month");
     const [errors, setErrors] = useState({});
+    const toast = useToast();
 
     const dateRangeOptions = [
         { value: "custom", label: "Personalizado" },
@@ -79,8 +81,12 @@ const AdminReportsFilterPanel = ({ setFiltersData }) => {
 
     const handleSearchClick = (e) => {
         e.preventDefault();
-        if (!validateForm()) return;
+        if (!validateForm()) {
+            toast.warning("Por favor, verifique que la fecha 'Hasta' sea posterior a 'Desde'.");
+            return;
+        }
         setFiltersData(localFilters);
+        toast.success("Filtros de reporte aplicados.");
     };
 
     const handleResetClick = () => {
@@ -88,6 +94,7 @@ const AdminReportsFilterPanel = ({ setFiltersData }) => {
         setFiltersData(initialFiltersState);
         setSelectedRange("month");
         setErrors({});
+        toast.info("Filtros restablecidos al mes actual.");
     };
 
     useEffect(() => {

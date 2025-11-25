@@ -7,6 +7,7 @@ import Button from '../../../ui/Button';
 import { specialtyOptions, mockDoctors } from '../../../../utils/mockData';
 import { adminCreateDoctorSchema } from '../../../../validations/adminSchemas';
 import ROLES from '../../../../utils/constants';
+import { useToast } from '../../../../hooks/useToast';
 
 const initialDoctorState = {
     firstName: "",
@@ -22,9 +23,13 @@ const initialDoctorState = {
 const AdminEditDoctor = ({ doctorId, onSave, onCancel }) => {
     const [doctorData, setDoctorData] = useState(initialDoctorState);
     const [errors, setErrors] = useState({});
-
+    const toast = useToast();
+    
 
     useEffect(() => {
+        // AQUI VA LA LLAMADA AL BACKEND
+        // getDoctorById(doctorId)
+
         console.log("Cargando datos del médico ID:", doctorId);
         const doctor = mockDoctors.find(d => d.doctorId === doctorId);
 
@@ -72,17 +77,17 @@ const AdminEditDoctor = ({ doctorId, onSave, onCancel }) => {
         return Object.keys(newErrors).length === 0;
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         const isValid = validateForm();
 
-        if (isValid) {
-            console.log("Datos del médico a actualizar:", doctorData);
-            if (onSave) {
-                onSave(doctorData);
-            }
-        } else {
-            alert("Por favor, corrige los errores en el formulario.");
+        if (!isValid) {
+            toast.warning("Por favor, corrige los errores en el formulario antes de guardar.");
+            return;
+        }
+
+        if (onSave) {
+            onSave(doctorData);
         }
     };
 

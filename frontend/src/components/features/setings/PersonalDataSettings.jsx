@@ -307,7 +307,7 @@ const PersonalDataSettings = ({ user, profile, socialWorks }) => {
                             {user.role === 'Doctor' && (
                                 <>
                                     <Input tittle={"Especialidad"} name={"specialty"} value={formData.specialty} size={"small"} disable={true} />
-                                    <Input tittle={"Matrícula"} name={"matricula"} value={formData.licenseNumber} size={"small"} disable={true} />
+                                    <Input tittle={"Matrícula"} name={"licenseNumber"} value={formData.licenseNumber} size={"small"} disable={true} />
                                 </>
                             )}
                         </div>

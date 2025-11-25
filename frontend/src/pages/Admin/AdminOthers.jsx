@@ -11,10 +11,12 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useOutletContext } from 'react-router-dom'
 import AdminEditSocialWork from '../../components/features/adminDataManagement/edit/AdminEditSocialWork';
 import AdminEditSpecialty from '../../components/features/adminDataManagement/edit/AdminEditSpecialty';
-import Modal from '../../components/ui/Modal'
-import PrincipalCard from '../../components/ui/PrincipalCard'
+import Modal from '../../components/ui/Modal';
+import PrincipalCard from '../../components/ui/PrincipalCard';
+import { useToast } from '../../hooks/useToast';
 
 const AdminOthers = () => {
+  const toast = useToast();
   const [showNewSocialWork, setShowNewSocialWork] = useState(false);
   const [showNewSpecialty, setShowNewSpecialty] = useState(false);
   const toggleSocialWork = () => setShowNewSocialWork(prev => !prev);
@@ -22,6 +24,11 @@ const AdminOthers = () => {
 
   const [selectedSocialWorkId, setSelectedSocialWorkId] = useState(null);
   const [selectedSpecialtyId, setSelectedSpecialtyId] = useState(null);
+
+  const [loadingSaveSocialWork, setLoadingSaveSocialWork] = useState(false);
+  const [loadingDeleteSocialWork, setLoadingDeleteSocialWork] = useState(false);
+  const [loadingSaveSpecialty, setLoadingSaveSpecialty] = useState(false);
+  const [loadingDeleteSpecialty, setLoadingDeleteSpecialty] = useState(false);
 
   const sectionVariants = {
     hidden: {
@@ -93,39 +100,71 @@ const AdminOthers = () => {
     setIsDiscardModalSpecialtyOpen(true);
   }
 
-  const confirmSaveSpecialty = () => {
-    console.log("Guardando cambios en la especialidad:", specialtyToSave);
-    // ... Aquí iría tu lógica de API para actualizar al paciente ...
+  const confirmSaveSpecialty = async () => {
+    setLoadingSaveSpecialty(true); // Activar spinner
+    try {
+      // AQUI VA LA LLAMADA AL BACKEND
+      // await axios.put(...)
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      console.log("Guardando cambios en la especialidad:", specialtyToSave);
 
-    setIsSaveModalSpecialtyOpen(false);
-    setSpecialtyToSave(null);
-    setSelectedSpecialtyId();
+      toast.success("Especialidad actualizada correctamente.");
+
+      setIsSaveModalSpecialtyOpen(false);
+      setSpecialtyToSave(null);
+      setSelectedSpecialtyId(null); // Cerrar edición
+    } catch (error) {
+      toast.error("Error al guardar la especialidad.");
+      console.error(error);
+    } finally {
+      setLoadingSaveSpecialty(false);
+    }
   };
 
-  const confirmDeleteSpecialty = () => {
-    console.log("Eliminando especialidad ID:", specialtyIdToDelete);
-    // ... Aquí iría tu lógica de API para eliminar al paciente ...
+  // 🟢 Eliminar Especialidad (Async)
+  const confirmDeleteSpecialty = async () => {
+    setLoadingDeleteSpecialty(true);
+    try {
+      // AQUI VA LA LLAMADA AL BACKEND
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      console.log("Eliminando especialidad ID:", specialtyIdToDelete);
 
-    // Simulación: Muestra alerta y cierra
-    setIsDeleteModalSpecialtyOpen(false);
-    setSpecialtyIdToDelete(null);
-    // Aquí deberías re-ejecutar la búsqueda en AdminDoctorFilterPanel
-    // para que la lista se actualice.
+      toast.success("Especialidad eliminada correctamente.");
+
+      setIsDeleteModalSpecialtyOpen(false);
+
+      // Si eliminamos la que estamos editando, cerramos el panel
+      if (selectedSpecialtyId === specialtyIdToDelete) {
+        setSelectedSpecialtyId(null);
+      }
+      setSpecialtyIdToDelete(null);
+
+    } catch (error) {
+      toast.error("Error al eliminar la especialidad. Verifique que no esté en uso.");
+      console.error(error);
+    } finally {
+      setLoadingDeleteSpecialty(false);
+    }
   };
 
   const closeDeleteModalSpecialty = () => {
-    setIsDeleteModalSpecialtyOpen(false);
-    setSpecialtyIdToDelete(null);
+    if (!loadingDeleteSpecialty) {
+      setIsDeleteModalSpecialtyOpen(false);
+      setSpecialtyIdToDelete(null);
+    }
   };
 
   const closeSaveModalSpecialty = () => {
-    setIsSaveModalSpecialtyOpen(false);
-    setSpecialtyToSave(null);
+    if (!loadingSaveSpecialty) {
+      setIsSaveModalSpecialtyOpen(false);
+      setSpecialtyToSave(null);
+    }
   };
 
   const confirmDiscardSpecialty = () => {
     setIsDiscardModalSpecialtyOpen(false);
     setSelectedSpecialtyId(null);
+    toast.info("Cambios descartados.");
   };
 
   const closeDiscardModalSpecialty = () => {
@@ -155,40 +194,68 @@ const AdminOthers = () => {
     setIsDiscardModalSocialWorkOpen(true);
   }
 
-  const confirmSaveSocialWork = () => {
-    // Corregido: Muestra los datos a guardar (socialWorkToSave)
-    console.log("Guardando cambios en la obra social:", socialWorkToSave);
-    // ... Aquí iría tu lógica de API para actualizar la obra social ...
+  const confirmSaveSocialWork = async () => {
+    setLoadingSaveSocialWork(true);
+    try {
+      // AQUI VA LA LLAMADA AL BACKEND
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      console.log("Guardando cambios en la obra social:", socialWorkToSave);
 
-    setIsSaveModalSocialWorkOpen(false);
-    setSocialWorkToSave(null);
-    setSelectedSocialWorkId(null); // Limpia la selección
+      toast.success("Obra Social actualizada correctamente.");
+
+      setIsSaveModalSocialWorkOpen(false);
+      setSocialWorkToSave(null);
+      setSelectedSocialWorkId(null);
+    } catch (error) {
+      toast.error("Error al guardar la obra social.");
+      console.error(error);
+    } finally {
+      setLoadingSaveSocialWork(false);
+    }
   };
 
-  const confirmDeleteSocialWork = () => {
-    // Corregido: Muestra el ID a eliminar
-    console.log("Eliminando obra social ID:", socialWorkIdToDelete);
-    // ... Aquí iría tu lógica de API para eliminar la obra social ...
+  // 🟢 Eliminar Obra Social (Async)
+  const confirmDeleteSocialWork = async () => {
+    setLoadingDeleteSocialWork(true);
+    try {
+      // AQUI VA LA LLAMADA AL BACKEND
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      console.log("Eliminando obra social ID:", socialWorkIdToDelete);
 
-    setIsDeleteModalSocialWorkOpen(false);
-    setSocialWorkIdToDelete(null);
-    // Aquí deberías re-ejecutar la búsqueda de obras sociales
-    // para que la lista se actualice.
+      toast.success("Obra Social eliminada correctamente.");
+
+      setIsDeleteModalSocialWorkOpen(false);
+
+      if (selectedSocialWorkId === socialWorkIdToDelete) {
+        setSelectedSocialWorkId(null);
+      }
+      setSocialWorkIdToDelete(null);
+    } catch (error) {
+      toast.error("Error al eliminar la obra social. Verifique que no esté asignada a pacientes.");
+      console.error(error);
+    } finally {
+      setLoadingDeleteSocialWork(false);
+    }
   };
 
   const closeDeleteModalSocialWork = () => {
-    setIsDeleteModalSocialWorkOpen(false);
-    setSocialWorkIdToDelete(null);
+    if (!loadingDeleteSocialWork) {
+      setIsDeleteModalSocialWorkOpen(false);
+      setSocialWorkIdToDelete(null);
+    }
   };
 
   const closeSaveModalSocialWork = () => {
-    setIsSaveModalSocialWorkOpen(false);
-    setSocialWorkToSave(null);
+    if (!loadingSaveSocialWork) {
+      setIsSaveModalSocialWorkOpen(false);
+      setSocialWorkToSave(null);
+    }
   };
 
   const confirmDiscardSocialWork = () => {
     setIsDiscardModalSocialWorkOpen(false);
     setSelectedSocialWorkId(null);
+    toast.info("Cambios descartados.");
   };
 
   const closeDiscardModalSocialWork = () => {
@@ -260,7 +327,7 @@ const AdminOthers = () => {
           Listado de Obras Sociales
         </h1>
         <SectionCard tittle={"Buscar Obra Social"} content={
-          <AdminSocialWorkFilterPanel  socialWorkToEdit={handleSocialWorkToEdit} socialWorkToDelete={handleSocialWorkToDelete}/>
+          <AdminSocialWorkFilterPanel socialWorkToEdit={handleSocialWorkToEdit} socialWorkToDelete={handleSocialWorkToDelete} />
         } />
 
         <AnimatePresence>
@@ -288,7 +355,7 @@ const AdminOthers = () => {
           Listado de Especialidades
         </h1>
         <SectionCard tittle={"Buscar Especialidad"} content={
-          <AdminSpecialtyFilterPanel specialtyToEdit={handleSpecialtyToEdit} specialtyToDelete={handleSpecialtyToDelete}/>
+          <AdminSpecialtyFilterPanel specialtyToEdit={handleSpecialtyToEdit} specialtyToDelete={handleSpecialtyToDelete} />
         } />
 
         <AnimatePresence>
@@ -323,8 +390,8 @@ const AdminOthers = () => {
                 ¿Estás seguro de que deseas guardar los cambios en esta especialidad?
               </p>
               <div className="flex flex-row gap-10">
-                <Button text="Seguir Editando" variant="secondary" onClick={closeSaveModalSpecialty} />
-                <Button text="Guardar" variant="primary" onClick={confirmSaveSpecialty} />
+                <Button text="Seguir Editando" variant="secondary" onClick={closeSaveModalSpecialty} disable={loadingSaveSpecialty} />
+                <Button text="Guardar" variant="primary" onClick={confirmSaveSpecialty} isLoading={loadingSaveSpecialty} />
               </div>
             </div>
           }
@@ -361,8 +428,8 @@ const AdminOthers = () => {
                 Esta acción no se puede deshacer.
               </p>
               <div className="flex flex-row gap-10">
-                <Button text="Cancelar" variant="secondary" onClick={closeDeleteModalSpecialty} />
-                <Button text="Eliminar" variant="primary" onClick={confirmDeleteSpecialty} />
+                <Button text="Cancelar" variant="secondary" onClick={closeDeleteModalSpecialty} disable={loadingDeleteSpecialty}/>
+                <Button text="Eliminar" variant="primary" onClick={confirmDeleteSpecialty} isLoading={loadingDeleteSpecialty} />
               </div>
             </div>
           }
@@ -379,8 +446,8 @@ const AdminOthers = () => {
                 ¿Estás seguro de que deseas guardar los cambios en esta obra social?
               </p>
               <div className="flex flex-row gap-10">
-                <Button text="Seguir Editando" variant="secondary" onClick={closeSaveModalSocialWork} />
-                <Button text="Guardar" variant="primary" onClick={confirmSaveSocialWork} />
+                <Button text="Seguir Editando" variant="secondary" onClick={closeSaveModalSocialWork} disable={loadingSaveSocialWork}/>
+                <Button text="Guardar" variant="primary" onClick={confirmSaveSocialWork} isLoading={loadingSaveSocialWork} />
               </div>
             </div>
           }
@@ -417,8 +484,8 @@ const AdminOthers = () => {
                 Esta acción no se puede deshacer.
               </p>
               <div className="flex flex-row gap-10">
-                <Button text="Cancelar" variant="secondary" onClick={closeDeleteModalSocialWork} />
-                <Button text="Eliminar" variant="primary" onClick={confirmDeleteSocialWork} />
+                <Button text="Cancelar" variant="secondary" onClick={closeDeleteModalSocialWork} disable={loadingDeleteSocialWork} />
+                <Button text="Eliminar" variant="primary" onClick={confirmDeleteSocialWork} isLoading={loadingDeleteSocialWork} />
               </div>
             </div>
           }

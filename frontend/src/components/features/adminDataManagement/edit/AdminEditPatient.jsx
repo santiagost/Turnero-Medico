@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Input from '../../../ui/Input';
 import Select from '../../../ui/Select';
 import Button from '../../../ui/Button';
-
+import { useToast } from '../../../../hooks/useToast';
 // 1. Importa los mocks de Pacientes y Obras Sociales, y el esquema de Paciente
 import { mockPatients, socialWorkOptions } from '../../../../utils/mockData';
 import { adminCreatePatientSchema } from '../../../../validations/adminSchemas';
@@ -24,12 +24,17 @@ const initialPatientState = {
 const AdminEditPatient = ({ patientId, onSave, onCancel }) => {
     const [patientData, setPatientData] = useState(initialPatientState);
     const [errors, setErrors] = useState({});
+    const toast = useToast();
+    const socialWorksOptionsWithAll = [{ value: "", label: "Ninguna" }, ...socialWorkOptions];
 
     useEffect(() => {
+        // AQUI VA LA LLAMADA AL BACKEND
+        // getPatientById(patientId)
+
         console.log("Cargando datos del paciente ID:", patientId);
 
         const patient = mockPatients.find(p => p.patientId === patientId);
-        
+
 
         if (patient) {
             setPatientData({
@@ -78,17 +83,17 @@ const AdminEditPatient = ({ patientId, onSave, onCancel }) => {
         return Object.keys(newErrors).length === 0;
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         const isValid = validateForm();
 
-        if (isValid) {
-            console.log("Datos del paciente a actualizar:", patientData);
-            if (onSave) {
-                onSave(patientData);
-            }
-        } else {
-            alert("Por favor, corrige los errores en el formulario.");
+        if (!isValid) {
+            toast.warning("Por favor, corrige los errores en el formulario antes de guardar.");
+            return;
+        }
+
+        if (onSave) {
+            onSave(patientData);
         }
     };
 
@@ -100,7 +105,6 @@ const AdminEditPatient = ({ patientId, onSave, onCancel }) => {
 
     return (
         <div className="p-4">
-            {/* 5. El JSX es el mismo que AdminNewPatient */}
             <form onSubmit={handleSubmit} className="grid grid-cols-4 gap-4" noValidate>
                 <Input
                     tittle="Nombre"
@@ -136,7 +140,7 @@ const AdminEditPatient = ({ patientId, onSave, onCancel }) => {
                     tittle="Perfil"
                     name="profile"
                     value={patientData.profile}
-                    _ size="small"
+                    size="small"
                     disable={true}
                 />
                 <Input
@@ -158,7 +162,7 @@ const AdminEditPatient = ({ patientId, onSave, onCancel }) => {
                     error={errors.birthDate}
                     size="small"
                     required
-                    _ />
+                />
                 <div className='col-start-3 col-span-2'>
                     <Input
                         tittle="Correo Electrónico"
@@ -186,9 +190,8 @@ const AdminEditPatient = ({ patientId, onSave, onCancel }) => {
                     value={patientData.socialWorkId}
                     onChange={handleChange}
                     onBlur={handleBlur}
-                    D error={errors.socialWorkId}
-                    options={socialWorkOptions}
-                    placeholder="Ninguna" // Placeholder para 'sin obra social'
+                    error={errors.socialWorkId}
+                    options={socialWorksOptionsWithAll}
                     size="small"
                     required
                 />

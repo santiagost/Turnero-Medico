@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Input from '../../../ui/Input';
 import Button from '../../../ui/Button';
-
+import { useToast } from '../../../../hooks/useToast';
 // 1. Importa los mocks (asumido) y el esquema de Especialidad
 import { mockSpecialties } from '../../../../utils/mockData';
 import { adminCreateSpecialtySchema } from '../../../../validations/adminSchemas';
@@ -12,18 +12,15 @@ const initialSpecialtyState = {
     description: ""
 };
 
-/**
- * Componente para EDITAR una Especialidad existente.
- * @param {number} specialtyId El ID de la especialidad a editar.
- * @param {function} onSave Función para llamar al guardar.
- * @param {function} onCancel Función para llamar al cancelar.
- */
 const AdminEditSpecialty = ({ specialtyId, onSave, onCancel }) => {
     const [specialtyData, setSpecialtyData] = useState(initialSpecialtyState);
     const [errors, setErrors] = useState({});
+    const toast = useToast();
 
     // 4. useEffect para cargar los datos de la Especialidad
     useEffect(() => {
+        // AQUI VA LA LLAMADA AL BACKEND
+        // getSpecialtyById(specialtyId)
         console.log("Cargando datos de la Especialidad ID:", specialtyId);
 
         // Simulación con Mocks (asegúrate de que mockSpecialties exista y tenga specialtyId)
@@ -72,16 +69,17 @@ const AdminEditSpecialty = ({ specialtyId, onSave, onCancel }) => {
         return Object.keys(newErrors).length === 0;
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         const isValid = validateForm();
 
-        if (isValid) {
-            console.log("Datos de la Especialidad a actualizar:", specialtyData);
+        if (!isValid) {
+            toast.warning("Por favor, corrige los errores en el formulario antes de guardar.");
+            return;
+        }
 
-            if (onSave) {
-                onSave(specialtyData);
-            }
+        if (onSave) {
+            onSave(specialtyData);
         }
     };
 
