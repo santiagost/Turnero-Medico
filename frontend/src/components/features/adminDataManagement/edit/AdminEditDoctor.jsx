@@ -4,10 +4,14 @@ import Select from '../../../ui/Select';
 import Button from '../../../ui/Button';
 
 
-import { specialtyOptions, mockDoctors } from '../../../../utils/mockData';
+import { mockDoctors } from '../../../../utils/mockData';
 import { adminCreateDoctorSchema } from '../../../../validations/adminSchemas';
 import ROLES from '../../../../utils/constants';
 import { useToast } from '../../../../hooks/useToast';
+
+import { getSpecialtyOptions } from '../../../../../services/specialty.service';
+
+
 
 const initialDoctorState = {
     firstName: "",
@@ -24,7 +28,26 @@ const AdminEditDoctor = ({ doctorId, onSave, onCancel }) => {
     const [doctorData, setDoctorData] = useState(initialDoctorState);
     const [errors, setErrors] = useState({});
     const toast = useToast();
-    
+
+    const [specialtyOptions, setSpecialtyOptions] = useState([
+        { value: "", label: "" }
+    ]);
+
+    useEffect(() => {
+        const fetchOptions = async () => {
+            try {
+                const dataFromBackend = await getSpecialtyOptions();
+
+                setSpecialtyOptions([
+                    ...dataFromBackend
+                ]);
+            } catch (error) {
+                console.error("No se pudieron cargar las opciones", error);
+            }
+        };
+
+        fetchOptions();
+    }, []);
 
     useEffect(() => {
         // AQUI VA LA LLAMADA AL BACKEND

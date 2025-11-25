@@ -12,7 +12,6 @@ import Modal from "../../ui/Modal";
 import PrincipalCard from "../../ui/PrincipalCard";
 
 import {
-    specialtyOptions,
     doctorOptions,
     mockDoctors,
     getMockDoctorSchedule,
@@ -20,6 +19,8 @@ import {
 } from "../../../utils/mockData";
 
 import { newShiftSchema } from "../../../validations/shiftSchemas";
+
+import { getSpecialtyOptions } from "../../../../services/specialty.service";
 
 const sectionVariants = {
     hidden: {
@@ -56,7 +57,7 @@ const NewMedicalShift = ({ onShiftCreated }) => {
     const [errors, setErrors] = useState({});
     const [doctorScheduleConfig, setDoctorScheduleConfig] = useState([]);
 
-    const [specialties, setSpecialties] = useState(specialtyOptions);
+    
     const [filteredDoctorOptions, setFilteredDoctorOptions] = useState(doctorOptions);
     const [selectedWeek, setSelectedWeek] = useState();
     const [selectedShift, setSelectedShift] = useState();
@@ -66,15 +67,36 @@ const NewMedicalShift = ({ onShiftCreated }) => {
     const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
     const isReasonValid = formData.reason && formData.reason.replace(/\s/g, "").length >= 5 && !errors.reason;
 
-    const specialtyOptionsWithAll = [{ value: "", label: "" }, ...specialties];
+    
     const doctorOptionsWithAll = [{ value: "", label: "" }, ...filteredDoctorOptions];
 
+    const [specialtyOptionsWithEmpty, setSpecialtyOptions] = useState([
+                { value: "", label: "" }
+            ]);
+        
+            useEffect(() => {
+                const fetchOptions = async () => {
+                    try {
+                        const dataFromBackend = await getSpecialtyOptions();
+                        
+                        setSpecialtyOptions([
+                            { value: "", label: "" },
+                            ...dataFromBackend
+                        ]);
+                    } catch (error) {
+                        console.error("No se pudieron cargar las opciones", error);
+                    }
+                };
+        
+                fetchOptions();
+            }, []);
+    
     const selectedDoctorObj = mockDoctors.find(
         (doc) => doc.doctorId === parseInt(formData.doctor)
     );
 
     const getSpecialtyName = () => {
-        const found = specialties.find(s => s.value === parseInt(formData.specialty));
+        const found = specialtyOptionsWithEmpty.find(s => s.value === parseInt(formData.specialty));
         return found ? found.label : "";
     };
 
@@ -281,7 +303,7 @@ const NewMedicalShift = ({ onShiftCreated }) => {
                     name="specialty"
                     value={formData.specialty}
                     onChange={handleChange}
-                    options={specialtyOptionsWithAll}
+                    options={specialtyOptionsWithEmpty}
                     onBlur={handleBlur}
                     error={errors.specialty}
                 />

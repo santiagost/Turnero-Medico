@@ -9,30 +9,32 @@ export const medicationValidationSchema = {
 };
 
 // --- Esquema para crear un nuevo paciente por el Admin ---
-export const adminCreatePatientSchema = {
-  // Reutilizamos reglas comunes para mantener consistencia
-  firstName: commonRules.name,
-  lastName: (value) => registerValidationSchema.lastname(value), // Reusamos la lógica específica de apellido
-  dni: commonRules.dni,
-  telephone: commonRules.telephone,
-  birthDate: commonRules.birthDate,
-  email: commonRules.email,
-  
-  // Reglas específicas de Perfil (Obra Social)
-  membershipNumber: (value, formData) => {
-     // Si tienes la lógica de editValidationRules disponible, úsala, 
-     // si no, la replicamos aquí o importamos getEditValidationSchema
-     if (formData.socialWorkId && !value) { 
-         return "El N° de afiliado es requerido si tiene obra social.";
-     }
-     return null;
-  },
-  socialWorkId: (value, formData) => {
-     if (!value && formData.membershipNumber) {
-         return "Seleccione una obra social.";
-     }
-     return null;
-  },
+export const adminCreatePatientSchema = (particularId = null) => {
+  return {
+    firstName: commonRules.name,
+    lastName: (value) => registerValidationSchema.lastname(value),
+    dni: commonRules.dni,
+    telephone: commonRules.telephone,
+    birthDate: commonRules.birthDate,
+    email: commonRules.email,
+
+    // Regla dinámica
+    membershipNumber: (value, formData) => {
+      const isParticular = formData.socialWorkId == particularId;
+
+      if (formData.socialWorkId && !isParticular && !value) {
+        return "El N° de afiliado es requerido para esta obra social.";
+      }
+      return null;
+    },
+
+    socialWorkId: (value, formData) => {
+      if (!value && formData.membershipNumber) {
+        return "Seleccione una obra social.";
+      }
+      return null;
+    },
+  };
 };
 
 // --- Esquema de Creación de Médico por Admin ---

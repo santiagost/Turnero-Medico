@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import AnimatedPage from '../../components/layout/AnimatedPage';
 import { useAuth } from '../../hooks/useAuth';
 
-import { completedConsultationsMock, doctorOptions, specialtyOptions } from '../../utils/mockData';
+import { completedConsultationsMock, doctorOptions } from '../../utils/mockData';
 import { useToast } from '../../hooks/useToast';
 
 import SectionCard from '../../components/ui/SectionCard';
@@ -11,6 +11,8 @@ import ConsultationFilterPanel, { initialFiltersState, hasActiveFilters } from '
 
 import { useParams, useNavigate } from 'react-router-dom';
 import Spinner from '../../components/ui/Spinner';
+
+import { getSpecialtyOptions } from '../../../services/specialty.service';
 
 const PatientHistory = () => {
   const { profile } = useAuth();
@@ -110,6 +112,27 @@ const PatientHistory = () => {
 
   }, [activeFilters, fetchHistory, consultationId]);
 
+  const [specialtyOptionsWithAll, setSpecialtyOptions] = useState([
+    { value: "", label: "Todas" }
+  ]);
+
+  useEffect(() => {
+    const fetchOptions = async () => {
+      try {
+        const dataFromBackend = await getSpecialtyOptions();
+
+        setSpecialtyOptions([
+          { value: "", label: "Todas" },
+          ...dataFromBackend
+        ]);
+      } catch (error) {
+        console.error("No se pudieron cargar las opciones", error);
+      }
+    };
+
+    fetchOptions();
+  }, []);
+
   return (
     <AnimatedPage>
       <div className="px-8">
@@ -120,7 +143,7 @@ const PatientHistory = () => {
         <SectionCard tittle={"Filtra entre tus consultas"} content={
           <ConsultationFilterPanel
             onSearch={handleFilteredSearch}
-            specialties={specialtyOptions}
+            specialties={specialtyOptionsWithAll}
             doctors={doctorOptions}
           />
         } />

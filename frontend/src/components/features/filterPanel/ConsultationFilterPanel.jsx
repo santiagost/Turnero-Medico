@@ -43,10 +43,6 @@ const ConsultationFilterPanel = ({ onSearch, specialties = [], doctors = [] }) =
         { value: "alpha_desc", label: "Orden Alfabético (Z-A)" }
     ];
 
-    const specialtyOptionsWithAll = [
-        { value: "", label: "Todas" },
-        ...specialties
-    ];
 
     const doctorOptionsWithAll = [
         { value: "", label: "Todos" },
@@ -81,7 +77,7 @@ const ConsultationFilterPanel = ({ onSearch, specialties = [], doctors = [] }) =
                 name="specialty"
                 value={localFilters.specialty}
                 onChange={handleChange}
-                options={specialtyOptionsWithAll}
+                options={specialties}
                 size="small"
             />
 

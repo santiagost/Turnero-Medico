@@ -11,10 +11,10 @@ import IconButton from '../../../ui/IconButton';
 import Spinner from '../../../ui/Spinner';
 
 import {
-    socialWorkOptions,
     mockPatients // <-- ¡Importa la lista completa de pacientes!
 } from '../../../../utils/mockData';
 
+import { getSocialWorkOptions } from '../../../../../services/socialWork.service'
 
 export const initialFiltersState = {
     dni: "",
@@ -40,10 +40,26 @@ const AdminPatientFilterPanel = ({ patientToDelete, patientToEdit, viewMode = "d
         { value: "alpha_desc", label: "Orden Alfabético (Z-A)" }
     ];
 
-    const socialWorkOptionsWithAll = [
-        { value: "", label: "Todas" },
-        ...socialWorkOptions
-    ];
+    const [socialWorkOptionsWithAll, setSocialWorkOptions] = useState([
+            { value: "", label: "Todas" }
+        ]);
+    
+        useEffect(() => {
+            const fetchOptions = async () => {
+                try {
+                    const dataFromBackend = await getSocialWorkOptions();
+    
+                    setSocialWorkOptions([
+                        { value: "", label: "Todas" },
+                        ...dataFromBackend
+                    ]);
+                } catch (error) {
+                    console.error("No se pudieron cargar las opciones", error);
+                }
+            };
+    
+            fetchOptions();
+        }, []);
 
     const handleChange = (e) => {
         const { name, value } = e.target;

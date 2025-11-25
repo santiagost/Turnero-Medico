@@ -15,14 +15,17 @@ import { FaSearch } from "react-icons/fa";
 import { LiaUndoAltSolid } from "react-icons/lia";
 
 import {
-    specialtyOptions,
-    socialWorkOptions,
+
     doctorOptions,
     mockDoctors,
     getMockDoctorSchedule,
     mockDoctorAvailability,
     mockPatients
 } from "../../../../utils/mockData";
+
+import { getSpecialtyOptions } from "../../../../../services/specialty.service";
+import { getSocialWorkOptions } from "../../../../../services/socialWork.service"
+
 
 import { newAdminShiftSchema } from "../../../../validations/shiftSchemas"
 import ToggleSwitch from "../../../ui/ToggleSwitch";
@@ -58,8 +61,8 @@ const AdminNewShift = () => {
     const [errors, setErrors] = useState({});
     const [doctorScheduleConfig, setDoctorScheduleConfig] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
-    const [specialties, setSpecialties] = useState(specialtyOptions);
-    const [socialWorks, setSocialWorks] = useState(socialWorkOptions);
+
+
     const [filteredDoctorOptions, setFilteredDoctorOptions] = useState(doctorOptions);
     const [selectedWeek, setSelectedWeek] = useState();
     const [selectedShift, setSelectedShift] = useState();
@@ -67,16 +70,48 @@ const AdminNewShift = () => {
 
     const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
 
-    const specialtyOptionsWithAll = [{ value: "", label: "" }, ...specialties];
-    const socialWorksOptionsWithAll = [{ value: "", label: "" }, ...socialWorks];
+
+
     const doctorOptionsWithAll = [{ value: "", label: "" }, ...filteredDoctorOptions];
+
+    const [specialtyOptionsWithEmpty, setSpecialtyOptions] = useState([
+        { value: "", label: "" }
+    ]);
+    const [socialWorkOptionsWithEmpty, setSocialWorkOptions] = useState([
+        { value: "", label: "" }
+    ]);
+
+    useEffect(() => {
+        const fetchOptions = async () => {
+            try {
+                const specialtyFromBackend = await getSpecialtyOptions();
+                const socialWorkFromBackend = await getSocialWorkOptions();
+
+                setSpecialtyOptions([
+                    { value: "", label: "" },
+                    ...specialtyFromBackend
+                ]);
+                setSocialWorkOptions([
+                    { value: "", label: "" },
+                    ...socialWorkFromBackend
+                ]);
+                
+
+            } catch (error) {
+                console.error("No se pudieron cargar las opciones", error);
+            }
+        };
+
+        fetchOptions();
+    }, []);
+
 
     const selectedDoctorObj = mockDoctors.find(
         (doc) => doc.doctorId === parseInt(formData.doctor)
     );
 
     const getSpecialtyName = () => {
-        const found = specialties.find((s) => s.value === parseInt(formData.specialty));
+        const found = specialtyOptionsWithEmpty.find((s) => s.value === parseInt(formData.specialty));
         return found ? found.label : "";
     };
 
@@ -494,7 +529,7 @@ const AdminNewShift = () => {
                                     onChange={handleChange}
                                     onBlur={handleBlur}
                                     error={errors.socialWorkId}
-                                    options={socialWorksOptionsWithAll}
+                                    options={socialWorkOptionsWithEmpty}
                                     size="small"
                                     required
                                     disable={isPatientFound && !isPatientManual}
@@ -510,7 +545,7 @@ const AdminNewShift = () => {
                         name="specialty"
                         value={formData.specialty}
                         onChange={handleChange}
-                        options={specialtyOptionsWithAll}
+                        options={specialtyOptionsWithEmpty}
                         onBlur={handleBlur}
                         error={errors.specialty}
                     />

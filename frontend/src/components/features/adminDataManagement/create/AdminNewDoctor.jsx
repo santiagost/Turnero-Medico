@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Input from '../../../ui/Input';
 import Select from '../../../ui/Select';
 import Button from '../../../ui/Button';
 
+import { getSpecialtyOptions } from '../../../../../services/specialty.service';
 
-import { specialtyOptions } from '../../../../utils/mockData';
 import { adminCreateDoctorSchema } from '../../../../validations/adminSchemas';
 import ROLES from '../../../../utils/constants';
 import { useToast } from '../../../../hooks/useToast';
@@ -25,6 +25,26 @@ const AdminNewDoctor = () => {
     const [errors, setErrors] = useState({});
     const toast = useToast();
     const [isLoading, setIsLoading] = useState(false);
+
+    const [specialtyOptions, setSpecialtyOptions] = useState([
+        { value: "", label: "" }
+    ]);
+
+    useEffect(() => {
+        const fetchOptions = async () => {
+            try {
+                const dataFromBackend = await getSpecialtyOptions();
+
+                setSpecialtyOptions([
+                    ...dataFromBackend
+                ]);
+            } catch (error) {
+                console.error("No se pudieron cargar las opciones", error);
+            }
+        };
+
+        fetchOptions();
+    }, []);
 
     const handleChange = (e) => {
         const { name, value } = e.target;

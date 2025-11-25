@@ -4,9 +4,10 @@ import Select from '../../../ui/Select';
 import Button from '../../../ui/Button';
 import { useToast } from '../../../../hooks/useToast';
 // 1. Importa los mocks de Pacientes y Obras Sociales, y el esquema de Paciente
-import { mockPatients, socialWorkOptions } from '../../../../utils/mockData';
+import { mockPatients } from '../../../../utils/mockData';
 import { adminCreatePatientSchema } from '../../../../validations/adminSchemas';
 import ROLES from '../../../../utils/constants';
+import { getSocialWorkOptions } from '../../../../../services/socialWork.service';
 
 // 2. Define el estado inicial para Paciente
 const initialPatientState = {
@@ -25,7 +26,36 @@ const AdminEditPatient = ({ patientId, onSave, onCancel }) => {
     const [patientData, setPatientData] = useState(initialPatientState);
     const [errors, setErrors] = useState({});
     const toast = useToast();
-    const socialWorksOptionsWithAll = [{ value: "", label: "Ninguna" }, ...socialWorkOptions];
+
+    const [socialWorksOptionsWithEmpty, setSocialWorkOptions] = useState([
+        { value: "", label: "" }
+    ]);
+
+    useEffect(() => {
+        const fetchOptions = async () => {
+            try {
+                const dataFromBackend = await getSocialWorkOptions();
+
+                setSocialWorkOptions([
+                    ...dataFromBackend
+                ]);
+            } catch (error) {
+                console.error("No se pudieron cargar las opciones", error);
+            }
+        };
+
+        fetchOptions();
+    }, []);
+
+    const isParticularSelected = () => {
+        const selected = socialWorksOptionsWithEmpty.find(opt => opt.value == patientData.socialWorkId);
+        return selected && selected.label === "Particular";
+    };
+
+    const getParticularId = () => {
+        const particularOption = socialWorksOptionsWithEmpty.find(opt => opt.label === "Particular");
+        return particularOption ? particularOption.value : null;
+    };
 
     useEffect(() => {
         // AQUI VA LA LLAMADA AL BACKEND
@@ -54,7 +84,18 @@ const AdminEditPatient = ({ patientId, onSave, onCancel }) => {
     // --- Handlers (usando el esquema de Paciente) ---
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setPatientData(prev => ({ ...prev, [name]: value }));
+        setPatientData(prev => {
+            const newData = { ...prev, [name]: value };
+
+            if (name === "socialWorkId") {
+                const selectedOption = socialWorksOptionsWithEmpty.find(opt => opt.value == value);
+
+                if (selectedOption && selectedOption.label === "Particular") {
+                    newData.membershipNumber = "";
+                }
+            }
+            return newData;
+        });
         if (errors[name]) {
             setErrors(prevErrors => ({ ...prevErrors, [name]: null }));
         }
@@ -62,8 +103,10 @@ const AdminEditPatient = ({ patientId, onSave, onCancel }) => {
 
     const handleBlur = (e) => {
         const { name, value } = e.target;
-        // 4. Usa el esquema de Paciente
-        const rule = adminCreatePatientSchema[name];
+        const particularId = getParticularId();
+        const schema = adminCreatePatientSchema(particularId);
+
+        const rule = schema[name];
         if (rule) {
             const error = rule(value, patientData);
             setErrors(prevErrors => ({ ...prevErrors, [name]: error }));
@@ -72,10 +115,13 @@ const AdminEditPatient = ({ patientId, onSave, onCancel }) => {
 
     const validateForm = () => {
         const newErrors = {};
-        // 4. Usa el esquema de Paciente
-        for (const name in adminCreatePatientSchema) {
+        
+        const particularId = getParticularId();
+        const schema = adminCreatePatientSchema(particularId);
+
+        for (const name in schema) {
             const value = patientData[name];
-            const rule = adminCreatePatientSchema[name];
+            const rule = schema[name];
             const error = rule(value, patientData);
             if (error) { newErrors[name] = error; }
         }
@@ -181,8 +227,10 @@ const AdminEditPatient = ({ patientId, onSave, onCancel }) => {
                     value={patientData.membershipNumber}
                     onChange={handleChange}
                     onBlur={handleBlur}
-                    s error={errors.membershipNumber}
+                    error={errors.membershipNumber}
                     size="small"
+                    disable={isParticularSelected()}
+                    placeholder={isParticularSelected() ? "No requerido" : ""}
                 />
                 <Select
                     img tittle="Obra Social"
@@ -191,7 +239,7 @@ const AdminEditPatient = ({ patientId, onSave, onCancel }) => {
                     onChange={handleChange}
                     onBlur={handleBlur}
                     error={errors.socialWorkId}
-                    options={socialWorksOptionsWithAll}
+                    options={socialWorksOptionsWithEmpty}
                     size="small"
                     required
                 />

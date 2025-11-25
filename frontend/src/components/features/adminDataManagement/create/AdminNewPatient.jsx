@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Input from '../../../ui/Input';
 import Select from '../../../ui/Select';
 import Button from '../../../ui/Button';
 
-import { socialWorkOptions } from '../../../../utils/mockData';
+
 import { adminCreatePatientSchema } from '../../../../validations/adminSchemas';
 import ROLES from '../../../../utils/constants';
 import { useToast } from '../../../../hooks/useToast';
+import { getSocialWorkOptions } from '../../../../../services/socialWork.service';
 
 const initialPatientState = {
     firstName: "",
@@ -25,14 +26,62 @@ const AdminNewPatient = () => {
     const [errors, setErrors] = useState({});
     const [isLoading, setIsLoading] = useState(false);
     const toast = useToast();
-    const socialWorksOptionsWithAll = [{ value: "", label: "Ninguna" }, ...socialWorkOptions];
+
+    const isParticularSelected = () => {
+        const selected = socialWorksOptions.find(opt => opt.value == patientData.socialWorkId);
+        return selected && selected.label === "Particular";
+    };
+
+    const getParticularId = () => {
+        const particularOption = socialWorksOptions.find(opt => opt.label === "Particular");
+        return particularOption ? particularOption.value : null;
+    };
+
+    const [socialWorksOptions, setSocialWorkOptions] = useState([
+        { value: "", label: "" }
+    ]);
+
+    useEffect(() => {
+        const fetchOptions = async () => {
+            try {
+                const dataFromBackend = await getSocialWorkOptions();
+
+                setSocialWorkOptions([
+                    ...dataFromBackend
+                ]);
+                const particularOption = dataFromBackend.find(opt => opt.label === "Particular");
+
+                if (particularOption) {
+                    setPatientData(prev => ({
+                        ...prev,
+                        socialWorkId: particularOption.value,
+                        membershipNumber: ""
+                    }));
+                }
+
+            } catch (error) {
+                console.error("No se pudieron cargar las opciones", error);
+                toast.error("Error al cargar obras sociales.");
+            }
+        };
+
+        fetchOptions();
+    }, []);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setPatientData(prev => ({
-            ...prev,
-            [name]: value
-        }));
+        setPatientData(prev => {
+            const newData = { ...prev, [name]: value };
+
+            if (name === "socialWorkId") {
+                const selectedOption = socialWorksOptions.find(opt => opt.value == value);
+
+                if (selectedOption && selectedOption.label === "Particular") {
+                    newData.membershipNumber = "";
+                }
+            }
+            return newData;
+        });
         if (errors[name]) {
             setErrors(prevErrors => ({ ...prevErrors, [name]: null }));
         }
@@ -40,7 +89,10 @@ const AdminNewPatient = () => {
 
     const handleBlur = (e) => {
         const { name, value } = e.target;
-        const rule = adminCreatePatientSchema[name];
+        const particularId = getParticularId();
+        const schema = adminCreatePatientSchema(particularId);
+
+        const rule = schema[name];
         if (rule) {
             const error = rule(value, patientData);
             setErrors(prevErrors => ({ ...prevErrors, [name]: error }));
@@ -49,13 +101,15 @@ const AdminNewPatient = () => {
 
     const validateForm = () => {
         const newErrors = {};
-        for (const name in adminCreatePatientSchema) {
+
+        const particularId = getParticularId();
+        const schema = adminCreatePatientSchema(particularId);
+
+        for (const name in schema) {
             const value = patientData[name];
-            const rule = adminCreatePatientSchema[name];
+            const rule = schema[name];
             const error = rule(value, patientData);
-            if (error) {
-                newErrors[name] = error;
-            }
+            if (error) { newErrors[name] = error; }
         }
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
@@ -191,7 +245,8 @@ const AdminNewPatient = () => {
                     onBlur={handleBlur}
                     error={errors.membershipNumber}
                     size="small"
-                    disable={isLoading}
+                    disable={isLoading || isParticularSelected()}
+                    placeholder={isParticularSelected() ? "No requerido" : ""}
                 />
                 <Select
                     tittle="Obra Social"
@@ -200,7 +255,7 @@ const AdminNewPatient = () => {
                     onChange={handleChange}
                     onBlur={handleBlur}
                     error={errors.socialWorkId}
-                    options={socialWorksOptionsWithAll}
+                    options={socialWorksOptions}
                     size="small"
                     required
                     disable={isLoading}
