@@ -146,6 +146,13 @@ class MedicoService:
             if self.cursor.fetchone():
                 raise ValueError(f"Ya existe un médico con matrícula {medico_data.matricula}")
             
+            if medico_data.id_usuario:
+                # Validar que el usuario exista
+                usuario_service = UsuarioService(self.db)
+                usuario = usuario_service.get_by_id(medico_data.id_usuario)
+                if not usuario:
+                    raise ValueError(f"No existe un usuario con ID {medico_data.id_usuario}")
+
             # Insertar nuevo médico
             self.cursor.execute("""
                 INSERT INTO Medico (dni, nombre, apellido, matricula, telefono, id_especialidad, id_usuario)
@@ -163,8 +170,9 @@ class MedicoService:
             self.db.commit()
             
             # Obtener el médico recién creado
-            medico_id = self.cursor.lastrowid
-            return self._get_medico_completo(medico_id)
+            id_medico = self.cursor.lastrowid
+
+            return self._get_medico_completo(id_medico)
             
         except sqlite3.IntegrityError as e:
             self.db.rollback()
