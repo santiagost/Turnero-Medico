@@ -15,6 +15,20 @@ from .consulta_router import router as consulta_router
 from .usuario_rol_router import router as usuario_rol_router
 from .receta_router import router as receta_router
 from .horario_atencion_router import router as horario_atencion_router
+from .analytics_router import router as analytics_router
 
 # Lista de todos los routers disponibles
-__all__ = ["path_router", "paciente_router", "rol_router", "especialidad_router", "obra_social_router", "estado_turno_router", "usuario_router", "medico_router", "turno_router", "consulta_router", "usuario_rol_router", "receta_router", "horario_atencion_router"]
+__all__ = ["path_router",
+           "paciente_router",
+           "rol_router",
+           "especialidad_router",
+           "obra_social_router",
+           "estado_turno_router",
+           "usuario_router",
+           "medico_router",
+           "turno_router",
+           "consulta_router",
+           "usuario_rol_router",
+           "receta_router",
+           "horario_atencion_router",
+           "analytics_router"]
