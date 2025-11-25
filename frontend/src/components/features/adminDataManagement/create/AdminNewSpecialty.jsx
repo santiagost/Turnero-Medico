@@ -3,13 +3,14 @@ import Input from '../../../ui/Input';
 import Button from '../../../ui/Button';
 import { useToast } from '../../../../hooks/useToast';
 import { adminCreateSpecialtySchema } from '../../../../validations/adminSchemas';
+import { createSpecialty } from '../../../../../services/specialty.service';
 
 const initialSpecialtyState = {
     name: "",
     description: ""
 };
 
-const AdminNewSpecialty = () => {
+const AdminNewSpecialty = ({ refresh }) => {
     const [specialtyData, setSpecialtyData] = useState(initialSpecialtyState);
     const [errors, setErrors] = useState({});
     const toast = useToast();
@@ -59,17 +60,12 @@ const AdminNewSpecialty = () => {
         setIsLoading(true); // Activar spinner
 
         try {
-            // AQUI VA LA LLAMADA AL BACKEND
-            // await axios.post('/api/specialties', specialtyData);
-
-            // Simulación de espera
-            await new Promise(resolve => setTimeout(resolve, 1500));
-
-            console.log("Datos de la nueva Especialidad a guardar:", specialtyData);
+            const data = await createSpecialty(specialtyData);
+            if (refresh) {
+                refresh(prev => prev + 1);
+            }
 
             toast.success("Especialidad guardada exitosamente.");
-
-            // Limpiar formulario
             setSpecialtyData(initialSpecialtyState);
             setErrors({});
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { FaSearch } from "react-icons/fa";
 import { LiaUndoAltSolid, LiaPencilAltSolid, LiaTrashAltSolid } from "react-icons/lia";
@@ -9,20 +9,19 @@ import Button from '../../../ui/Button';
 import IconButton from '../../../ui/IconButton';
 import { useToast } from '../../../../hooks/useToast';
 import Spinner from '../../../ui/Spinner';
-import { mockSocialWorks } from '../../../../utils/mockData';
+
+import { getAllSocialWorksWithFilters } from '../../../../../services/socialWork.service';
 
 export const initialFiltersState = {
     name: "",
     cuit: ""
 };
 
-const AdminSocialWorkFilterPanel = ({ socialWorkToDelete, socialWorkToEdit }) => {
+const AdminSocialWorkFilterPanel = ({ socialWorkToDelete, socialWorkToEdit, refreshTrigger}) => {
     const toast = useToast();
-    const [allSocialWorks, setAllSocialWorks] = useState(mockSocialWorks);
     const [localFilters, setLocalFilters] = useState(initialFiltersState);
     const [searchResults, setSearchResults] = useState([]);
     const [hasSearched, setHasSearched] = useState(false);
-
     const [isLoadingSearch, setIsLoadingSearch] = useState(false);
 
     const handleChange = (e) => {
@@ -30,48 +29,39 @@ const AdminSocialWorkFilterPanel = ({ socialWorkToDelete, socialWorkToEdit }) =>
         setLocalFilters(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleSearchClick = async (e) => {
-        e.preventDefault();
-
-        setIsLoadingSearch(true);
-        setSearchResults([]); // Limpiar visualmente
-        setHasSearched(false);
-
-        try {
-            // AQUI VA LA LLAMADA AL BACKEND
-            // const response = await axios.get('/api/social-works/search', { params: localFilters });
-
-            // Simulación de delay
-            await new Promise(resolve => setTimeout(resolve, 500));
-
-            let foundSocialWorks = [...allSocialWorks];
-
-            if (localFilters.name) {
-                foundSocialWorks = foundSocialWorks.filter(sw =>
-                    sw.name.toLowerCase().includes(localFilters.name.toLowerCase())
-                );
+    const performSearch = async () => {
+            setIsLoadingSearch(true);
+            setSearchResults([]);
+    
+            try {
+                const socialWorks = await getAllSocialWorksWithFilters({
+                    name: localFilters.name,
+                    cuit: localFilters.cuit
+                });
+                setSearchResults(socialWorks);
+    
+                if (socialWorks.length === 0 && ( localFilters.name || localFilters.cuit)) {
+                    toast.warning("Búsqueda sin resultados.");
+                }
+            } catch (error) {
+                console.error("Error", error);
+                toast.error("Error al actualizar lista.");
+            } finally {
+                setIsLoadingSearch(false);
             }
-            if (localFilters.cuit) {
-                foundSocialWorks = foundSocialWorks.filter(sw => sw.cuit.includes(localFilters.cuit));
-            }
-
-            // Simulación de error (opcional)
-            // throw new Error("Error de red");
-
-            setSearchResults(foundSocialWorks);
+        };
+    
+        const handleSearchClick = (e) => {
+            e.preventDefault();
             setHasSearched(true);
-
-            if (foundSocialWorks.length === 0 && (localFilters.name || localFilters.cuit)) {
-                toast.warning("Búsqueda sin resultados.");
+            performSearch();
+        };
+    
+        useEffect(() => {
+            if (hasSearched) {
+                performSearch();
             }
-
-        } catch (error) {
-            console.error("Error buscando obras sociales:", error);
-            toast.error("Ocurrió un error al buscar obras sociales.");
-        } finally {
-            setIsLoadingSearch(false);
-        }
-    };
+        }, [refreshTrigger]);
 
     const handleResetClick = () => {
         setLocalFilters(initialFiltersState);
@@ -145,9 +135,10 @@ const AdminSocialWorkFilterPanel = ({ socialWorkToDelete, socialWorkToEdit }) =>
                             "
                         >
                             <div className="flex-1 flex items-center gap-6">
-                                <span className="w-48 font-bold text-lg">{sw.name}</span>
-                                <span className="w-36 font-medium">{sw.cuit}</span>
-                                <span className="w-36">{sw.telephone}</span>
+                                <span className="w-1/3 font-bold text-lg">{sw.name}</span>
+                                <span className="w-1/3 font-medium">{sw.cuit}</span>
+                                <span className="w-1/3">{sw.telephone}</span>
+                                <span className="w-1/3">{sw.email}</span>
                             </div>
 
                             <div className="flex items-center gap-3">

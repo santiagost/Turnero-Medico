@@ -15,13 +15,16 @@ import Modal from '../../components/ui/Modal';
 import PrincipalCard from '../../components/ui/PrincipalCard';
 import { useToast } from '../../hooks/useToast';
 
+import { deleteSpecialty, editSpecialty } from '../../../services/specialty.service';
+import { deleteSocialWork, editSocialWork } from '../../../services/socialWork.service';
+
 const AdminOthers = () => {
   const toast = useToast();
   const [showNewSocialWork, setShowNewSocialWork] = useState(false);
   const [showNewSpecialty, setShowNewSpecialty] = useState(false);
   const toggleSocialWork = () => setShowNewSocialWork(prev => !prev);
   const toggleSpecialty = () => setShowNewSpecialty(prev => !prev);
-
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [selectedSocialWorkId, setSelectedSocialWorkId] = useState(null);
   const [selectedSpecialtyId, setSelectedSpecialtyId] = useState(null);
 
@@ -101,12 +104,10 @@ const AdminOthers = () => {
   }
 
   const confirmSaveSpecialty = async () => {
-    setLoadingSaveSpecialty(true); // Activar spinner
-    try {
-      // AQUI VA LA LLAMADA AL BACKEND
-      // await axios.put(...)
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      console.log("Guardando cambios en la especialidad:", specialtyToSave);
+    setLoadingSaveSpecialty(true);
+    try {      
+      const data = await editSpecialty(specialtyToSave.specialtyId, specialtyToSave);
+      setRefreshTrigger(prev => prev + 1);
 
       toast.success("Especialidad actualizada correctamente.");
 
@@ -121,13 +122,12 @@ const AdminOthers = () => {
     }
   };
 
-  // 🟢 Eliminar Especialidad (Async)
   const confirmDeleteSpecialty = async () => {
     setLoadingDeleteSpecialty(true);
     try {
-      // AQUI VA LA LLAMADA AL BACKEND
-      await new Promise(resolve => setTimeout(resolve, 1500));
       console.log("Eliminando especialidad ID:", specialtyIdToDelete);
+      const data = await deleteSpecialty(specialtyIdToDelete)
+      setRefreshTrigger(prev => prev + 1);
 
       toast.success("Especialidad eliminada correctamente.");
 
@@ -198,8 +198,8 @@ const AdminOthers = () => {
     setLoadingSaveSocialWork(true);
     try {
       // AQUI VA LA LLAMADA AL BACKEND
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      console.log("Guardando cambios en la obra social:", socialWorkToSave);
+      const data = await editSocialWork(socialWorkToSave.socialWorkId, socialWorkToSave);
+      setRefreshTrigger(prev => prev + 1);
 
       toast.success("Obra Social actualizada correctamente.");
 
@@ -214,13 +214,13 @@ const AdminOthers = () => {
     }
   };
 
-  // 🟢 Eliminar Obra Social (Async)
+
   const confirmDeleteSocialWork = async () => {
     setLoadingDeleteSocialWork(true);
-    try {
-      // AQUI VA LA LLAMADA AL BACKEND
-      await new Promise(resolve => setTimeout(resolve, 1500));
+    try {      
       console.log("Eliminando obra social ID:", socialWorkIdToDelete);
+      const data = await deleteSocialWork(socialWorkIdToDelete)
+      setRefreshTrigger(prev => prev + 1);
 
       toast.success("Obra Social eliminada correctamente.");
 
@@ -301,7 +301,7 @@ const AdminOthers = () => {
               style={{ overflow: 'hidden' }}
             >
               <SectionCard tittle={"Nueva Obra Social"} content={
-                <AdminNewSocialWork />
+                <AdminNewSocialWork refresh={setRefreshTrigger} />
               } />
             </motion.div>
           )}
@@ -316,7 +316,7 @@ const AdminOthers = () => {
               style={{ overflow: 'hidden' }}
             >
               <SectionCard tittle={"Nueva Especialidad"} content={
-                <AdminNewSpecialty />
+                <AdminNewSpecialty refresh={setRefreshTrigger} />
               } />
             </motion.div>
           )}
@@ -327,7 +327,7 @@ const AdminOthers = () => {
           Listado de Obras Sociales
         </h1>
         <SectionCard tittle={"Buscar Obra Social"} content={
-          <AdminSocialWorkFilterPanel socialWorkToEdit={handleSocialWorkToEdit} socialWorkToDelete={handleSocialWorkToDelete} />
+          <AdminSocialWorkFilterPanel socialWorkToEdit={handleSocialWorkToEdit} socialWorkToDelete={handleSocialWorkToDelete} refreshTrigger={refreshTrigger}/>
         } />
 
         <AnimatePresence>
@@ -355,7 +355,7 @@ const AdminOthers = () => {
           Listado de Especialidades
         </h1>
         <SectionCard tittle={"Buscar Especialidad"} content={
-          <AdminSpecialtyFilterPanel specialtyToEdit={handleSpecialtyToEdit} specialtyToDelete={handleSpecialtyToDelete} />
+          <AdminSpecialtyFilterPanel specialtyToEdit={handleSpecialtyToEdit} specialtyToDelete={handleSpecialtyToDelete} refreshTrigger={refreshTrigger}/>
         } />
 
         <AnimatePresence>

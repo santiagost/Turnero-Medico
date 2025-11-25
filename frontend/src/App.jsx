@@ -1,4 +1,7 @@
 import { createHashRouter, RouterProvider } from "react-router-dom";
+import { useEffect, useState } from "react";
+import Spinner from "./components/ui/Spinner";
+import { getSystemStatus } from "../services/api.service";
 
 // --- Importar Componentes ---
 import ProtectedRoute from "./routes/ProtectedRoute";
@@ -107,6 +110,52 @@ const router = createHashRouter([
 
 
 const App = () => {
+  const [isLoading, setIsLoading] = useState(true);
+  const [isServerUp, setIsServerUp] = useState(false);
+
+  useEffect(() => {
+    const checkApiStatus = async () => {
+      try {
+        await getSystemStatus();
+        setIsServerUp(true);
+      } catch (error) {
+        console.error("API Down:", error);
+        setIsServerUp(false);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkApiStatus();
+  }, []);
+
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen text-white bg-custom-light-blue p-4">
+        <Spinner />
+        <p className="mt-4 text-sm animate-pulse">Conectando con el servidor...</p>
+      </div>
+    );
+  }
+
+  if (!isServerUp) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen text-white bg-white p-4">
+        <div className="bg-red-900 p-10 flex flex-col items-center justify-center rounded-4xl">
+          <h1 className="text-3xl font-bold mb-2">Servicio No Disponible</h1>
+          <p>No pudimos conectar con el sistema médico.</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-6 px-4 py-2 bg-white text-red-900 rounded font-bold hover:bg-gray-200 transition"
+          >
+            Reintentar conexión
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <AuthProvider>
       <RouterProvider router={router} />

@@ -3,6 +3,7 @@ import Input from '../../../ui/Input';
 import Button from '../../../ui/Button';
 import { useToast } from '../../../../hooks/useToast';
 import { adminCreateSocialWorkSchema } from '../../../../validations/adminSchemas';
+import { createSocialWork } from '../../../../../services/socialWork.service';
 
 const initialSocialWorkState = {
     name: "",
@@ -12,7 +13,7 @@ const initialSocialWorkState = {
     email: ""
 };
 
-const AdminNewSocialWork = () => {
+const AdminNewSocialWork = ({ refresh }) => {
     const [socialWorkData, setSocialWorkData] = useState(initialSocialWorkState);
     const [errors, setErrors] = useState({});
     const [isLoading, setIsLoading] = useState(false);
@@ -59,19 +60,13 @@ const AdminNewSocialWork = () => {
             return;
         }
 
-        setIsLoading(true); // Activar spinner
+        setIsLoading(true);
 
         try {
-            /// AQUI VA LA LLAMADA AL BACKEND
-            // await axios.post('/api/social-works', socialWorkData);
-
-            // Simulación de espera
-            await new Promise(resolve => setTimeout(resolve, 1500));
-
-            // Simulación de error (opcional)
-            // throw new Error("El CUIT ya existe.");
-
-            console.log("Datos de la nueva Obra Social a guardar:", socialWorkData);
+            const data = await createSocialWork(socialWorkData);
+            if (refresh) {
+                refresh(prev => prev + 1);
+            }
 
             toast.success("Obra Social registrada exitosamente.");
 
@@ -81,8 +76,7 @@ const AdminNewSocialWork = () => {
 
         } catch (error) {
             console.error("Error al crear obra social:", error);
-            const errorMsg = error.message || "Ocurrió un error al registrar la obra social.";
-            toast.error(errorMsg);
+            toast.error("Ocurrió un error al registrar la obra social.");
         } finally {
             setIsLoading(false); // Desactivar spinner
         }

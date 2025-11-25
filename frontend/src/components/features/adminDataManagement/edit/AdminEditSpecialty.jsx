@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import Input from '../../../ui/Input';
 import Button from '../../../ui/Button';
 import { useToast } from '../../../../hooks/useToast';
-// 1. Importa los mocks (asumido) y el esquema de Especialidad
-import { mockSpecialties } from '../../../../utils/mockData';
+import Spinner from '../../../ui/Spinner';
 import { adminCreateSpecialtySchema } from '../../../../validations/adminSchemas';
+import { getSpecialtyById } from '../../../../../services/specialty.service';
 
 // 2. Define el estado inicial para Especialidad
 const initialSpecialtyState = {
@@ -16,27 +16,32 @@ const AdminEditSpecialty = ({ specialtyId, onSave, onCancel }) => {
     const [specialtyData, setSpecialtyData] = useState(initialSpecialtyState);
     const [errors, setErrors] = useState({});
     const toast = useToast();
+    const [isLoading, setIsLoading] = useState(true);
 
-    // 4. useEffect para cargar los datos de la Especialidad
     useEffect(() => {
-        // AQUI VA LA LLAMADA AL BACKEND
-        // getSpecialtyById(specialtyId)
-        console.log("Cargando datos de la Especialidad ID:", specialtyId);
+        const fetchSpecialtyData = async () => {
+            try {
+                setIsLoading(true);
+                const data = await getSpecialtyById(specialtyId);
+                setSpecialtyData(data);
 
-        // Simulación con Mocks (asegúrate de que mockSpecialties exista y tenga specialtyId)
-        if (mockSpecialties) {
-            const specialty = mockSpecialties.find(s => s.specialtyId === specialtyId);
+            } catch (error) {
+                console.error("Error cargando especialidad:", error);
+                toast.error("No se pudo cargar la información de la especialidad.");
 
-            if (specialty) {
-                setSpecialtyData({
-                    name: specialty.name,
-                    description: specialty.description
-                });
+                if (onCancel) onCancel();
+                
+            } finally {
+                setIsLoading(false);
             }
+        };
+
+        if (specialtyId) {
+            fetchSpecialtyData();
         }
     }, [specialtyId]);
 
-    // --- Handlers (usando el esquema de Especialidad) ---
+    
     const handleChange = (e) => {
         const { name, value } = e.target;
         setSpecialtyData(prev => ({ ...prev, [name]: value }));
@@ -69,6 +74,14 @@ const AdminEditSpecialty = ({ specialtyId, onSave, onCancel }) => {
         return Object.keys(newErrors).length === 0;
     };
 
+    if (isLoading) {
+        return (
+            <div className="flex justify-center items-center p-10 h-64">
+                <Spinner />
+            </div>
+        );
+    }
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         const isValid = validateForm();
@@ -90,7 +103,7 @@ const AdminEditSpecialty = ({ specialtyId, onSave, onCancel }) => {
     };
 
     return (
-        <div className="p-4 rounded-lg shadow-sm">
+        <div className="p-4">
             <form onSubmit={handleSubmit} className="grid grid-cols-4 gap-4 items-center" noValidate>
 
                 <Input

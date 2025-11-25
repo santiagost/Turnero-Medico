@@ -1,22 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { FaSearch } from "react-icons/fa";
 import { LiaUndoAltSolid, LiaPencilAltSolid, LiaTrashAltSolid } from "react-icons/lia";
+import { getAllSpecialtyWithFilters } from '../../../../../services/specialty.service';
 
 import Input from '../../../ui/Input';
 import Button from '../../../ui/Button';
 import IconButton from '../../../ui/IconButton';
 import { useToast } from '../../../../hooks/useToast';
 import Spinner from '../../../ui/Spinner';
-import { mockSpecialties } from '../../../../utils/mockData';
 
 
 export const initialFiltersState = {
     name: ""
 };
 
-const AdminSpecialtyFilterPanel = ({ specialtyToDelete, specialtyToEdit }) => {
-    const [allSpecialties, setAllSpecialties] = useState(mockSpecialties);
+const AdminSpecialtyFilterPanel = ({ specialtyToDelete, specialtyToEdit, refreshTrigger }) => {
     const toast = useToast();
     const [localFilters, setLocalFilters] = useState(initialFiltersState);
     const [searchResults, setSearchResults] = useState([]);
@@ -28,45 +27,38 @@ const AdminSpecialtyFilterPanel = ({ specialtyToDelete, specialtyToEdit }) => {
         setLocalFilters(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleSearchClick = async (e) => {
-        e.preventDefault();
-
+    const performSearch = async () => {
         setIsLoadingSearch(true);
-        setSearchResults([]); // Limpiar visualmente
-        setHasSearched(false);
+        setSearchResults([]);
 
         try {
-            // AQUI VA LA LLAMADA AL BACKEND
-            // const response = await axios.get('/api/specialties/search', { params: localFilters });
+            const specialties = await getAllSpecialtyWithFilters({
+                name: localFilters.name
+            });
+            setSearchResults(specialties);
 
-            // Simulación de delay
-            await new Promise(resolve => setTimeout(resolve, 500));
-
-            let foundSpecialties = [...allSpecialties];
-
-            if (localFilters.name) {
-                foundSpecialties = foundSpecialties.filter(sp =>
-                    sp.name.toLowerCase().includes(localFilters.name.toLowerCase())
-                );
-            }
-
-            // Simulación de error (opcional)
-            // throw new Error("Error de conexión");
-
-            setSearchResults(foundSpecialties);
-            setHasSearched(true);
-
-            if (foundSpecialties.length === 0 && localFilters.name) {
+            if (specialties.length === 0 && localFilters.name) {
                 toast.warning("Búsqueda sin resultados.");
             }
-
         } catch (error) {
-            console.error("Error buscando especialidades:", error);
-            toast.error("Ocurrió un error al buscar especialidades.");
+            console.error("Error", error);
+            toast.error("Error al actualizar lista.");
         } finally {
             setIsLoadingSearch(false);
         }
     };
+
+    const handleSearchClick = (e) => {
+        e.preventDefault();
+        setHasSearched(true);
+        performSearch();
+    };
+
+    useEffect(() => {
+        if (hasSearched) {
+            performSearch();
+        }
+    }, [refreshTrigger]);
 
     const handleResetClick = () => {
         setLocalFilters(initialFiltersState);

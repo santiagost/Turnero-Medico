@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import Input from '../../../ui/Input';
 import Button from '../../../ui/Button';
+import Spinner from '../../../ui/Spinner';
 
-// 1. Importa los mocks y el esquema de Obra Social
-import { mockSocialWorks } from '../../../../utils/mockData';
 import { adminCreateSocialWorkSchema } from '../../../../validations/adminSchemas';
 import { useToast } from '../../../../hooks/useToast';
 
-// 2. Define el estado inicial para Obra Social
+import { getSocialWorkById } from '../../../../../services/socialWork.service';
+
 const initialSocialWorkState = {
     name: "",
     cuit: "",
@@ -17,33 +17,35 @@ const initialSocialWorkState = {
 };
 
 const AdminEditSocialWork = ({ socialWorkId, onSave, onCancel }) => {
-    // 3. Renombra los estados
     const [socialWorkData, setSocialWorkData] = useState(initialSocialWorkState);
     const [errors, setErrors] = useState({});
     const toast = useToast();
+    const [isLoading, setIsLoading] = useState(true);
 
-    // 4. useEffect para cargar los datos de la Obra Social
+    
     useEffect(() => {
+        const fetchSocialWorkData = async () => {
+            try {
+                setIsLoading(true);
+                const data = await getSocialWorkById(socialWorkId);
+                setSocialWorkData(data);
+            } catch (error) {
+                console.error("Error cargando especialidad:", error);
+                toast.error("No se pudo cargar la información de la obra social.");
 
-        // AQUI VA LA LLAMADA AL BACKEND
-        // getSocialWorkById(socialWorkId)
-        console.log("Cargando datos de la Obra Social ID:", socialWorkId);
+                if (onCancel) onCancel();
+                
+            } finally {
+                setIsLoading(false);
+            }
+        };
 
-        // Simulación con Mocks
-        const socialWork = mockSocialWorks.find(sw => sw.socialWorkId === socialWorkId);
-
-        if (socialWork) {
-            setSocialWorkData({
-                name: socialWork.name,
-                cuit: socialWork.cuit,
-                telephone: socialWork.telephone,
-                address: socialWork.direction, // El mock usa 'direction'
-                email: socialWork.email
-            });
+        if (socialWorkId) {
+            fetchSocialWorkData();
         }
     }, [socialWorkId]);
 
-    // --- Handlers (usando el esquema de Obra Social) ---
+    
     const handleChange = (e) => {
         const { name, value } = e.target;
         setSocialWorkData(prev => ({ ...prev, [name]: value }));
@@ -54,7 +56,6 @@ const AdminEditSocialWork = ({ socialWorkId, onSave, onCancel }) => {
 
     const handleBlur = (e) => {
         const { name, value } = e.target;
-        // 5. Usa el esquema de Obra Social
         const rule = adminCreateSocialWorkSchema[name];
         if (rule) {
             const error = rule(value, socialWorkData);
@@ -64,7 +65,6 @@ const AdminEditSocialWork = ({ socialWorkId, onSave, onCancel }) => {
 
     const validateForm = () => {
         const newErrors = {};
-        // 5. Usa el esquema de Obra Social
         for (const name in adminCreateSocialWorkSchema) {
             const value = socialWorkData[name];
             const rule = adminCreateSocialWorkSchema[name];
@@ -74,6 +74,14 @@ const AdminEditSocialWork = ({ socialWorkId, onSave, onCancel }) => {
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
+
+    if (isLoading) {
+        return (
+            <div className="flex justify-center items-center p-10 h-64">
+                <Spinner />
+            </div>
+        );
+    }
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -96,8 +104,7 @@ const AdminEditSocialWork = ({ socialWorkId, onSave, onCancel }) => {
     };
 
     return (
-        <div className="p-4 rounded-lg shadow-sm">
-            {/* 6. El JSX es el mismo que AdminNewSocialWork, pero con 2 botones */}
+        <div className="p-4">
             <form onSubmit={handleSubmit} className="grid grid-cols-4 gap-4" noValidate>
                 <Input
                     tittle="Nombre"
