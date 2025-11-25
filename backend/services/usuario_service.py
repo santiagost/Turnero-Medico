@@ -57,7 +57,7 @@ class UsuarioService:
         #         creado_en=usuario_dict['creado_en'],
         #         activo=usuario_dict['activo']
         #     )
-        return None
+        # return None
     
 
     def create(self, usuario_data: UsuarioCreate) -> UsuarioResponse:

@@ -22,6 +22,8 @@ class TurnoService:
             fecha_hora_inicio=turno_dict['fecha_hora_inicio'],
             fecha_hora_fin=turno_dict['fecha_hora_fin'],
             motivo_consulta=turno_dict.get('motivo_consulta'),
+            recordatorio_notificado=bool(turno_dict.get('recordatorio_notificado')),
+            reserva_notificada=bool(turno_dict.get('reserva_notificada')),
             paciente=PacienteService(self.db).get_by_id(turno_dict['id_paciente']),
             medico=MedicoService(self.db).get_by_id(turno_dict['id_medico']),
             estado_turno=EstadoTurnoService(self.db).get_by_id(turno_dict['id_estado_turno'])
@@ -33,21 +35,8 @@ class TurnoService:
         rows = self.cursor.fetchall()
         turnos = []
         for row in rows:
-            turno_dict = dict(row)
-            turnos.append(TurnoResponse(
-                id_turno=turno_dict['id_turno'],
-                id_paciente=turno_dict['id_paciente'],
-                id_medico=turno_dict['id_medico'],
-                id_estado_turno=turno_dict['id_estado_turno'],
-                fecha_hora_inicio=turno_dict['fecha_hora_inicio'],
-                fecha_hora_fin=turno_dict['fecha_hora_fin'],
-                motivo_consulta=turno_dict.get('motivo_consulta'),
-                recordatorio_notificado=bool(turno_dict.get('recordatorio_notificado')),
-                reserva_notificada=bool(turno_dict.get('reserva_notificada')),
-                paciente=PacienteService(self.db).get_by_id(turno_dict['id_paciente']),
-                medico=MedicoService(self.db).get_by_id(turno_dict['id_medico']),
-                estado_turno=EstadoTurnoService(self.db).get_by_id(turno_dict['id_estado_turno'])
-            ))
+            turno_completo = self._get_turno_completo(row)
+            turnos.append(turno_completo)
         return turnos
 
     def get_by_id(self, turno_id: int) -> Optional[TurnoResponse]:
@@ -55,21 +44,7 @@ class TurnoService:
         self.cursor.execute("SELECT * FROM turno WHERE id_turno = ?", (turno_id,))
         row = self.cursor.fetchone()
         if row:
-            turno_dict = dict(row)
-            return TurnoResponse(
-                id_turno=turno_dict['id_turno'],
-                id_paciente=turno_dict['id_paciente'],
-                id_medico=turno_dict['id_medico'],
-                id_estado_turno=turno_dict['id_estado_turno'],
-                fecha_hora_inicio=turno_dict['fecha_hora_inicio'],
-                fecha_hora_fin=turno_dict['fecha_hora_fin'],
-                motivo_consulta=turno_dict.get('motivo_consulta'),
-                recordatorio_notificado=bool(turno_dict.get('recordatorio_notificado')),
-                reserva_notificada=bool(turno_dict.get('reserva_notificada')),
-                paciente=PacienteService(self.db).get_by_id(turno_dict['id_paciente']),
-                medico=MedicoService(self.db).get_by_id(turno_dict['id_medico']),
-                estado_turno=EstadoTurnoService(self.db).get_by_id(turno_dict['id_estado_turno'])
-            )
+            return self._get_turno_completo(row)
         return None
 
     def create(self, turno_data: TurnoCreate) -> TurnoResponse:
@@ -99,7 +74,6 @@ class TurnoService:
                 )
 
             return turno
-        
 
         except sqlite3.IntegrityError as e:
             raise ValueError("Error de integridad al crear el turno: " + str(e))
@@ -151,8 +125,6 @@ class TurnoService:
         Marca los turnos que deben ser notificados por recordatorio.
         """
         try:
-            
-            
             self.cursor.execute("""
                 SELECT id_turno, fecha_hora_inicio, id_paciente, id_medico FROM Turno
                 WHERE id_estado_turno = (
@@ -161,6 +133,8 @@ class TurnoService:
                 AND datetime(fecha_hora_inicio) BETWEEN datetime('now', 'localtime') AND datetime('now', 'localtime', '+1 day')
                 AND recordatorio_notificado = 0
                 """)
+
+            
             
             turnos_a_notificar = self.cursor.fetchall()
             
@@ -168,21 +142,22 @@ class TurnoService:
             for i in turnos_a_notificar:
                 p = PacienteService(self.db).get_by_id(i['id_paciente'])
                 m = MedicoService(self.db).get_by_id(i['id_medico'])
-                print(f"Paciente: {p.nombre}, Email: {p.usuario.email}")
-                print(f"Medico: {m.nombre}, Email: {m.usuario.email}")
+                
+                if p.usuario.recordatorios_activados:
+                    EmailSender.send_email(
+                        destinatario=p.usuario.email,
+                        asunto="Recordatorio de turno médico",
+                        cuerpo=f"Estimado/a {p.nombre}, le recordamos que tiene un turno programado con el Dr./Dra. {m.nombre} el día {i['fecha_hora_inicio']}."
+                    )
 
-                EmailSender.send_email(
-                    destinatario=p.usuario.email,
-                    asunto="Recordatorio de turno médico",
-                    cuerpo=f"Estimado/a {p.nombre}, le recordamos que tiene un turno programado con el Dr./Dra. {m.nombre} el día {i['fecha_hora_inicio']}."
-                )
-                EmailSender.send_email(
-                    destinatario=m.usuario.email,
-                    asunto="Recordatorio de turno médico",
-                    cuerpo=f"Estimado/a Dr./Dra. {m.nombre}, le recordamos que tiene un turno programado con el paciente {p.nombre} el día {i['fecha_hora_inicio']}."
-                )
+                if m.usuario.recordatorios_activados:
+                    EmailSender.send_email(
+                        destinatario=m.usuario.email,
+                        asunto="Recordatorio de turno médico",
+                        cuerpo=f"Estimado/a Dr./Dra. {m.nombre}, le recordamos que tiene un turno programado con el paciente {p.nombre} el día {i['fecha_hora_inicio']}."
+                    )
 
-                self.update(i['id_turno'], {'recordatorio_notificado': 1}) # funciona
+                self.update(i['id_turno'], {'recordatorio_notificado': True}) # funciona
 
             return len(turnos_a_notificar)
 

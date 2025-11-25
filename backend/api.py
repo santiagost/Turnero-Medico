@@ -46,8 +46,8 @@ async def lifespan(app: FastAPI):
     scheduler = BackgroundScheduler()
     
     # Configuramos para que corra cada 10 o 30 segundos
-    scheduler.add_job(chequear_recordatorios_background, 'interval', seconds=10)
-    scheduler.start()
+    # scheduler.add_job(chequear_recordatorios_background, 'interval', seconds=10)
+    # scheduler.start()
 
     print("Scheduler de notificaciones INICIADO")
     
