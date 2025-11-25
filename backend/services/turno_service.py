@@ -68,6 +68,63 @@ class TurnoService:
         """Obtiene un turno por su ID"""
         return self._get_turno_completo(turno_id)
 
+    def get_proximos_turnos_paciente(self, paciente_id: int) -> List[TurnoResponse]:
+        """Obtiene los próximos turnos de un paciente"""
+        self.cursor.execute("""
+            SELECT id_turno FROM turno
+            WHERE id_paciente = ? AND datetime(fecha_hora_inicio) > datetime('now', 'localtime')
+            ORDER BY fecha_hora_inicio ASC
+        """, (paciente_id,))
+        
+        rows = self.cursor.fetchall()
+        
+        turnos = []
+        for row in rows:
+            turno_id = dict(row)['id_turno']
+            turno_completo = self._get_turno_completo(turno_id)
+            if turno_completo:
+                turnos.append(turno_completo)
+        
+        return turnos
+
+    def get_historial_desde_hasta(self, paciente_id: int, fecha_desde: str, fecha_hasta: str) -> List[TurnoResponse]:
+        """Obtiene el historial de turnos de un paciente entre dos fechas"""
+        self.cursor.execute("""
+            SELECT id_turno FROM turno
+            WHERE id_paciente = ? AND date(fecha_hora_inicio) BETWEEN date(?) AND date(?)
+            ORDER BY fecha_hora_inicio DESC
+        """, (paciente_id, fecha_desde, fecha_hasta))
+        
+        rows = self.cursor.fetchall()
+        
+        turnos = []
+        for row in rows:
+            turno_id = dict(row)['id_turno']
+            turno_completo = self._get_turno_completo(turno_id)
+            if turno_completo:
+                turnos.append(turno_completo)
+        
+        return turnos
+    
+    def get_agenda_desde_hasta(self, id_medico: int, fecha_desde: str, fecha_hasta: str) -> List[TurnoResponse]:
+        """Obtiene la agenda de un médico entre dos fechas"""
+        self.cursor.execute("""
+            SELECT id_turno FROM turno
+            WHERE id_medico = ? AND date(fecha_hora_inicio) BETWEEN date(?) AND date(?)
+            ORDER BY fecha_hora_inicio ASC
+        """, (id_medico, fecha_desde, fecha_hasta))
+        
+        rows = self.cursor.fetchall()
+        
+        turnos = []
+        for row in rows:
+            turno_id = dict(row)['id_turno']
+            turno_completo = self._get_turno_completo(turno_id)
+            if turno_completo:
+                turnos.append(turno_completo)
+        
+        return turnos
+
     def create(self, turno_data: TurnoCreate) -> TurnoResponse:
         """Crea un nuevo turno"""
         try:
@@ -94,7 +151,6 @@ class TurnoService:
             self.db.rollback()
             raise ValueError("Error al crear el turno: " + str(e))
         
-
     def update(self, turno_id: int, turno_data: dict) -> Optional[TurnoResponse]:
         """Actualiza los datos de un turno existente"""
         existing = self.get_by_id(turno_id)
