@@ -47,7 +47,8 @@ INSERT INTO Rol (nombre, descripcion) VALUES
 INSERT INTO EstadoTurno (nombre, descripcion) VALUES
 ('Pendiente', 'Turno reservado, a la espera de confirmación o llegada'),
 ('Atendido', 'Turno que ha sido atendido por el médico'),
-('Cancelado', 'Turno anulado por medico o paciente');
+('Cancelado', 'Turno anulado por medico o paciente'),
+('Ausente', 'El paciente no se presentó al turno');
 
 -- ============================================================================================================================================
 -- Especialidades
