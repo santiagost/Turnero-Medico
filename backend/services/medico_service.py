@@ -47,9 +47,58 @@ class MedicoService:
             noti_cancel_email_act=bool(medico_dict.get('noti_cancel_email_act', 1))
         )
     
-    def get_all(self) -> List[MedicoResponse]:
+    def get_all(self, 
+                matricula: str = None, 
+                dni: str = None, 
+                nombre: str = None,
+                apellido: str = None,
+                id_medico: int = None,
+                id_usuario: int = None,
+                id_especialidad: int = None, 
+                telefono: str = None) -> List[MedicoResponse]:
+
         """Obtiene todos los médicos"""
-        self.cursor.execute("SELECT id_medico FROM medico")
+        sql = "SELECT id_medico FROM medico"
+
+        condiciones = []
+        valores = []
+
+        if matricula:
+            condiciones.append("matricula = ?")
+            valores.append(matricula)
+
+        if dni:
+            condiciones.append("dni = ?")
+            valores.append(dni)
+
+        if nombre:
+            condiciones.append("nombre = ?")
+            valores.append(nombre)
+        
+        if apellido:
+            condiciones.append("apellido = ?")
+            valores.append(apellido)
+            
+        if id_medico:
+            condiciones.append("id_medico = ?")
+            valores.append(id_medico)
+
+        if id_usuario:
+            condiciones.append("id_usuario = ?")
+            valores.append(id_usuario)
+
+        if id_especialidad:
+            condiciones.append("id_especialidad = ?")
+            valores.append(id_especialidad)
+
+        if telefono:
+            condiciones.append("telefono = ?")
+            valores.append(telefono)
+
+        if condiciones:
+            sql += " WHERE " + " AND ".join(condiciones)
+
+        self.cursor.execute(sql, tuple(valores))
         rows = self.cursor.fetchall()
         
         medicos = []
@@ -65,6 +114,26 @@ class MedicoService:
         """Obtiene un médico por su ID"""
         return self._get_medico_completo(medico_id)
     
+
+    # devuelve {id, nombre-apellido}
+    def get_ligero(self):
+        """Obtiene una lista ligera de médicos (id, nombre, apellido)"""
+        self.cursor.execute("""
+            SELECT m.id_medico, m.nombre, m.apellido
+            FROM medico m """)
+        rows = self.cursor.fetchall()
+        
+        medicos_ligeros = []
+        for row in rows:
+            medico_dict = dict(row)
+            medicos_ligeros.append({
+                "id_medico": medico_dict['id_medico'],
+                "nombre": medico_dict['nombre'],
+                "apellido": medico_dict['apellido']
+            })
+        
+        return medicos_ligeros
+
     def create(self, medico_data: MedicoCreate) -> MedicoResponse:
         """Crea un nuevo médico"""
         try:

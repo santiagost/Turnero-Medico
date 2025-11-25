@@ -36,6 +36,19 @@ class EspecialidadService:
     def get_by_id(self, especialidad_id: int) -> Optional[EspecialidadResponse]:
         """Obtiene una especialidad por su ID"""
         return self._get_especialidad_completa(especialidad_id)
+    
+    def get_ligero(self) -> List[dict]:
+        """Obtiene todas las especialidades en formato ligero"""
+        self.cursor.execute("SELECT id_especialidad, nombre FROM especialidad")
+        rows = self.cursor.fetchall()
+        especialidades_ligeras = []
+        for row in rows:
+            especialidad_dict = dict(row)
+            especialidades_ligeras.append({
+                "id_especialidad": especialidad_dict['id_especialidad'],
+                "nombre": especialidad_dict['nombre']
+            })
+        return especialidades_ligeras
 
     def create(self, especialidad_data: EspecialidadCreate) -> EspecialidadResponse:
         """Crea una nueva especialidad"""

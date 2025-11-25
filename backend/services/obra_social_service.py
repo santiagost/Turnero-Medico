@@ -41,6 +41,19 @@ class ObraSocialService:
         """Obtiene una obra social por su ID"""
         return self._get_obra_social_completa(obra_social_id)
     
+    def get_ligero(self) -> List[dict]:
+        """Obtiene una lista ligera de obras sociales (id y nombre)"""
+        self.cursor.execute("SELECT id_obra_social, nombre FROM obrasocial")
+        rows = self.cursor.fetchall()
+        ligero_list = []
+        for row in rows:
+            row_dict = dict(row)
+            ligero_list.append({
+                "id_obra_social": row_dict['id_obra_social'],
+                "nombre": row_dict['nombre']
+            })
+        return ligero_list
+    
     def create(self, obra_social_data: ObraSocialCreate) -> ObraSocialResponse:
         """Crea una nueva obra social"""
         try:

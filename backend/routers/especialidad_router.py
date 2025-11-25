@@ -32,6 +32,13 @@ async def get_especialidad_by_id(especialidad_id: int, service: EspecialidadServ
         raise HTTPException(status_code=404, detail="Especialidad no encontrada")
     return jsonable_encoder(especialidad)
 
+# quizas sea innecesario ya que get_all ya devuelve poca info
+@router.get("/ligero/", response_model=List[dict])
+async def get_all_especialidades_ligero(service: EspecialidadService = Depends(get_especialidad_service)):
+    """Obtiene todas las especialidades en formato ligero"""
+    especialidades = service.get_ligero()
+    return jsonable_encoder(especialidades)
+
 
 @router.post("/", response_model=dict, status_code=status.HTTP_201_CREATED)
 async def create_especialidad(especialidad_data: dict, service: EspecialidadService = Depends(get_especialidad_service)):

@@ -33,6 +33,14 @@ async def get_obra_social_by_id(obra_social_id: int, service: ObraSocialService 
         raise HTTPException(status_code=404, detail="Obra Social no encontrada")
     return jsonable_encoder(obra_social)
 
+# quizas sea innecesario ya que get_all ya devuelve poca info
+@router.get("/ligero/", response_model=List[dict])
+async def get_all_obras_sociales_ligero(service: ObraSocialService = Depends(get_obra_social_service)):
+    """Obtiene todas las obras sociales en formato ligero"""
+    obras_sociales = service.get_ligero()
+    return jsonable_encoder(obras_sociales)
+
+
 @router.post("/", response_model=dict, status_code=status.HTTP_201_CREATED)
 async def create_obra_social(obra_social_data: dict, service: ObraSocialService = Depends(get_obra_social_service)):
     """Crea una nueva obra social"""

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, status, HTTPException
 from fastapi.encoders import jsonable_encoder
-from typing import List
+from typing import List, Optional
 import sqlite3
 from database import get_db
 from models.medico import MedicoResponse, MedicoCreate, MedicoUpdate
@@ -19,9 +19,27 @@ def get_medico_service(db: sqlite3.Connection = Depends(get_db)) -> MedicoServic
 
 
 @router.get("/", response_model=List[dict])
-async def get_all_medicos(service: MedicoService = Depends(get_medico_service)):
+async def get_all_medicos(
+    dni: Optional[str] = None,
+    matricula: Optional[str] = None,
+    nombre: Optional[str] = None,
+    apellido: Optional[str] = None,
+    id_medico: Optional[int] = None,
+    id_usuario: Optional[int] = None,
+    id_especialidad: Optional[int] = None,
+    telefono: Optional[str] = None,
+    service: MedicoService = Depends(get_medico_service)):
     """Obtiene todos los medicos"""
-    medicos = service.get_all()
+    medicos = service.get_all(
+        matricula=matricula,
+        id_especialidad=id_especialidad,
+        dni=dni,
+        nombre=nombre,
+        apellido=apellido,
+        id_medico=id_medico,
+        id_usuario=id_usuario,
+        telefono=telefono
+    )
     return jsonable_encoder(medicos)
 
 
@@ -32,6 +50,12 @@ async def get_medico_by_id(medico_id: int, service: MedicoService = Depends(get_
     if not medico:
         raise HTTPException(status_code=404, detail="Médico no encontrado")
     return jsonable_encoder(medico)
+
+@router.get("/ligero/", response_model=List[dict])
+async def get_all_medicos_ligero(service: MedicoService = Depends(get_medico_service)):
+    """Obtiene todos los medicos en formato ligero"""
+    medicos = service.get_ligero()
+    return jsonable_encoder(medicos)
 
 
 @router.post("/", response_model=dict, status_code=status.HTTP_201_CREATED)
