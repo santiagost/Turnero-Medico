@@ -333,3 +333,20 @@ class TurnoService:
         except sqlite3.IntegrityError as e:
             self.db.rollback()
             raise ValueError("Error al cancelar el turno: " + str(e))
+        
+    def marcar_como_atendido(self, id_turno: int) -> TurnoResponse:
+        """Marca un turno como atendido"""
+        turno = self.get_by_id(id_turno)
+        if not turno:
+            raise ValueError(f"No existe un turno con ID {id_turno}")
+        
+        if turno.id_estado_turno != 1:  # Suponiendo que 1 es el estado 'Pendiente'
+            raise ValueError("Solo se pueden marcar como atendidos los turnos en estado 'Pendiente'")
+        
+        try:
+            self.update(id_turno, {'id_estado_turno': 2})  # Suponiendo que 2 es el estado 'Atendido'
+            return self.get_by_id(id_turno)
+            
+        except sqlite3.IntegrityError as e:
+            self.db.rollback()
+            raise ValueError("Error al marcar el turno como atendido: " + str(e))

@@ -34,8 +34,6 @@ async def get_horario_atencion_by_id(horario_id: int, service: HorarioAtencionSe
         raise HTTPException(status_code=404, detail="Horario de atención no encontrado")
     return jsonable_encoder(horario)
 
-
-
 # REDUCIR LA CANTIDAD DE INFORMACION QUE DEVUELVE, YA QUE NO INTERESA TENER TODO EL DETALLE DE UN MEDICO
 @router.get("/medico/{medico_id}", response_model=List[dict])
 async def get_horarios_by_medico(medico_id: int, service: HorarioAtencionService = Depends(get_horario_atencion_service)):
@@ -66,8 +64,6 @@ async def update_horarios_for_medico(medico_id: int, horarios_data: List[dict], 
         raise HTTPException(status_code=400, detail=f"Falta el campo obligatorio: {str(e)}")
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-
-
 
 @router.post("/", response_model=dict, status_code=status.HTTP_201_CREATED)
 async def create_horario_atencion(horario_data: dict, service: HorarioAtencionService = Depends(get_horario_atencion_service)):

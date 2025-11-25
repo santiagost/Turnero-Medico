@@ -1,3 +1,4 @@
+import datetime
 from fastapi import APIRouter, Depends, status, HTTPException
 from fastapi.encoders import jsonable_encoder
 from typing import List
@@ -5,6 +6,7 @@ import sqlite3
 from database import get_db
 from models.consulta import ConsultaResponse, ConsultaCreate, ConsultaUpdate
 from services.consulta_service import ConsultaService
+from services.turno_service import TurnoService
 
 
 router = APIRouter(
@@ -41,12 +43,15 @@ async def create_consulta(consulta_data: dict, service: ConsultaService = Depend
     try:
         consulta = ConsultaCreate(
             id_turno=consulta_data['id_turno'],
-            fecha_consulta=consulta_data['fecha_consulta'],
+            fecha_consulta=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             diagnostico=consulta_data.get('diagnostico'),
             notas_privadas_medico=consulta_data.get('notas_privadas_medico'),
             tratamiento=consulta_data.get('tratamiento')
         )
+
+        TurnoService(service.db).marcar_como_atendido(consulta.id_turno)
         resultado = service.create(consulta)
+
         return jsonable_encoder(resultado)
     
     except KeyError as e:
