@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, status, HTTPException
 from fastapi.encoders import jsonable_encoder
 from typing import List
 import sqlite3
@@ -29,24 +29,31 @@ async def get_all_medicos(service: MedicoService = Depends(get_medico_service)):
 async def get_medico_by_id(medico_id: int, service: MedicoService = Depends(get_medico_service)):
     """Obtiene un medico por ID"""
     medico = service.get_by_id(medico_id)
+    if not medico:
+        raise HTTPException(status_code=404, detail="Médico no encontrado")
     return jsonable_encoder(medico)
 
 
 @router.post("/", response_model=dict, status_code=status.HTTP_201_CREATED)
 async def create_medico(medico_data: dict, service: MedicoService = Depends(get_medico_service)):
     """Crea un nuevo medico"""
-    # Crear objeto MedicoCreate desde el dict
-    medico = MedicoCreate(
-        dni=medico_data['dni'],
-        nombre=medico_data['nombre'],
-        apellido=medico_data['apellido'],
-        telefono=medico_data['telefono'],
-        id_usuario=medico_data.get('id_usuario'),
-        matricula=medico_data['matricula'],
-        id_especialidad=medico_data.get('id_especialidad')
-    )
-    resultado = service.create(medico)
-    return jsonable_encoder(resultado)
+    try:
+        medico = MedicoCreate(
+            dni=medico_data['dni'],
+            nombre=medico_data['nombre'],
+            apellido=medico_data['apellido'],
+            matricula=medico_data['matricula'],
+            telefono=medico_data.get('telefono'),
+            id_usuario=medico_data['id_usuario'],
+            id_especialidad=medico_data['id_especialidad']
+        )
+        resultado = service.create(medico)
+        return jsonable_encoder(resultado)
+    
+    except KeyError as e:
+        raise HTTPException(status_code=400, detail=f"Falta el campo obligatorio: {str(e)}")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.put("/{medico_id}", response_model=dict)
@@ -56,19 +63,30 @@ async def update_medico(
     service: MedicoService = Depends(get_medico_service)
 ):
     """Actualiza un medico existente"""
-    # Crear objeto MedicoUpdate desde el dict
-    medico_update = MedicoUpdate(
-        nombre=medico_data.get('nombre'),
-        apellido=medico_data.get('apellido'),
-        telefono=medico_data.get('telefono'),
-        id_especialidad=medico_data.get('id_especialidad')
-    )
-    resultado = service.update(medico_id, medico_update)
-    return jsonable_encoder(resultado)
+    try:
+        medico_update = MedicoUpdate(
+            nombre=medico_data.get('nombre'),
+            apellido=medico_data.get('apellido'),
+            telefono=medico_data.get('telefono'),
+            id_especialidad=medico_data.get('id_especialidad')
+        )
+        resultado = service.update(medico_id, medico_update)
+        if not resultado:
+            raise HTTPException(status_code=404, detail="Médico no encontrado")
+        return jsonable_encoder(resultado)
+    
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.delete("/{medico_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_medico(medico_id: int, service: MedicoService = Depends(get_medico_service)):
     """Elimina un medico"""
-    service.delete(medico_id)
-    return None
+    try:
+        success = service.delete(medico_id)
+        if not success:
+            raise HTTPException(status_code=404, detail="Médico no encontrado")
+        return None
+    
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))

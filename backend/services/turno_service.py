@@ -12,8 +12,29 @@ class TurnoService:
         self.db = db
         self.cursor = db.cursor()
 
-    def _get_turno_completo(self, row) -> TurnoResponse:
+    def _get_turno_completo(self, turno_id: int) -> Optional[TurnoResponse]:
+        """Obtiene un turno con sus relaciones"""
+        self.cursor.execute("SELECT * FROM turno WHERE id_turno = ?", (turno_id,))
+        row = self.cursor.fetchone()
+        
+        if not row:
+            return None
+        
         turno_dict = dict(row)
+        
+        # Obtener relaciones usando sus servicios
+        paciente_obj = None
+        if turno_dict.get('id_paciente'):
+            paciente_obj = PacienteService(self.db).get_by_id(turno_dict['id_paciente'])
+        
+        medico_obj = None
+        if turno_dict.get('id_medico'):
+            medico_obj = MedicoService(self.db).get_by_id(turno_dict['id_medico'])
+        
+        estado_turno_obj = None
+        if turno_dict.get('id_estado_turno'):
+            estado_turno_obj = EstadoTurnoService(self.db).get_by_id(turno_dict['id_estado_turno'])
+        
         return TurnoResponse(
             id_turno=turno_dict['id_turno'],
             id_paciente=turno_dict['id_paciente'],
@@ -22,85 +43,89 @@ class TurnoService:
             fecha_hora_inicio=turno_dict['fecha_hora_inicio'],
             fecha_hora_fin=turno_dict['fecha_hora_fin'],
             motivo_consulta=turno_dict.get('motivo_consulta'),
-            paciente=PacienteService(self.db).get_by_id(turno_dict['id_paciente']),
-            medico=MedicoService(self.db).get_by_id(turno_dict['id_medico']),
-            estado_turno=EstadoTurnoService(self.db).get_by_id(turno_dict['id_estado_turno'])
+            recordatorio_notificado=bool(turno_dict.get('recordatorio_notificado', 0)),
+            reserva_notificada=bool(turno_dict.get('reserva_notificada', 0)),
+            paciente=paciente_obj,
+            medico=medico_obj,
+            estado_turno=estado_turno_obj
         )
 
     def get_all(self) -> List[TurnoResponse]:
         """Obtiene todos los turnos"""
-        self.cursor.execute("SELECT * FROM turno")
+        self.cursor.execute("SELECT id_turno FROM turno")
         rows = self.cursor.fetchall()
+        
         turnos = []
         for row in rows:
-            turno_dict = dict(row)
-            turnos.append(TurnoResponse(
-                id_turno=turno_dict['id_turno'],
-                id_paciente=turno_dict['id_paciente'],
-                id_medico=turno_dict['id_medico'],
-                id_estado_turno=turno_dict['id_estado_turno'],
-                fecha_hora_inicio=turno_dict['fecha_hora_inicio'],
-                fecha_hora_fin=turno_dict['fecha_hora_fin'],
-                motivo_consulta=turno_dict.get('motivo_consulta'),
-                paciente=PacienteService(self.db).get_by_id(turno_dict['id_paciente']),
-                medico=MedicoService(self.db).get_by_id(turno_dict['id_medico']),
-                estado_turno=EstadoTurnoService(self.db).get_by_id(turno_dict['id_estado_turno'])
-            ))
+            turno_id = dict(row)['id_turno']
+            turno_completo = self._get_turno_completo(turno_id)
+            if turno_completo:
+                turnos.append(turno_completo)
+        
         return turnos
 
     def get_by_id(self, turno_id: int) -> Optional[TurnoResponse]:
-        """Obtiene un turno por ID"""
-        self.cursor.execute("SELECT * FROM turno WHERE id_turno = ?", (turno_id,))
-        row = self.cursor.fetchone()
-        if row:
-            turno_dict = dict(row)
-            return TurnoResponse(
-                id_turno=turno_dict['id_turno'],
-                id_paciente=turno_dict['id_paciente'],
-                id_medico=turno_dict['id_medico'],
-                id_estado_turno=turno_dict['id_estado_turno'],
-                fecha_hora_inicio=turno_dict['fecha_hora_inicio'],
-                fecha_hora_fin=turno_dict['fecha_hora_fin'],
-                motivo_consulta=turno_dict.get('motivo_consulta'),
-                paciente=PacienteService(self.db).get_by_id(turno_dict['id_paciente']),
-                medico=MedicoService(self.db).get_by_id(turno_dict['id_medico']),
-                estado_turno=EstadoTurnoService(self.db).get_by_id(turno_dict['id_estado_turno'])
-            )
-        return None
+        """Obtiene un turno por su ID"""
+        return self._get_turno_completo(turno_id)
 
     def create(self, turno_data: TurnoCreate) -> TurnoResponse:
+        """Crea un nuevo turno"""
         try:
-            """Crea un nuevo turno"""
-            self.cursor.execute(
-                "INSERT INTO turno (fecha_hora_inicio, fecha_hora_fin, id_estado_turno, id_paciente, id_medico, motivo_consulta) VALUES (?, ?, ?, ?, ?, ?)",
-                (turno_data.fecha_hora_inicio, turno_data.fecha_hora_fin, turno_data.id_estado_turno, turno_data.id_paciente, turno_data.id_medico, turno_data.motivo_consulta)
-            )
+            # Insertar nuevo turno
+            self.cursor.execute("""
+                INSERT INTO turno (fecha_hora_inicio, fecha_hora_fin, id_estado_turno, id_paciente, id_medico, motivo_consulta)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """, (
+                turno_data.fecha_hora_inicio,
+                turno_data.fecha_hora_fin,
+                turno_data.id_estado_turno,
+                turno_data.id_paciente,
+                turno_data.id_medico,
+                turno_data.motivo_consulta
+            ))
+            
             self.db.commit()
+            
+            # Obtener el turno recién creado
             turno_id = self.cursor.lastrowid
-            return self.get_by_id(turno_id)
-        
+            return self._get_turno_completo(turno_id)
+            
         except sqlite3.IntegrityError as e:
-            raise ValueError("Error de integridad al crear el turno: " + str(e))
+            self.db.rollback()
+            raise ValueError("Error al crear el turno: " + str(e))
         
 
     def update(self, turno_id: int, turno_data: dict) -> Optional[TurnoResponse]:
+        """Actualiza los datos de un turno existente"""
         existing = self.get_by_id(turno_id)
         if not existing:
             return None
         
-        fields = []
-        values = []
-        for key, value in turno_data.items():
-            fields.append(f"{key} = ?")
-            values.append(value)
-        values.append(turno_id)
-
-        sql = f"UPDATE turno SET {', '.join(fields)} WHERE id_turno = ?"
-        self.cursor.execute(sql, values)
-        self.db.commit()
-        return self.get_by_id(turno_id)
+        try:
+            update_fields = []
+            update_values = []
+            
+            for key, value in turno_data.items():
+                update_fields.append(f"{key} = ?")
+                update_values.append(value)
+            
+            if not update_fields:
+                raise ValueError("No se proporcionaron campos para actualizar")
+            
+            update_values.append(turno_id)
+            
+            query = f"UPDATE turno SET {', '.join(update_fields)} WHERE id_turno = ?"
+            self.cursor.execute(query, update_values)
+            self.db.commit()
+            
+            return self._get_turno_completo(turno_id)
+            
+        except sqlite3.IntegrityError as e:
+            self.db.rollback()
+            raise ValueError("Error al actualizar el turno: " + str(e))
     
     def delete(self, turno_id: int) -> bool:
+        """Elimina un turno por su ID"""
         existing = self.get_by_id(turno_id)
         if not existing:
             return False
@@ -109,14 +134,14 @@ class TurnoService:
             self.cursor.execute("DELETE FROM turno WHERE id_turno = ?", (turno_id,))
             self.db.commit()
             return True
+            
         except sqlite3.IntegrityError as e:
-            raise ValueError("Error de integridad al actualizar el turno: " + str(e))
+            self.db.rollback()
+            raise ValueError("Error al eliminar el turno: " + str(e))
         
 
     def notificar_recordatorios_turnos(self):
-        """
-        Marca los turnos que deben ser notificados por recordatorio.
-        """
+        """Marca los turnos que deben ser notificados por recordatorio"""
         try:
             
             

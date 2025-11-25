@@ -30,13 +30,14 @@ async def get_all_pacientes(service: PacienteService = Depends(get_paciente_serv
 async def get_paciente_by_id(paciente_id: int, service: PacienteService = Depends(get_paciente_service)):
     """Obtiene un paciente por ID"""
     paciente = service.get_by_id(paciente_id)
+    if not paciente:
+        raise HTTPException(status_code=404, detail="Paciente no encontrado")
     return jsonable_encoder(paciente)
 
 
 @router.post("/", response_model=dict, status_code=status.HTTP_201_CREATED)
 async def create_paciente(paciente_data: dict, service: PacienteService = Depends(get_paciente_service)):
     """Crea un nuevo paciente"""
-    # Crear objeto PacienteCreate desde el dict
     try:
         paciente = PacienteCreate(
             dni=paciente_data['dni'],
@@ -50,9 +51,12 @@ async def create_paciente(paciente_data: dict, service: PacienteService = Depend
         )
         resultado = service.create(paciente)
         return jsonable_encoder(resultado)
+    
+    except KeyError as e:
+        raise HTTPException(status_code=400, detail=f"Falta el campo obligatorio: {str(e)}")
     except ValueError as e:
-        # Si hay error (ej: dni duplicado), lanzamos un 400 Bad Request
         raise HTTPException(status_code=400, detail=str(e))
+
 
 @router.put("/{paciente_id}", response_model=dict)
 async def update_paciente(
@@ -60,9 +64,8 @@ async def update_paciente(
     paciente_data: dict,
     service: PacienteService = Depends(get_paciente_service)
 ):
+    """Actualiza un paciente existente"""
     try:
-        """Actualiza un paciente existente"""
-        # Crear objeto PacienteUpdate desde el dict
         paciente_update = PacienteUpdate(
             nombre=paciente_data.get('nombre'),
             apellido=paciente_data.get('apellido'),
@@ -72,7 +75,10 @@ async def update_paciente(
             nro_afiliado=paciente_data.get('nro_afiliado')
         )
         resultado = service.update(paciente_id, paciente_update)
+        if not resultado:
+            raise HTTPException(status_code=404, detail="Paciente no encontrado")
         return jsonable_encoder(resultado)
+    
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     
@@ -80,6 +86,11 @@ async def update_paciente(
 @router.delete("/{paciente_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_paciente(paciente_id: int, service: PacienteService = Depends(get_paciente_service)):
     """Elimina un paciente"""
-    service.delete(paciente_id)
-    return None
-
+    try:
+        success = service.delete(paciente_id)
+        if not success:
+            raise HTTPException(status_code=404, detail="Paciente no encontrado")
+        return None
+    
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))

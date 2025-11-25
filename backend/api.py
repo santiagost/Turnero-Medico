@@ -49,7 +49,7 @@ async def lifespan(app: FastAPI):
     scheduler = BackgroundScheduler()
     
     # Configuramos para que corra cada 10 o 30 segundos
-    scheduler.add_job(chequear_recordatorios_background, 'interval', seconds=10)
+    scheduler.add_job(chequear_recordatorios_background, 'interval', seconds=3600)
     scheduler.start()
 
     print("Scheduler de notificaciones INICIADO")
@@ -116,6 +116,10 @@ FastAPIApp.include_router(estado_turno_router)
 FastAPIApp.include_router(usuario_router)
 FastAPIApp.include_router(medico_router)
 FastAPIApp.include_router(turno_router)
+FastAPIApp.include_router(consulta_router)
+FastAPIApp.include_router(usuario_rol_router)
+FastAPIApp.include_router(receta_router)
+FastAPIApp.include_router(horario_atencion_router)
 
 # Evento de cierre: cerrar la conexión a la base de datos
 @app.on_event("shutdown")

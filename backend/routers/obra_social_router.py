@@ -50,7 +50,7 @@ async def create_obra_social(obra_social_data: dict, service: ObraSocialService 
     except KeyError as e:
         raise HTTPException(status_code=400, detail=f"Falta el campo obligatorio: {str(e)}")
     
-    except ValueError as e: # capturamos el error del servicio
+    except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     
 
@@ -77,9 +77,13 @@ async def update_obra_social(
 
 @router.delete("/{obra_social_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_obra_social(obra_social_id: int, service: ObraSocialService = Depends(get_obra_social_service)):
-        """Elimina una obra social por ID"""
+    """Elimina una obra social por ID"""
+    try:
         eliminado_os = service.delete(obra_social_id)
         if not eliminado_os:
             raise HTTPException(status_code=404, detail="Obra Social no encontrada")
         return None
+    
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 

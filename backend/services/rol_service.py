@@ -1,7 +1,3 @@
-"""
-Servicio de gestión de roles de usuario. - Contiene la lógica de negocio y acceso a datos
-"""
-
 from http.client import HTTPException
 import sqlite3
 from typing import List, Optional
@@ -41,60 +37,68 @@ class RolService:
         return roles
 
     def get_by_id(self, rol_id: int) -> Optional[RolResponse]:
-        """Obtiene un rol por ID"""
-        self.cursor.execute("SELECT * FROM rol WHERE id_rol = ?", (rol_id,))
-        row = self.cursor.fetchone()
-        if row:
-            role_dict = dict(row)
-            return RolResponse(
-                id_rol=role_dict['id_rol'],
-                nombre=role_dict['nombre'],
-                descripcion=role_dict.get('descripcion')
-            )
-        return None
+        """Obtiene un rol por su ID"""
+        return self._get_rol_completo(rol_id)
 
     def create(self, rol_data: RolCreate) -> RolResponse:
         """Crea un nuevo rol"""
         try:
-
-            self.cursor.execute(
-                "INSERT INTO rol (nombre, descripcion) VALUES (?, ?)",
-                (rol_data.nombre, rol_data.descripcion)
-            )
+            self.cursor.execute("""
+                INSERT INTO rol (nombre, descripcion)
+                VALUES (?, ?)
+            """, (
+                rol_data.nombre,
+                rol_data.descripcion
+            ))
+            
             self.db.commit()
+            
+            # Obtener el rol recién creado
             rol_id = self.cursor.lastrowid
-            return self.get_by_id(rol_id)
+            return self._get_rol_completo(rol_id)
+            
         except sqlite3.IntegrityError as e:
             self.db.rollback()
             raise ValueError(f"Error al crear el rol: {e}")
         
 
     def update(self, rol_id: int, rol_data: RolUpdate) -> Optional[RolResponse]:
-        """Actualiza un rol existente"""
-        existing_rol = self.get_by_id(rol_id)
-        if not existing_rol:
+        """Actualiza los datos de un rol existente"""
+        existing = self.get_by_id(rol_id)
+        if not existing:
             return None
-
-        nombre = rol_data.nombre if rol_data.nombre is not None else existing_rol.nombre
-        descripcion = rol_data.descripcion if rol_data.descripcion is not None else existing_rol.descripcion
-
-        self.cursor.execute(
-            "UPDATE rol SET nombre = ?, descripcion = ? WHERE id_rol = ?",
-            (nombre, descripcion, rol_id)
-        )
-        self.db.commit()
-        return self.get_by_id(rol_id)
-    
-    def delete(self, rol_id: int) -> None:
+        
         try:
-            self.cursor.execute("SELECT id_rol FROM rol WHERE id_rol = ?", (rol_id,))
-            if not self.cursor.fetchone():
-                raise ValueError("Rol no encontrado")
-            self.cursor.execute("DELETE FROM rol WHERE id_rol = ?", (rol_id,))
+            nombre = rol_data.nombre if rol_data.nombre is not None else existing.nombre
+            descripcion = rol_data.descripcion if rol_data.descripcion is not None else existing.descripcion
+            
+            self.cursor.execute("""
+                UPDATE rol SET nombre = ?, descripcion = ?
+                WHERE id_rol = ?
+            """, (nombre, descripcion, rol_id))
+            
             self.db.commit()
+            
+            return self._get_rol_completo(rol_id)
+            
         except sqlite3.IntegrityError as e:
             self.db.rollback()
-            raise ValueError(f"No se puede eliminar el rol: {e}")
+            raise ValueError(f"Error al actualizar el rol: {e}")
+    
+    def delete(self, rol_id: int) -> bool:
+        """Elimina un rol por su ID"""
+        existing = self.get_by_id(rol_id)
+        if not existing:
+            return False
+        
+        try:
+            self.cursor.execute("DELETE FROM rol WHERE id_rol = ?", (rol_id,))
+            self.db.commit()
+            return True
+            
+        except sqlite3.IntegrityError as e:
+            self.db.rollback()
+            raise ValueError(f"Error al eliminar el rol: {e}")
         
                     
             

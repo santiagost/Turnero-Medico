@@ -47,7 +47,7 @@ async def create_especialidad(especialidad_data: dict, service: EspecialidadServ
     except KeyError as e:
         raise HTTPException(status_code=400, detail=f"Falta el campo obligatorio: {str(e)}")
     
-    except ValueError as e: # capturamos el error del servicio
+    except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -56,25 +56,28 @@ async def update_especialidad(
     especialidad_id: int, 
     especialidad_data: dict, 
     service: EspecialidadService = Depends(get_especialidad_service)):
-
+    """Actualiza una especialidad existente"""
     try:
-        """Actualiza una especialidad existente"""
         especialidad_actualizada = service.update(especialidad_id, especialidad_data)
         if especialidad_actualizada is None:
             raise HTTPException(status_code=404, detail="Especialidad no encontrada")
         return jsonable_encoder(especialidad_actualizada)
         
-    except ValueError as e:  # capturamos el error del servicio
+    except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     
 
 @router.delete("/{especialidad_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_especialidad(especialidad_id: int, service: EspecialidadService = Depends(get_especialidad_service)):
-        """Elimina una especialidad por ID"""
+    """Elimina una especialidad por ID"""
+    try:
         eliminado_esp = service.delete(especialidad_id)
         if not eliminado_esp:
             raise HTTPException(status_code=404, detail="Especialidad no encontrada")
         return None
+    
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 
