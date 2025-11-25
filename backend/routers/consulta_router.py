@@ -37,6 +37,12 @@ async def get_consulta_by_id(consulta_id: int, service: ConsultaService = Depend
     return jsonable_encoder(consulta)
 
 
+@router.get("/paciente/{id_paciente}", response_model=List[dict])
+async def get_consultas_by_paciente(id_paciente: int, service: ConsultaService = Depends(get_consulta_service)):
+    """Obtiene todas las consultas de un paciente por su ID"""
+    consultas_paciente = service.get_by_paciente_id(id_paciente)
+    return jsonable_encoder(consultas_paciente)
+
 @router.post("/", response_model=dict, status_code=status.HTTP_201_CREATED)
 async def create_consulta(consulta_data: dict, service: ConsultaService = Depends(get_consulta_service)):
     """Crea una nueva consulta"""

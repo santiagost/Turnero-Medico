@@ -141,6 +141,26 @@ class ConsultaService:
         except sqlite3.IntegrityError as e:
             self.db.rollback()
             raise ValueError("Error al eliminar la consulta: " + str(e))
+        
+    def get_by_paciente_id(self, paciente_id: int) -> List[ConsultaResponse]:
+        """Obtiene todas las consultas asociadas a un paciente específico"""
+        self.cursor.execute("""
+            SELECT C.id_consulta
+            FROM Consulta C
+            JOIN Turno T ON C.id_turno = T.id_turno
+            WHERE T.id_paciente = ?
+        """, (paciente_id,))
+        
+        rows = self.cursor.fetchall()
+        
+        consultas = []
+        for row in rows:
+            consulta_id = dict(row)['id_consulta']
+            consulta_completa = self._get_consulta_completa(consulta_id)
+            if consulta_completa:
+                consultas.append(consulta_completa)
+        
+        return consultas
 
 
         
