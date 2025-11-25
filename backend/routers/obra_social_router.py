@@ -1,7 +1,7 @@
 
 from fastapi import APIRouter, HTTPException, Depends, status
 from fastapi.encoders import jsonable_encoder
-from typing import List
+from typing import List, Optional
 import sqlite3
 from database import get_db
 from models.obraSocial import ObraSocialResponse, ObraSocialCreate
@@ -19,9 +19,9 @@ def get_obra_social_service(db: sqlite3.Connection = Depends(get_db)) -> ObraSoc
     return ObraSocialService(db)
 
 @router.get("/", response_model=List[dict])
-async def get_all_obras_sociales(service: ObraSocialService = Depends(get_obra_social_service)):
+async def get_all_obras_sociales(id_obra_social: Optional[int] = None, nombre: Optional[str] = None, cuit: Optional[str] = None, telefono: Optional[str] = None, mail: Optional[str] = None, service: ObraSocialService = Depends(get_obra_social_service)):
     """Obtiene todas las obras sociales"""
-    obras_sociales = service.get_all()
+    obras_sociales = service.get_all(id_obra_social=id_obra_social, nombre=nombre, cuit=cuit, telefono=telefono, mail=mail)
     return jsonable_encoder(obras_sociales)
 
 

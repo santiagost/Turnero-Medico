@@ -25,10 +25,41 @@ class ObraSocialService:
             mail= obra_social_dict['mail']
         )
     
-    def get_all(self) -> List[ObraSocialResponse]:
+    def get_all(self,
+                id_obra_social: Optional[int] = None,
+                nombre: Optional[str] = None,
+                cuit: Optional[str] = None,
+                telefono: Optional[str] = None,
+                mail: Optional[str] = None) -> List[ObraSocialResponse]:
         """Obtiene todas las obras sociales"""
-        self.cursor.execute("SELECT * FROM obrasocial")
+
+        sql = "SELECT * FROM obrasocial"
+
+        params = []
+        conditions = []
+
+        if id_obra_social is not None:
+            conditions.append("id_obra_social = ?")
+            params.append(id_obra_social)
+        if nombre is not None:
+            conditions.append("nombre LIKE ?")
+            params.append(f"%{nombre}%")
+        if cuit is not None:
+            conditions.append("cuit = ?")
+            params.append(cuit)
+        if telefono is not None:
+            conditions.append("telefono = ?")
+            params.append(telefono)
+        if mail is not None:
+            conditions.append("mail = ?")
+            params.append(mail)
+        
+        if conditions:
+            sql += " WHERE " + " AND ".join(conditions)
+
+        self.cursor.execute(sql, params)
         rows = self.cursor.fetchall()
+
         obras_sociales = []
         for row in rows:
             obra_social_id = dict(row)['id_obra_social']
