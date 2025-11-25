@@ -13,21 +13,24 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
+def get_turno_service(db: sqlite3.Connection = Depends(get_db)) -> TurnoService:
+    """Dependency Injection para el servicio de turnos"""
+    return TurnoService(db)
+
 @router.get("/", response_model=List[dict])
-async def get_all_turnos(service: TurnoService = Depends(lambda db=Depends(get_db): TurnoService(db))):
+async def get_all_turnos(service: TurnoService = Depends(get_turno_service)):
     """Obtiene todos los turnos"""
     turnos = service.get_all()
     return jsonable_encoder(turnos)
 
 
-
 @router.get("/prueba_notificaciones", status_code=status.HTTP_200_OK)
-async def notificar_recordatorios(service: TurnoService = Depends(lambda db=Depends(get_db): TurnoService(db))):
+async def notificar_recordatorios(service: TurnoService = Depends(get_turno_service)):
     turnos_notificados = service.notificar_recordatorios_turnos()
     return {"mensaje": "Recordatorios de turnos notificados", "turnos": jsonable_encoder(turnos_notificados)}
 
 @router.get("/{turno_id}", response_model=dict)
-async def get_turno_by_id(turno_id: int, service: TurnoService = Depends(lambda db=Depends(get_db): TurnoService(db))):
+async def get_turno_by_id(turno_id: int, service: TurnoService = Depends(get_turno_service)):
     """Obtiene un turno por ID"""
     turno = service.get_by_id(turno_id)
     if not turno:
@@ -35,7 +38,7 @@ async def get_turno_by_id(turno_id: int, service: TurnoService = Depends(lambda 
     return jsonable_encoder(turno)
 
 @router.post("/", response_model=dict, status_code=status.HTTP_201_CREATED)
-async def create_turno(turno_data: dict, service: TurnoService = Depends(lambda db=Depends(get_db): TurnoService(db))):
+async def create_turno(turno_data: dict, service: TurnoService = Depends(get_turno_service)):
     try:
         turno = TurnoCreate(
             id_paciente=turno_data['id_paciente'],
@@ -49,7 +52,7 @@ async def create_turno(turno_data: dict, service: TurnoService = Depends(lambda 
         return jsonable_encoder(resultado)
     except KeyError as e:
         raise HTTPException(status_code=400, detail=f"Falta el campo obligatorio: {str(e)}")
-    except ValueError as e: # capturamos el error del servicio
+    except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     
 
@@ -57,7 +60,7 @@ async def create_turno(turno_data: dict, service: TurnoService = Depends(lambda 
 async def update_turno(
     turno_id: int, 
     turno_data: dict, 
-    service: TurnoService = Depends(lambda db=Depends(get_db): TurnoService(db))):
+    service: TurnoService = Depends(get_turno_service)):
 
     try:
         resultado = service.update(turno_id, turno_data)
@@ -69,9 +72,14 @@ async def update_turno(
     
 
 @router.delete("/{turno_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_turno(turno_id: int, service: TurnoService = Depends(lambda db=Depends(get_db): TurnoService(db))):
-    resultado = service.delete(turno_id)
-    if not resultado:
-        raise HTTPException(status_code=404, detail="Turno no encontrado")
-    return None
+async def delete_turno(turno_id: int, service: TurnoService = Depends(get_turno_service)):
+    """Elimina un turno"""
+    try:
+        resultado = service.delete(turno_id)
+        if not resultado:
+            raise HTTPException(status_code=404, detail="Turno no encontrado")
+        return None
+    
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 

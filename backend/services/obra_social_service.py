@@ -38,40 +38,29 @@ class ObraSocialService:
         return obras_sociales
     
     def get_by_id(self, obra_social_id: int) -> Optional[ObraSocialResponse]:
-        """Obtiene una obra social por ID"""
-        self.cursor.execute("SELECT * FROM obrasocial WHERE id_obra_social = ?", (obra_social_id,))
-        row = self.cursor.fetchone()
-        if row:
-            obra_social_dict = dict(row)
-            return ObraSocialResponse(
-                id_obra_social=obra_social_dict['id_obra_social'],
-                nombre=obra_social_dict['nombre'],
-                cuit= obra_social_dict['cuit'],
-                direccion= obra_social_dict['direccion'],
-                telefono= obra_social_dict['telefono'],
-                mail= obra_social_dict['mail']
-            )
-        return None
+        """Obtiene una obra social por su ID"""
+        return self._get_obra_social_completa(obra_social_id)
     
     def create(self, obra_social_data: ObraSocialCreate) -> ObraSocialResponse:
         """Crea una nueva obra social"""
         try:
-            self.cursor.execute(
-                """
+            self.cursor.execute("""
                 INSERT INTO obrasocial (nombre, cuit, direccion, telefono, mail)
                 VALUES (?, ?, ?, ?, ?)
-                """,
-                (
-                    obra_social_data.nombre,
-                    obra_social_data.cuit,
-                    obra_social_data.direccion,
-                    obra_social_data.telefono,
-                    obra_social_data.mail
-                )
-            )
+            """, (
+                obra_social_data.nombre,
+                obra_social_data.cuit,
+                obra_social_data.direccion,
+                obra_social_data.telefono,
+                obra_social_data.mail
+            ))
+            
             self.db.commit()
-            nueva_id = self.cursor.lastrowid
-            return self.get_by_id(nueva_id)
+            
+            # Obtener la obra social recién creada
+            obra_social_id = self.cursor.lastrowid
+            return self._get_obra_social_completa(obra_social_id)
+            
         except sqlite3.IntegrityError as e:
             self.db.rollback()
             raise ValueError("Error al crear la obra social: " + str(e))
@@ -83,48 +72,51 @@ class ObraSocialService:
                direccion: Optional[str],
                telefono: Optional[str],
                mail: Optional[str]) -> Optional[ObraSocialResponse]:
-        
-        """Actualiza una obra social existente"""
-        existing_obra_social = self.get_by_id(obra_social_id)
-        if not existing_obra_social:
+        """Actualiza los datos de una obra social existente"""
+        existing = self.get_by_id(obra_social_id)
+        if not existing:
             return None
         
-        updated_nombre = nombre if nombre is not None else existing_obra_social.nombre
-        updated_cuit = cuit if cuit is not None else existing_obra_social.cuit
-        updated_direccion = direccion if direccion is not None else existing_obra_social.direccion
-        updated_telefono = telefono if telefono is not None else existing_obra_social.telefono
-        updated_mail = mail if mail is not None else existing_obra_social.mail
-        
         try:
-            self.cursor.execute(
-                """
+            updated_nombre = nombre if nombre is not None else existing.nombre
+            updated_cuit = cuit if cuit is not None else existing.cuit
+            updated_direccion = direccion if direccion is not None else existing.direccion
+            updated_telefono = telefono if telefono is not None else existing.telefono
+            updated_mail = mail if mail is not None else existing.mail
+            
+            # Ejecutar update
+            self.cursor.execute("""
                 UPDATE obrasocial
                 SET nombre = ?, cuit = ?, direccion = ?, telefono = ?, mail = ?
                 WHERE id_obra_social = ?
-                """,
-                (
-                    updated_nombre,
-                    updated_cuit,
-                    updated_direccion,
-                    updated_telefono,
-                    updated_mail,
-                    obra_social_id
-                )
-            )
+            """, (
+                updated_nombre,
+                updated_cuit,
+                updated_direccion,
+                updated_telefono,
+                updated_mail,
+                obra_social_id
+            ))
+            
             self.db.commit()
-            return self.get_by_id(obra_social_id)
-
+            
+            return self._get_obra_social_completa(obra_social_id)
+            
         except sqlite3.IntegrityError as e:
             self.db.rollback()
             raise ValueError("Error al actualizar la obra social: " + str(e))
     
     def delete(self, obra_social_id: int) -> bool:
-        """Elimina una obra social por ID"""
+        """Elimina una obra social por su ID"""
+        existing = self.get_by_id(obra_social_id)
+        if not existing:
+            return False
+        
         try:
             self.cursor.execute("DELETE FROM obrasocial WHERE id_obra_social = ?", (obra_social_id,))
             self.db.commit()
-            return self.cursor.rowcount > 0
-
+            return True
+            
         except sqlite3.IntegrityError as e:
             self.db.rollback()
             raise ValueError("Error al eliminar la obra social: " + str(e))

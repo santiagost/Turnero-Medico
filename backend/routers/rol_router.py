@@ -73,10 +73,12 @@ async def update_rol(
 @router.delete("/{rol_id}", status_code=204)
 async def delete_rol(rol_id: int, service: RolService = Depends(get_rol_service)):
     """Elimina un rol existente"""
-    existing_rol = service.get_by_id(rol_id)
-    if not existing_rol:
-        raise HTTPException(status_code=404, detail="Rol no encontrado")
-
-    service.delete(rol_id)
-    return None
+    try:
+        success = service.delete(rol_id)
+        if not success:
+            raise HTTPException(status_code=404, detail="Rol no encontrado")
+        return None
+    
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
