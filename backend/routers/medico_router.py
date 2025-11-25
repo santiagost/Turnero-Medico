@@ -67,6 +67,12 @@ async def update_horarios_medico(
     pass
 
 
+@router.get("/mis_pacientes/{medico_id}", response_model=List[dict])
+async def get_mis_pacientes(medico_id: int, service: MedicoService = Depends(get_medico_service)):
+    """Obtiene los pacientes asignados a un médico"""
+    pacientes = service.get_pacientes_de_medico(medico_id)
+    return jsonable_encoder(pacientes)
+
 @router.post("/", response_model=dict, status_code=status.HTTP_201_CREATED)
 async def create_medico(medico_data: dict, service: MedicoService = Depends(get_medico_service)):
     """Crea un nuevo medico"""

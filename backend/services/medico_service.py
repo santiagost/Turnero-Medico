@@ -233,7 +233,22 @@ class MedicoService:
         
 
     # FUNCIONES DE NEGOCIO
-
+    def get_pacientes_de_medico(self, medico_id: int) -> List[dict]:
+        """Obtiene los pacientes asignados a un médico específico"""
+        self.cursor.execute("""
+            SELECT DISTINCT p.id_paciente, p.dni, p.nombre, p.apellido
+            FROM Paciente p
+            JOIN Turno t ON p.id_paciente = t.id_paciente
+            WHERE t.id_medico = ?
+        """, (medico_id,))
+        
+        rows = self.cursor.fetchall()
+        pacientes = []
+        for row in rows:
+            paciente_dict = dict(row)
+            pacientes.append(paciente_dict)
+        
+        return pacientes
     
 
 

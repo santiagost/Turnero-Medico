@@ -9,7 +9,7 @@ DB_FILE = os.path.join(BASE_DIR, "turnero_medico.db")
 
 # hoy = '2024-11-24 17:00:00'
 
-# hoy = datetime.date.today().isoformat()
+hoy = datetime.date.today().isoformat()
 manana = (datetime.date.today() + datetime.timedelta(days=1)).isoformat()
 
 
@@ -140,6 +140,9 @@ INSERT INTO Turno (id_paciente, id_medico, id_estado_turno, fecha_hora_inicio, f
 (2, 2, 1, '2024-12-28 10:00:00', '2024-12-28 10:20:00', 'para marcar como ausente', 1, 0),
 (3, 2, 2, '2024-11-9 10:00:00', '2024-11-9 10:20:00', 'Turno 1', 1, 1),
 (3, 3, 2, '2025-11-10 09:00:00', '2024-11-10 09:30:00', 'Turno 2', 0, 1),
+(3, 2, 1, '{hoy} 09:00:00', '{hoy} 09:30:00', 'Turno 3', 0, 0),
+(3, 3, 1, '{hoy} 12:00:00', '{hoy} 12:30:00', 'Turno 4', 0, 0),
+(3, 3, 3, '{hoy} 20:00:00', '{hoy} 20:30:00', 'Turno 5', 0, 0),
 (3, 2, 1, '{manana} 09:00:00', '{manana} 09:30:00', 'Turno 3', 0, 0),
 (3, 3, 1, '{manana} 12:00:00', '{manana} 12:30:00', 'Turno 4', 0, 0),
 (3, 3, 3, '{manana} 15:00:00', '{manana} 15:30:00', 'Turno 5', 0, 0);
