@@ -112,9 +112,21 @@ INSERT INTO Paciente (id_usuario, dni, nombre, apellido, fecha_nacimiento, telef
 -- Horarios de Atención 
 
 INSERT INTO HorarioAtencion (id_medico, dia_semana, hora_inicio, hora_fin, duracion_turno_min) VALUES 
+
+-- house:
 (1, 0, '08:00', '12:00', 30), -- House Lunes
+(1, 1, '14:00', '18:00', 30), -- House Martes
 (1, 2, '14:00', '18:00', 30), -- House Miércoles
-(2, 1, '09:00', '17:00', 20); -- Grey Martes (turnos de 20 min)
+(1, 3, '08:00', '12:00', 30), -- House Jueves
+(1, 4, '08:00', '12:00', 30), -- House Viernes
+
+
+-- grey:
+(2, 0, '08:00', '12:00', 30), -- Grey Lunes
+(2, 1, '14:00', '18:00', 30), -- Grey Martes
+(2, 2, '14:00', '18:00', 30), -- Grey Miércoles
+(2, 3, '08:00', '12:00', 30), -- Grey Jueves
+(2, 4, '08:00', '12:00', 30); -- Grey Viernes
 
 -- ============================================================================================================================================
 -- Turnos

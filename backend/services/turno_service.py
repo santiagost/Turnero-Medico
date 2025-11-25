@@ -5,12 +5,80 @@ from models.turno import TurnoCreate, TurnoResponse
 from services.paciente_service import PacienteService
 from services.medico_service import MedicoService
 from services.estado_turno_service import EstadoTurnoService
+from services.horario_atencion_service import HorarioAtencionService
 from utils.email_sender import *
+
+
 
 class TurnoService:
     def __init__(self, db: sqlite3.Connection):
         self.db = db
         self.cursor = db.cursor()
+
+    def _hay_solapamiento_turnos(self, id_persona: int, fecha_hora_inicio: str, fecha_hora_fin: str, es_medico: bool) -> bool:
+        """Verifica si hay solapamiento de turnos para un médico o paciente"""
+        campo_id = 'id_medico' if es_medico else 'id_paciente'
+        
+        self.cursor.execute(f"""
+            SELECT COUNT(*) as count FROM turno
+            WHERE {campo_id} = ?
+            AND (
+                (datetime(fecha_hora_inicio) < datetime(?) AND datetime(fecha_hora_fin) > datetime(?))
+                OR
+                (datetime(fecha_hora_inicio) >= datetime(?) AND datetime(fecha_hora_inicio) < datetime(?))
+                OR
+                (datetime(fecha_hora_fin) > datetime(?) AND datetime(fecha_hora_fin) <= datetime(?))
+            )
+        """, (id_persona, fecha_hora_fin, fecha_hora_inicio, fecha_hora_inicio, fecha_hora_fin, fecha_hora_inicio, fecha_hora_fin))
+        
+        row = self.cursor.fetchone()
+
+        return row['count'] > 0
+
+    
+    def _es_turno_valido(self, turno_data: TurnoCreate) -> bool:
+        """Valida si un turno cumple con las reglas de negocio"""
+        
+        # - El turno no se solapa con otros turnos del mismo médico
+        # - El turno está dentro del horario laboral del médico 
+        # - El paciente no tiene otro turno en el mismo horario
+
+        esta_dentro_horario = HorarioAtencionService(self.db).esta_dentro_de_horario(
+            id_medico=turno_data.id_medico,
+            fecha_hora_inicio=turno_data.fecha_hora_inicio,
+            fecha_hora_fin=turno_data.fecha_hora_fin
+        )
+
+        id_medico = turno_data.id_medico
+        id_paciente = turno_data.id_paciente
+
+        hay_solapamiento_medico = self._hay_solapamiento_turnos(
+            id_persona=id_medico,
+            fecha_hora_inicio=turno_data.fecha_hora_inicio,
+            fecha_hora_fin=turno_data.fecha_hora_fin,
+            es_medico=True
+        )
+
+        hay_solapamiento_paciente = self._hay_solapamiento_turnos(
+            id_persona=id_paciente,
+            fecha_hora_inicio=turno_data.fecha_hora_inicio,
+            fecha_hora_fin=turno_data.fecha_hora_fin,
+            es_medico=False
+        )
+
+        print(f"Intento post creacion turno: Medico {id_medico}, Paciente {id_paciente}, Inicio {turno_data.fecha_hora_inicio}, Fin {turno_data.fecha_hora_fin}")
+        print(f"Dentro horario? {esta_dentro_horario} | Solapamiento medico? {hay_solapamiento_medico} | Solapamiento paciente? {hay_solapamiento_paciente}")
+        
+        if not esta_dentro_horario:
+            raise ValueError("El turno no está dentro del horario de atención del médico")
+        
+        if hay_solapamiento_medico:
+            raise ValueError("El medico tiene otro turno en el mismo horario")
+        
+        if hay_solapamiento_paciente:
+            raise ValueError("El paciente tiene otro turno en el mismo horario")
+        
+        return True
 
     def _get_turno_completo(self, turno_id: int) -> Optional[TurnoResponse]:
         """Obtiene un turno con sus relaciones"""
@@ -127,7 +195,14 @@ class TurnoService:
 
     def create(self, turno_data: TurnoCreate) -> TurnoResponse:
         """Crea un nuevo turno"""
+
+        self._es_turno_valido(turno_data)
+       
         try:
+
+            if not self._es_turno_valido(turno_data):
+                raise ValueError("El turno no cumple con las reglas de negocio")
+
             # Insertar nuevo turno
             self.cursor.execute("""
                 INSERT INTO turno (fecha_hora_inicio, fecha_hora_fin, id_estado_turno, id_paciente, id_medico, motivo_consulta)
@@ -195,7 +270,6 @@ class TurnoService:
             self.db.rollback()
             raise ValueError("Error al eliminar el turno: " + str(e))
         
-
     def notificar_recordatorios_turnos(self):
         """Marca los turnos que deben ser notificados por recordatorio"""
         try:
