@@ -15,28 +15,69 @@ class TurnoService:
         self.db = db
         self.cursor = db.cursor()
 
+    def _hay_solapamiento_turnos(self, id_persona: int, fecha_hora_inicio: str, fecha_hora_fin: str, es_medico: bool) -> bool:
+        """Verifica si hay solapamiento de turnos para un médico o paciente"""
+        campo_id = 'id_medico' if es_medico else 'id_paciente'
+        
+        self.cursor.execute(f"""
+            SELECT COUNT(*) as count FROM turno
+            WHERE {campo_id} = ?
+            AND (
+                (datetime(fecha_hora_inicio) < datetime(?) AND datetime(fecha_hora_fin) > datetime(?))
+                OR
+                (datetime(fecha_hora_inicio) >= datetime(?) AND datetime(fecha_hora_inicio) < datetime(?))
+                OR
+                (datetime(fecha_hora_fin) > datetime(?) AND datetime(fecha_hora_fin) <= datetime(?))
+            )
+        """, (id_persona, fecha_hora_fin, fecha_hora_inicio, fecha_hora_inicio, fecha_hora_fin, fecha_hora_inicio, fecha_hora_fin))
+        
+        row = self.cursor.fetchone()
+
+        return row['count'] > 0
+
+    
     def _es_turno_valido(self, turno_data: TurnoCreate) -> bool:
         """Valida si un turno cumple con las reglas de negocio"""
-        # Aquí se pueden agregar validaciones como:
-        # TODO El turno no se solapa con otros turnos del mismo médico
-        # === El turno está dentro del horario laboral del médico 
-        # TODO El paciente no tiene otro turno en el mismo horario
-        # Por simplicidad, esta función siempre devuelve True en este ejemplo
+        
+        # - El turno no se solapa con otros turnos del mismo médico
+        # - El turno está dentro del horario laboral del médico 
+        # - El paciente no tiene otro turno en el mismo horario
 
         esta_dentro_horario = HorarioAtencionService(self.db).esta_dentro_de_horario(
             id_medico=turno_data.id_medico,
             fecha_hora_inicio=turno_data.fecha_hora_inicio,
             fecha_hora_fin=turno_data.fecha_hora_fin
-        ) # funciona
+        )
 
-        # validar que no haya solapamiento con otros turnos del mismo medico
-        # validar que no haya solapamiento con otros turnos del mismo paciente
-        # ===> utilizar servicio de turno para eso
+        id_medico = turno_data.id_medico
+        id_paciente = turno_data.id_paciente
 
-        #print(f"El turno está ->> {esta_dentro_horario}")
+        hay_solapamiento_medico = self._hay_solapamiento_turnos(
+            id_persona=id_medico,
+            fecha_hora_inicio=turno_data.fecha_hora_inicio,
+            fecha_hora_fin=turno_data.fecha_hora_fin,
+            es_medico=True
+        )
 
+        hay_solapamiento_paciente = self._hay_solapamiento_turnos(
+            id_persona=id_paciente,
+            fecha_hora_inicio=turno_data.fecha_hora_inicio,
+            fecha_hora_fin=turno_data.fecha_hora_fin,
+            es_medico=False
+        )
 
-
+        print(f"Intento post creacion turno: Medico {id_medico}, Paciente {id_paciente}, Inicio {turno_data.fecha_hora_inicio}, Fin {turno_data.fecha_hora_fin}")
+        print(f"Dentro horario? {esta_dentro_horario} | Solapamiento medico? {hay_solapamiento_medico} | Solapamiento paciente? {hay_solapamiento_paciente}")
+        
+        if not esta_dentro_horario:
+            raise ValueError("El turno no está dentro del horario de atención del médico")
+        
+        if hay_solapamiento_medico:
+            raise ValueError("El medico tiene otro turno en el mismo horario")
+        
+        if hay_solapamiento_paciente:
+            raise ValueError("El paciente tiene otro turno en el mismo horario")
+        
         return True
 
     def _get_turno_completo(self, turno_id: int) -> Optional[TurnoResponse]:
