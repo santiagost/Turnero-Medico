@@ -216,6 +216,7 @@ const AdminDoctorSchedulePanel = ({ doctorId, onSaveSuccess }) => {
                     size="small"
                     required
                     type="number"
+                    disable={true}
                 />
                 <div className='flex flex-col items-center justify-center'>
                     <IconButton

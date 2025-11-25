@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import AnimatedPage from '../../components/layout/AnimatedPage';
 import SectionCard from '../../components/ui/SectionCard';
@@ -6,14 +6,38 @@ import SectionCard from '../../components/ui/SectionCard';
 import PersonalDataSettings from '../../components/features/setings/PersonalDataSettings';
 import NotificationSettings from '../../components/features/setings/NotificationSettings';
 import SecuritySettings from '../../components/features/setings/SecuritySettings';
-import { socialWorkOptions } from '../../utils/mockData';
+
+import { getSocialWorkOptions } from '../../../services/socialWork.service';
 
 const SettingsPage = () => {
     const { user, profile } = useAuth();
-    const socialWorksOptionsWithAll = [{ value: "", label: "" }, ...socialWorkOptions];
+
+    const [socialWorkOptions, setSocialWorkOptions] = useState([
+        { value: "", label: "" }
+    ]);
+
+    useEffect(() => {
+        const fetchOptions = async () => {
+            try {
+
+                const socialWorkFromBackend = await getSocialWorkOptions();
+
+                setSocialWorkOptions([
+                    ...socialWorkFromBackend
+                ]);
+
+
+            } catch (error) {
+                console.error("No se pudieron cargar las opciones", error);
+            }
+        };
+
+        fetchOptions();
+    }, []);
+
     if (!user) {
         return <div>Cargando configuración...</div>;
-    }    
+    }
 
     return (
         <AnimatedPage>
@@ -24,19 +48,19 @@ const SettingsPage = () => {
                 <div className='grid grid-cols-2'>
 
                     <div className='col-start-1 col-span-1 flex flex-col justify-center'>
-                        <SectionCard 
-                            tittle={"Mis Datos"} 
-                            content={<PersonalDataSettings user={user} profile={profile} socialWorks={socialWorksOptionsWithAll} />} 
+                        <SectionCard
+                            tittle={"Mis Datos"}
+                            content={<PersonalDataSettings user={user} profile={profile} socialWorks={socialWorkOptions} />}
                         />
                     </div>
                     <div className='col-start-2 col-span-1 flex flex-col justify-center'>
-                        <SectionCard 
-                            tittle={"Notificaciones"} 
-                            content={<NotificationSettings user={user} />} 
+                        <SectionCard
+                            tittle={"Notificaciones"}
+                            content={<NotificationSettings user={user} />}
                         />
-                        <SectionCard 
-                            tittle={"Seguridad"} 
-                            content={<SecuritySettings />} 
+                        <SectionCard
+                            tittle={"Seguridad"}
+                            content={<SecuritySettings />}
                         />
                     </div>
 

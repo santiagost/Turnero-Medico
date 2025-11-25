@@ -48,12 +48,31 @@ const PersonalDataSettings = ({ user, profile, socialWorks }) => {
         }
     }, [user, profile]);
 
+    const isParticularSelected = () => {
+        if (!formData.socialWork || !socialWorks) return false;
+        const selectedOption = socialWorks.find(sw => sw.value == formData.socialWork);
+        return selectedOption && selectedOption.label === "Particular";
+    };
+
+    const getParticularId = () => {
+        if (!socialWorks) return null;
+        const particularOption = socialWorks.find(sw => sw.label === "Particular");
+        return particularOption ? particularOption.value : null;
+    };
+
     const updateFormData = (e) => {
         const { name, value } = e.target;
-        setFormData(prevData => ({
-            ...prevData,
-            [name]: value
-        }));
+        setFormData(prevData => {
+            const newData = { ...prevData, [name]: value };
+
+            if (name === "socialWork") {
+                const selectedOption = socialWorks.find(sw => sw.value == value);
+                if (selectedOption && selectedOption.label === "Particular") {
+                    newData.membershipNumber = "";
+                }
+            }
+            return newData;
+        });
 
         if (errors[name]) {
             setErrors(prevErrors => ({ ...prevErrors, [name]: null }));
@@ -62,7 +81,8 @@ const PersonalDataSettings = ({ user, profile, socialWorks }) => {
 
     const handleBlur = (e) => {
         const { name, value } = e.target;
-        const schema = getEditValidationSchema(user.role);
+        const particularId = getParticularId();
+        const schema = getEditValidationSchema(user.role, particularId);
         const rule = schema[name];
         if (rule) {
             const error = rule(value, formData);
@@ -72,7 +92,8 @@ const PersonalDataSettings = ({ user, profile, socialWorks }) => {
 
     const validateForm = () => {
         const newErrors = {};
-        const schema = getEditValidationSchema(user.role);
+        const particularId = getParticularId();
+        const schema = getEditValidationSchema(user.role, particularId);
         for (const name in schema) {
             const value = formData[name];
             const rule = schema[name];
@@ -110,7 +131,7 @@ const PersonalDataSettings = ({ user, profile, socialWorks }) => {
         try {
             // Simulación de API (2 segundos)
             await new Promise(resolve => setTimeout(resolve, 2000));
-            
+
             // Si es exitoso:
             // await axios.put('/api/users/profile', dataToSend); 
 
@@ -126,11 +147,10 @@ const PersonalDataSettings = ({ user, profile, socialWorks }) => {
             const errorMessage = error.response?.data?.message || "Error al conectar con el servidor.";
             toast.error(errorMessage);
         } finally {
-            setLoadingSave(false); // 🟢 Desactivar spinner
+            setLoadingSave(false);
         }
     };
 
-    // 5. NUEVO: CERRAR MODAL (Asegurado contra clicks mientras carga)
     const closeConfirmModal = () => {
         if (!loadingSave) {
             setIsConfirmModalOpen(false);
@@ -158,11 +178,16 @@ const PersonalDataSettings = ({ user, profile, socialWorks }) => {
     };
 
     const handleClearSocialWork = () => {
+        const particularOption = socialWorks.find(sw => sw.label === "Particular");
+        const particularValue = particularOption ? particularOption.value : "";
+
         setFormData(prevData => ({
             ...prevData,
-            membershipNumber: "",
-            socialWork: ""
+            socialWork: particularValue,
+            membershipNumber: ""
         }));
+
+        setErrors(prev => ({ ...prev, socialWork: null, membershipNumber: null }));
     };
 
     const confirmationModalContent = (
@@ -227,11 +252,12 @@ const PersonalDataSettings = ({ user, profile, socialWorks }) => {
                                 tittle={"Número de Afiliado"}
                                 name={"membershipNumber"}
                                 value={formData.membershipNumber}
-                                disable={!editMode}
+                                disable={!editMode || isParticularSelected()}
                                 onChange={updateFormData}
                                 size={"small"}
                                 onBlur={handleBlur}
                                 error={errors.membershipNumber}
+                                placeholder={isParticularSelected() ? "No requerido" : ""}
                             />
                             <div>
                                 <Select
@@ -244,7 +270,7 @@ const PersonalDataSettings = ({ user, profile, socialWorks }) => {
                                     options={socialWorks}
                                     onBlur={handleBlur}
                                     error={errors.socialWork}
-                                    placeholder={"Ninguna"}
+                                    placeholder={"Seleccione una opción"}
                                 />
 
 
@@ -255,7 +281,7 @@ const PersonalDataSettings = ({ user, profile, socialWorks }) => {
                                             onClick={handleClearSocialWork}
                                             className="text-sm text-custom-blue hover:text-custom-dark-blue cursor-pointer"
                                         >
-                                            (Limpiar obra social)
+                                            (Establecer como Particular)
                                         </button>
                                     </div>
                                 )}

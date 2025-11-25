@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { FaSearch } from "react-icons/fa";
 import { LiaUndoAltSolid, LiaPencilAltSolid, LiaTrashAltSolid } from "react-icons/lia";
@@ -9,7 +9,10 @@ import Select from '../../../ui/Select';
 import Button from '../../../ui/Button';
 import IconButton from '../../../ui/IconButton';
 import { useToast } from '../../../../hooks/useToast';
-import { mockDoctors, specialtyOptions } from '../../../../utils/mockData';
+import { mockDoctors } from '../../../../utils/mockData';
+
+import { getSpecialtyOptions } from '../../../../../services/specialty.service'
+
 
 export const initialFiltersState = {
     licenseNumber: "",
@@ -32,10 +35,26 @@ const AdminDoctorFilterPanel = ({ doctorToDelete, doctorToEdit, viewMode = "deta
         { value: "alpha_desc", label: "Orden Alfabético (Z-A)" }
     ];
 
-    const specialtyOptionsWithAll = [
-        { value: "", label: "Todas" },
-        ...specialtyOptions
-    ];
+    const [specialtyOptionsWithAll, setSpecialtyOptions] = useState([
+        { value: "", label: "Todas" }
+    ]);
+
+    useEffect(() => {
+        const fetchOptions = async () => {
+            try {
+                const dataFromBackend = await getSpecialtyOptions();
+                
+                setSpecialtyOptions([
+                    { value: "", label: "Todas" },
+                    ...dataFromBackend
+                ]);
+            } catch (error) {
+                console.error("No se pudieron cargar las opciones", error);
+            }
+        };
+
+        fetchOptions();
+    }, []);
 
 
     const handleChange = (e) => {
