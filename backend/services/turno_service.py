@@ -35,7 +35,6 @@ class TurnoService:
 
         return row['count'] > 0
 
-    
     def _es_turno_valido(self, turno_data: TurnoCreate) -> bool:
         """Valida si un turno cumple con las reglas de negocio"""
         
@@ -314,6 +313,23 @@ class TurnoService:
         except Exception as e:
             raise ValueError("Error inesperado al notificar recordatorios de turnos: " + str(e))
     
+    def cancelar_turno_futuro_paciente(self, id_paciente: int, id_turno: int) -> List[TurnoResponse]:  
+        """Cancela un turno futuro de un paciente"""
+        turno = self.get_by_id(id_turno)
+        if not turno:
+            raise ValueError(f"No existe un turno con ID {id_turno}")
         
-
-
+        if turno.id_paciente != id_paciente:
+            raise ValueError("El turno no pertenece al paciente especificado")
+        
+        if turno.id_estado_turno != 1:  # Suponiendo que 1 es el estado 'Pendiente'
+            raise ValueError("Solo se pueden cancelar turnos en estado 'Pendiente'")
+        
+        try:
+            self.update(id_turno, {'id_estado_turno': 3})  # Suponiendo que 3 es el estado 'Cancelado'
+            
+            return self.get_proximos_turnos_paciente(id_paciente)
+            
+        except sqlite3.IntegrityError as e:
+            self.db.rollback()
+            raise ValueError("Error al cancelar el turno: " + str(e))
