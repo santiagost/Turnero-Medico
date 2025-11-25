@@ -51,9 +51,33 @@ class PacienteService:
             noti_reserva_email_act=bool(paciente_dict.get('noti_reserva_email_act'))
         )
     
-    def get_all(self) -> List[PacienteResponse]:
+    def get_all(self, id_paciente: Optional[int] = None, dni: Optional[str] = None, nombre: Optional[str] = None, apellido: Optional[str] = None, id_obra_social: Optional[int] = None) -> List[PacienteResponse]:
         """Obtiene todos los pacientes"""
-        self.cursor.execute("SELECT id_paciente FROM Paciente")
+        
+        sql = "SELECT * FROM Paciente"
+        params = []
+        conditions = []
+
+        if id_paciente is not None:
+            conditions.append("id_paciente = ?")
+            params.append(id_paciente)
+        if dni is not None:
+            conditions.append("dni = ?")
+            params.append(dni)
+        if nombre is not None:
+            conditions.append("nombre LIKE ?")
+            params.append(f"%{nombre}%")
+        if apellido is not None:
+            conditions.append("apellido LIKE ?")
+            params.append(f"%{apellido}%")
+        if id_obra_social is not None:
+            conditions.append("id_obra_social = ?")
+            params.append(id_obra_social)
+        if conditions:
+            sql += " WHERE " + " AND ".join(conditions)
+        self.cursor.execute(sql, params)
+        
+        # self.cursor.execute("SELECT id_paciente FROM Paciente")
         rows = self.cursor.fetchall()
         
         pacientes = []

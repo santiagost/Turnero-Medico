@@ -20,9 +20,16 @@ def get_paciente_service(db: sqlite3.Connection = Depends(get_db)) -> PacienteSe
 
 
 @router.get("/", response_model=List[dict])
-async def get_all_pacientes(service: PacienteService = Depends(get_paciente_service)):
+async def get_all_pacientes(
+    id_paciente: int = None,
+    dni: str = None,
+    nombre: str = None,
+    apellido: str = None,
+    id_obra_social: int = None,
+    service: PacienteService = Depends(get_paciente_service)
+):
     """Obtiene todos los pacientes"""
-    pacientes = service.get_all()
+    pacientes = service.get_all(id_paciente, dni, nombre, apellido, id_obra_social)
     return jsonable_encoder(pacientes)
 
 
