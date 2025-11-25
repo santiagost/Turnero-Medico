@@ -5,6 +5,7 @@ import sqlite3
 from database import get_db
 from models.medico import MedicoResponse, MedicoCreate, MedicoUpdate
 from services.medico_service import MedicoService
+from services.horario_atencion_service import HorarioAtencionService
 
 
 router = APIRouter(
@@ -57,6 +58,14 @@ async def get_all_medicos_ligero(service: MedicoService = Depends(get_medico_ser
     medicos = service.get_ligero()
     return jsonable_encoder(medicos)
 
+@router.put("/medicos/{id}/horarios", response_model=List[dict])
+async def update_horarios_medico(
+    id: int,
+    horarios: List[dict],
+    service: MedicoService = Depends(get_medico_service)
+):
+    pass
+
 
 @router.post("/", response_model=dict, status_code=status.HTTP_201_CREATED)
 async def create_medico(medico_data: dict, service: MedicoService = Depends(get_medico_service)):
@@ -73,6 +82,7 @@ async def create_medico(medico_data: dict, service: MedicoService = Depends(get_
             noti_cancel_email_act=medico_data.get('noti_cancel_email_act', 1)
         )
         resultado = service.create(medico)
+        HorarioAtencionService(service.db).crear_horarios_default_para_medico(resultado.id_medico)
         return jsonable_encoder(resultado)
     
     except KeyError as e:

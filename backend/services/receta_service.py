@@ -1,3 +1,4 @@
+import datetime
 import sqlite3
 from typing import List, Optional
 from models.receta import RecetaResponse, RecetaCreate, RecetaUpdate
@@ -86,7 +87,7 @@ class RecetaService:
             """, (
                 receta_data.id_consulta,
                 receta_data.medicamento,
-                receta_data.fecha_emision,
+                datetime.datetime.now().isoformat(),
                 receta_data.dosis,
                 receta_data.instrucciones
             ))

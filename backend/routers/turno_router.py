@@ -36,6 +36,7 @@ async def get_turno_by_id(turno_id: int, service: TurnoService = Depends(get_tur
     if not turno:
         raise HTTPException(status_code=404, detail="Turno no encontrado")
     return jsonable_encoder(turno)
+    
 
 @router.get("/paciente/proximos/{paciente_id}", response_model=List[dict])
 async def get_proximos_turnos_paciente(paciente_id: int, service: TurnoService = Depends(get_turno_service)):
@@ -67,6 +68,17 @@ async def get_agenda_medico(
     """Obtiene la agenda de un médico entre dos fechas"""
     turnos = service.get_agenda_desde_hasta(id_medico, fecha_desde, fecha_hasta)
     return jsonable_encoder(turnos)
+
+@router.post("/cancelar", response_model=List[dict])
+async def cancelar_turnos_paciente(
+    id_paciente: int,
+    id_turno: int,
+    service: TurnoService = Depends(get_turno_service)
+):
+    """Cancela todos los turnos futuros de un paciente a partir de una fecha y hora dada"""
+    turnos_cancelados = service.cancelar_turno_futuro_paciente(id_paciente, id_turno)
+    return jsonable_encoder(turnos_cancelados)
+
 
 @router.post("/", response_model=dict, status_code=status.HTTP_201_CREATED)
 async def create_turno(turno_data: dict, service: TurnoService = Depends(get_turno_service)):

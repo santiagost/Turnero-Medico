@@ -39,7 +39,7 @@ class HorarioAtencionService:
             duracion_turno_min=data['duracion_turno_min'],
             medico=medico_obj
         )
-    
+     
     def get_all(self) -> List[HorarioAtencionResponse]:
         """Obtiene todos los horarios de atención"""
         self.cursor.execute("SELECT id_horario_atencion FROM HorarioAtencion")
@@ -58,17 +58,44 @@ class HorarioAtencionService:
         """Obtiene un horario de atención por su ID"""
         return self._get_horario_atencion_completo(horario_id)
     
+
+    """Aca esta completo el get_by_medico_id original, pero lo dejamos comentado para referencia futura"""
+    # def get_by_medico_id(self, medico_id: int) -> List[HorarioAtencionResponse]:
+    #     """Obtiene todos los horarios de atención de un médico"""
+    #     self.cursor.execute("SELECT id_horario_atencion FROM HorarioAtencion WHERE id_medico = ?", (medico_id,))
+    #     rows = self.cursor.fetchall()
+        
+    #     horarios = []
+    #     for row in rows:
+    #         horario_id = dict(row)['id_horario_atencion']
+    #         horario_completo = self._get_horario_atencion_completo(horario_id)
+    #         if horario_completo:
+    #             horarios.append(horario_completo)
+        
+    #     return horarios
+
+
     def get_by_medico_id(self, medico_id: int) -> List[HorarioAtencionResponse]:
         """Obtiene todos los horarios de atención de un médico"""
-        self.cursor.execute("SELECT id_horario_atencion FROM HorarioAtencion WHERE id_medico = ?", (medico_id,))
+        self.cursor.execute("SELECT * FROM HorarioAtencion WHERE id_medico = ?", (medico_id,))
         rows = self.cursor.fetchall()
         
+
+        # De esta manera para aligerar la respuesta no traemos el medico relacionado por cada horario
+        # por medico puede llegar a haber mas de 10 horarios por dia, y asi los 5 dias de la semana
+        # es traer 50 veces el json completo del mismo medico en un solo get, muy pesado
         horarios = []
         for row in rows:
-            horario_id = dict(row)['id_horario_atencion']
-            horario_completo = self._get_horario_atencion_completo(horario_id)
-            if horario_completo:
-                horarios.append(horario_completo)
+            horarios.append(HorarioAtencionResponse(
+                id_horario_atencion=row['id_horario_atencion'],
+                id_medico=row['id_medico'],
+                dia_semana=row['dia_semana'],
+                hora_inicio=row['hora_inicio'],
+                hora_fin=row['hora_fin'],
+                duracion_turno_min=row['duracion_turno_min']
+                # medico = None (para evitar recursión)
+            ))
+            
         
         return horarios
     
@@ -162,7 +189,6 @@ class HorarioAtencionService:
             raise ValueError("Error al eliminar el horario de atención: " + str(e))
 
     # funciones de negocio
-
     def esta_dentro_de_horario(self, id_medico: int, fecha_hora_inicio: str, fecha_hora_fin: str) -> bool:
         """Verifica si un médico está dentro de su horario de atención en una fecha y hora dada"""
         # dia_semana = fecha_hora_inicio.weekday()  # 0=lunes, 6=domingo
@@ -197,6 +223,47 @@ class HorarioAtencionService:
             if hora_inicio_objeto <= fecha_hora_inicio_objeto.time() and hora_fin_objeto >= fecha_hora_fin_objeto.time():
                 return True
         return False
+    
+    def crear_horarios_default_para_medico(self, id_medico: int):
+        """Crea horarios de atención por defecto para un nuevo médico"""
+        horarios_default = [
+            # Lunes a Viernes de 09:00 a 17:00
+            (id_medico, 0, "09:00", "17:00", 30),
+            (id_medico, 1, "09:00", "17:00", 30),
+            (id_medico, 2, "09:00", "17:00", 30),
+            (id_medico, 3, "09:00", "17:00", 30),
+            (id_medico, 4, "09:00", "17:00", 30),
+        ]
+        
+        try:
+            for horario in horarios_default:
+                self.cursor.execute("""
+                    INSERT INTO horarioatencion (id_medico, dia_semana, hora_inicio, hora_fin, duracion_turno_min)
+                    VALUES (?, ?, ?, ?, ?)
+                """, horario)
+            self.db.commit()
+        except sqlite3.IntegrityError as e:
+            self.db.rollback()
+            raise ValueError("Error al crear horarios por defecto para el médico: " + str(e))
+        
+    def editar_horarios_medico(self, id_medico: int, horarios: List[HorarioAtencionCreate]) -> List[HorarioAtencionResponse]:
+        """Edita los horarios de atención de un médico"""
+        horarios_actualizados = []
+
+        """Validamos que el medico exista"""
+        self.cursor.execute("SELECT id_medico FROM Medico WHERE id_medico = ?", (id_medico,))
+        if not self.cursor.fetchone():
+            raise ValueError(f"No existe un médico con ID {id_medico}")
+        
+        """Borramos todos los horarios actuales del medico"""
+        self.cursor.execute("DELETE FROM HorarioAtencion WHERE id_medico = ?", (id_medico,))
+        self.db.commit()
+
+        for horario_data in horarios:
+            nuevo_horario = self.create(horario_data)
+            horarios_actualizados.append(nuevo_horario)
+            
+        return horarios_actualizados
     
 
     
