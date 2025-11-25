@@ -69,6 +69,7 @@ class TurnoService:
         return self._get_turno_completo(turno_id)
 
     def create(self, turno_data: TurnoCreate) -> TurnoResponse:
+        """Crea un nuevo turno"""
         try:
             # Insertar nuevo turno
             self.cursor.execute("""
