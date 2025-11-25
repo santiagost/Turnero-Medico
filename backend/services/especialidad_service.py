@@ -21,10 +21,29 @@ class EspecialidadService:
             descripcion=especialidad_dict.get('descripcion')
         )
 
-    def get_all(self) -> List[EspecialidadResponse]:
+    def get_all(self, 
+                id_especialidad: int = None,
+                nombre: str = None) -> List[EspecialidadResponse]:
         """Obtiene todas las especialidades"""
-        self.cursor.execute("SELECT * FROM especialidad")
+
+        sql = "SELECT id_especialidad FROM especialidad"
+        filters = []
+        params = []
+
+        if id_especialidad is not None:
+            filters.append("id_especialidad = ?")
+            params.append(id_especialidad)
+        if nombre is not None:
+            filters.append("nombre LIKE ?")
+            params.append(f"%{nombre}%")
+        if filters:
+            sql += " WHERE " + " AND ".join(filters)
+        
+        self.cursor.execute(sql, params)
         rows = self.cursor.fetchall()
+        
+        # self.cursor.execute("SELECT * FROM especialidad")
+        # rows = self.cursor.fetchall()
         especialidades = []
         for row in rows:
             especialidad_id = dict(row)['id_especialidad']

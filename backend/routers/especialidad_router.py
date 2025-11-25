@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter, Depends, status, HTTPException
 from fastapi.encoders import jsonable_encoder
-from typing import List
+from typing import List, Optional
 import sqlite3
 from database import get_db
 from models.especialidad import EspecialidadResponse, EspecialidadCreate, EspecialidadUpdate
@@ -19,9 +19,9 @@ def get_especialidad_service(db: sqlite3.Connection = Depends(get_db)) -> Especi
     return EspecialidadService(db)
 
 @router.get("/", response_model=List[dict])
-async def get_all_especialidades(service: EspecialidadService = Depends(get_especialidad_service)):
+async def get_all_especialidades(id_especialidad: Optional[int] = None, nombre: Optional[str] = None, service: EspecialidadService = Depends(get_especialidad_service)):
     """Obtiene todas las especialidades"""
-    especialidades = service.get_all()
+    especialidades = service.get_all(id_especialidad=id_especialidad, nombre=nombre)
     return jsonable_encoder(especialidades)
 
 @router.get("/{especialidad_id}", response_model=dict)
