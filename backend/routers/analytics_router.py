@@ -18,8 +18,6 @@ import datetime
 from services.analytics_service import AnalyticsService
 from fastapi import Depends
 
-
-
 router = APIRouter(
     prefix="/estadisticas",
     tags=["estadisticas"],

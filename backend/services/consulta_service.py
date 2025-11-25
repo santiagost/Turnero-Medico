@@ -141,3 +141,21 @@ class ConsultaService:
         except sqlite3.IntegrityError as e:
             self.db.rollback()
             raise ValueError("Error al eliminar la consulta: " + str(e))
+
+    def get_consultas_with_recetas(self) -> List[ConsultaResponse]:
+        """Obtiene todas las consultas que tienen recetas asociadas"""
+        self.cursor.execute("""
+            SELECT * FROM Consulta c
+            WHERE EXISTS (
+                SELECT 1 FROM Receta r WHERE r.id_consulta = c.id_consulta
+            )""")
+        rows = self.cursor.fetchall()
+        
+        consultas = []
+        for row in rows:
+            consulta_id = dict(row)['id_consulta']
+            consulta_completa = self._get_consulta_completa(consulta_id)
+            if consulta_completa:
+                consultas.append(consulta_completa)
+        
+        return consultas

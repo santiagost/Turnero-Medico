@@ -6,6 +6,7 @@ from database import get_db
 from models.medico import MedicoResponse, MedicoCreate, MedicoUpdate
 from services.medico_service import MedicoService
 from services.horario_atencion_service import HorarioAtencionService
+from services.usuario_service import UsuarioService
 
 
 router = APIRouter(
@@ -109,9 +110,15 @@ async def update_medico(
             nombre=medico_data.get('nombre'),
             apellido=medico_data.get('apellido'),
             telefono=medico_data.get('telefono'),
-            id_especialidad=medico_data.get('id_especialidad')
+            id_especialidad=medico_data.get('id_especialidad'),
+            dni=medico_data.get('dni'),
+            matricula=medico_data.get('matricula'),
+            noti_cancel_email_act=medico_data.get('noti_cancel_email_act')
+
         )
+        
         resultado = service.update(medico_id, medico_update)
+
         if not resultado:
             raise HTTPException(status_code=404, detail="Médico no encontrado")
         return jsonable_encoder(resultado)
