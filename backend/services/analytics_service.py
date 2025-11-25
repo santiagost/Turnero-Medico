@@ -174,4 +174,28 @@ class AnalyticsService:
         except Exception as e:
             raise e
         
+    def get_asistencia_vs_inasistencia(self, fecha_desde: str, fecha_hasta: str):
+        """Obtiene la evolución de asistencias vs ausencias en el tiempo"""
+        try:
+            self.cursor.execute("""
+                SELECT 
+                    SUM(CASE WHEN id_estado_turno = 2 THEN 1 ELSE 0 END) AS asistencias,
+                    SUM(CASE WHEN id_estado_turno = 4 THEN 1 ELSE 0 END) AS ausencias
+                FROM Turno
+                WHERE DATE(fecha_hora_inicio) BETWEEN DATE(?) AND DATE(?)
+            """, (fecha_desde, fecha_hasta))
+            results = self.cursor.fetchall()
+
+            stats = []
+            for row in results:
+                stats.append({
+                    "asistencias": row[0],
+                    "ausencias": row[1]
+                })
+
+            return stats
+
+        except Exception as e:
+            raise e
+        
     

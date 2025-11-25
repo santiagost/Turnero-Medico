@@ -42,6 +42,15 @@ async def get_volumen_pacientes(fecha_desde:str, fecha_hasta:str, service: Analy
         return stats
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error obteniendo volumen de pacientes: {str(e)}")
+    
+@router.get("/asistencia-vs-inasistencia")
+async def get_asistencia_vs_inasistencia(fecha_desde:str, fecha_hasta:str, service: AnalyticsService = Depends(get_analytics_service)):
+    """Obtiene la comparativa de asistencias vs inasistencias"""
+    try:
+        stats = service.get_asistencia_vs_inasistencia(fecha_desde, fecha_hasta)
+        return stats
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error obteniendo comparativa de asistencias: {str(e)}")
 
 @router.get("/diarias")
 async def get_resumen_diario(service: AnalyticsService = Depends(get_analytics_service)):
