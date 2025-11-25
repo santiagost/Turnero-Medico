@@ -197,49 +197,34 @@ class TurnoService:
         """Crea un nuevo turno"""
 
         self._es_turno_valido(turno_data)
+       
+        try:
 
-        return TurnoResponse(
-            id_turno=1,
-            id_paciente=turno_data.id_paciente,
-            id_medico=turno_data.id_medico,
-            id_estado_turno=1,
-            fecha_hora_inicio=turno_data.fecha_hora_inicio,
-            fecha_hora_fin=turno_data.fecha_hora_fin,
-            motivo_consulta=None,
-            recordatorio_notificado=False,
-            reserva_notificada=False,
-            paciente=None,
-            medico=None,
-            estado_turno=None
-        )
-        
-        # try:
+            if not self._es_turno_valido(turno_data):
+                raise ValueError("El turno no cumple con las reglas de negocio")
 
-        #     if not self._es_turno_valido(turno_data):
-        #         raise ValueError("El turno no cumple con las reglas de negocio")
-
-        #     # Insertar nuevo turno
-        #     self.cursor.execute("""
-        #         INSERT INTO turno (fecha_hora_inicio, fecha_hora_fin, id_estado_turno, id_paciente, id_medico, motivo_consulta)
-        #         VALUES (?, ?, ?, ?, ?, ?)
-        #     """, (
-        #         turno_data.fecha_hora_inicio,
-        #         turno_data.fecha_hora_fin,
-        #         turno_data.id_estado_turno,
-        #         turno_data.id_paciente,
-        #         turno_data.id_medico,
-        #         turno_data.motivo_consulta
-        #     ))
+            # Insertar nuevo turno
+            self.cursor.execute("""
+                INSERT INTO turno (fecha_hora_inicio, fecha_hora_fin, id_estado_turno, id_paciente, id_medico, motivo_consulta)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """, (
+                turno_data.fecha_hora_inicio,
+                turno_data.fecha_hora_fin,
+                turno_data.id_estado_turno,
+                turno_data.id_paciente,
+                turno_data.id_medico,
+                turno_data.motivo_consulta
+            ))
             
-        #     self.db.commit()
+            self.db.commit()
             
-        #     # Obtener el turno recién creado
-        #     turno_id = self.cursor.lastrowid
-        #     return self._get_turno_completo(turno_id)
+            # Obtener el turno recién creado
+            turno_id = self.cursor.lastrowid
+            return self._get_turno_completo(turno_id)
             
-        # except sqlite3.IntegrityError as e:
-        #     self.db.rollback()
-        #     raise ValueError("Error al crear el turno: " + str(e))
+        except sqlite3.IntegrityError as e:
+            self.db.rollback()
+            raise ValueError("Error al crear el turno: " + str(e))
         
     def update(self, turno_id: int, turno_data: dict) -> Optional[TurnoResponse]:
         """Actualiza los datos de un turno existente"""
