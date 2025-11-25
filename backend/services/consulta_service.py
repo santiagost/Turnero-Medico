@@ -36,7 +36,7 @@ class ConsultaService:
             diagnostico=consulta_dict.get('diagnostico'),
             notas_privadas_medico=consulta_dict.get('notas_privadas_medico'),
             tratamiento=consulta_dict.get('tratamiento'),
-            turno=turno_obj
+            turno=turno_obj,
         )
     
     def get_all(self) -> List[ConsultaResponse]:
@@ -142,20 +142,7 @@ class ConsultaService:
             self.db.rollback()
             raise ValueError("Error al eliminar la consulta: " + str(e))
 
-    def get_consultas_with_recetas(self) -> List[ConsultaResponse]:
-        """Obtiene todas las consultas que tienen recetas asociadas"""
-        self.cursor.execute("""
-            SELECT * FROM Consulta c
-            WHERE EXISTS (
-                SELECT 1 FROM Receta r WHERE r.id_consulta = c.id_consulta
-            )""")
-        rows = self.cursor.fetchall()
+
         
-        consultas = []
-        for row in rows:
-            consulta_id = dict(row)['id_consulta']
-            consulta_completa = self._get_consulta_completa(consulta_id)
-            if consulta_completa:
-                consultas.append(consulta_completa)
+
         
-        return consultas

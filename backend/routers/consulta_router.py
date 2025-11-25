@@ -21,20 +21,12 @@ def get_consulta_service(db: sqlite3.Connection = Depends(get_db)) -> ConsultaSe
     return ConsultaService(db)
 
 
-
-
 @router.get("/", response_model=List[dict])
 async def get_all_consultas(service: ConsultaService = Depends(get_consulta_service)):
     """Obtiene todas las consultas"""
     consultas = service.get_all()
     return jsonable_encoder(consultas)
 
-
-@router.get("/recetas", response_model=List[dict])
-async def get_consultas_with_recetas(service: ConsultaService = Depends(get_consulta_service)):
-    """Obtiene todas las consultas que tienen recetas asociadas"""
-    consultas = service.get_consultas_with_recetas()
-    return jsonable_encoder(consultas)
 
 @router.get("/{consulta_id}", response_model=dict)
 async def get_consulta_by_id(consulta_id: int, service: ConsultaService = Depends(get_consulta_service)):

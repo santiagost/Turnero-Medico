@@ -40,7 +40,7 @@ class ConsultaResponse(ConsultaBase):
                  diagnostico: Optional[str] = None,
                  notas_privadas_medico: Optional[str] = None,
                  tratamiento: Optional[str] = None,
-                 turno = None):  # TurnoResponse 
+                 turno = None):  # TurnoResponse
         super().__init__(id_turno, fecha_consulta)
         self.id_consulta = id_consulta
         self.diagnostico = diagnostico
