@@ -147,6 +147,31 @@ class AnalyticsService:
             raise e
         
     
-        
+    def get_volumen_pacientes(self, fecha_desde: str, fecha_hasta: str):
+        """Obtiene la evolución del volumen de pacientes ATENDIDOS en el tiempo"""
+        try:
+            self.cursor.execute("""
+                SELECT DATE(fecha_hora_inicio) AS fecha, COUNT(DISTINCT id_paciente) AS total_pacientes
+                FROM Turno
+                WHERE DATE(fecha_hora_inicio) BETWEEN DATE(?) AND DATE(?)
+                AND id_estado_turno = 2
+                GROUP BY DATE(fecha_hora_inicio)
+                ORDER BY DATE(fecha_hora_inicio) ASC
+            """, (fecha_desde, fecha_hasta))
+            results = self.cursor.fetchall()
+
+            stats = []
+            for row in results:
+                dateLabel = row[0][8:10] + "/" + row[0][5:7]  # Formato DD/MM
+                stats.append({
+                    "dateFull": row[0],
+                    "dateLabel": dateLabel,
+                    "pacientes": row[1]
+                })
+
+            return stats
+
+        except Exception as e:
+            raise e
         
     

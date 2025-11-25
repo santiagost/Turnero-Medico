@@ -34,6 +34,15 @@ def get_medico_service(db: sqlite3.Connection = Depends(get_db)) -> MedicoServic
     """Dependency Injection para el servicio de médicos"""
     return MedicoService(db)
 
+@router.get("/volumen-pacientes")
+async def get_volumen_pacientes(fecha_desde:str, fecha_hasta:str, service: AnalyticsService = Depends(get_analytics_service)):
+    """Obtiene la evolución del volumen de pacientes en el tiempo"""
+    try:
+        stats = service.get_volumen_pacientes(fecha_desde, fecha_hasta)
+        return stats
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error obteniendo volumen de pacientes: {str(e)}")
+
 @router.get("/diarias")
 async def get_resumen_diario(service: AnalyticsService = Depends(get_analytics_service)):
     """Obtiene un resumen diario de estadísticas (Totales de hoy)"""
@@ -51,6 +60,7 @@ async def get_resumen_diario(service: AnalyticsService = Depends(get_analytics_s
         # Es mejor capturar Exception general si el servicio lanza errores genéricos
         raise HTTPException(status_code=500, detail=f"Error obteniendo estadísticas: {str(e)}")
     
+
 
 @router.get("/rendimiento-medico/pdf")
 async def get_rendimiento_medico_pdf(
@@ -115,5 +125,4 @@ async def get_rendimiento_medico(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error obteniendo rendimiento médico: {str(e)}")
     
-
 
