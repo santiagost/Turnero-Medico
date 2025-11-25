@@ -39,7 +39,7 @@ class PacienteService:
                     email=usuario_data['email'],
                     id_usuario=usuario_data['id_usuario'],
                     activo=bool(usuario_data['activo']),
-                    creado_en=usuario_data['creado_en']
+                    recordatorios_activados=bool(usuario_data['recordatorios_activados'])
                 )
         
         # Obtener datos de la obra social si existe
@@ -70,7 +70,8 @@ class PacienteService:
             id_obra_social=paciente_dict.get('id_obra_social'),
             nro_afiliado=paciente_dict.get('nro_afiliado'),
             usuario=usuario_obj,
-            obra_social=obra_social_obj
+            obra_social=obra_social_obj,
+            noti_reserva_email_act=bool(paciente_dict.get('noti_reserva_email_act'))
         )
     
     def get_all(self) -> List[PacienteResponse]:
@@ -208,6 +209,9 @@ class PacienteService:
             if paciente_data.nro_afiliado is not None:
                 update_fields.append("nro_afiliado = ?")
                 update_values.append(paciente_data.nro_afiliado)
+            if paciente_data.noti_reserva_email_act is not None:
+                update_fields.append("noti_reserva_email_act = ?")
+                update_values.append(bool(paciente_data.noti_reserva_email_act))
             
             if not update_fields:
                 raise HTTPException(

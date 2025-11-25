@@ -69,7 +69,8 @@ async def update_paciente(
             fecha_nacimiento=paciente_data.get('fecha_nacimiento'),
             telefono=paciente_data.get('telefono'),
             id_obra_social=paciente_data.get('id_obra_social'),
-            nro_afiliado=paciente_data.get('nro_afiliado')
+            nro_afiliado=paciente_data.get('nro_afiliado'),
+            noti_reserva_email_act=paciente_data.get('noti_reserva_email_act')
         )
         resultado = service.update(paciente_id, paciente_update)
         return jsonable_encoder(resultado)

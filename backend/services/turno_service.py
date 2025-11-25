@@ -42,6 +42,8 @@ class TurnoService:
                 fecha_hora_inicio=turno_dict['fecha_hora_inicio'],
                 fecha_hora_fin=turno_dict['fecha_hora_fin'],
                 motivo_consulta=turno_dict.get('motivo_consulta'),
+                recordatorio_notificado=bool(turno_dict.get('recordatorio_notificado')),
+                reserva_notificada=bool(turno_dict.get('reserva_notificada')),
                 paciente=PacienteService(self.db).get_by_id(turno_dict['id_paciente']),
                 medico=MedicoService(self.db).get_by_id(turno_dict['id_medico']),
                 estado_turno=EstadoTurnoService(self.db).get_by_id(turno_dict['id_estado_turno'])
@@ -62,6 +64,8 @@ class TurnoService:
                 fecha_hora_inicio=turno_dict['fecha_hora_inicio'],
                 fecha_hora_fin=turno_dict['fecha_hora_fin'],
                 motivo_consulta=turno_dict.get('motivo_consulta'),
+                recordatorio_notificado=bool(turno_dict.get('recordatorio_notificado')),
+                reserva_notificada=bool(turno_dict.get('reserva_notificada')),
                 paciente=PacienteService(self.db).get_by_id(turno_dict['id_paciente']),
                 medico=MedicoService(self.db).get_by_id(turno_dict['id_medico']),
                 estado_turno=EstadoTurnoService(self.db).get_by_id(turno_dict['id_estado_turno'])
@@ -83,11 +87,16 @@ class TurnoService:
 
             turno = self.get_by_id(turno_id)
 
-            EmailSender.send_email(
-                destinatario=turno.paciente.usuario.email,
-                asunto="Confirmación de turno médico",
-                cuerpo=f"Estimado/a {turno.paciente.nombre}, su turno con el Dr./Dra. {turno.medico.nombre} ha sido confirmado para el día {turno.fecha_hora_inicio}."
-            )
+
+            # preguntar si el paciente tiene el campo noti_reserva_email_act encendido
+
+            print(turno.paciente.noti_reserva_email_act)
+            if turno.paciente.noti_reserva_email_act:
+                EmailSender.send_email(
+                    destinatario=turno.paciente.usuario.email,
+                    asunto="Confirmación de turno médico",
+                    cuerpo=f"Estimado/a {turno.paciente.nombre}, su turno con el Dr./Dra. {turno.medico.nombre} ha sido confirmado para el día {turno.fecha_hora_inicio}."
+                )
 
             return turno
         

@@ -36,7 +36,7 @@ class MedicoService:
                     email=usuario_data['email'],
                     id_usuario=usuario_data['id_usuario'],
                     activo=bool(usuario_data['activo']),
-                    creado_en=usuario_data['creado_en']
+                    recordatorios_activados=bool(usuario_data['recordatorios_activados'])
                 )
         
         # Obtener datos de la especialidad si existe
@@ -63,7 +63,8 @@ class MedicoService:
             id_usuario=medico_dict.get('id_usuario'),
             id_especialidad=medico_dict.get('id_especialidad'),
             usuario=usuario_obj,
-            especialidad=especialidad_obj
+            especialidad=especialidad_obj,
+            noti_cancel_email_act=bool(medico_dict.get('noti_cancel_email_act', 1))
         )
     
     def get_all(self) -> List[MedicoResponse]:

@@ -17,8 +17,8 @@ CREATE TABLE IF NOT EXISTS Usuario (
   id_usuario INTEGER PRIMARY KEY AUTOINCREMENT,
   email TEXT UNIQUE NOT NULL,
   password_hash TEXT NOT NULL,
-  creado_en TEXT DEFAULT (CURRENT_TIMESTAMP),
-  activo INTEGER DEFAULT 1
+  activo INTEGER DEFAULT 1,
+  recordatorios_activados INTEGER DEFAULT 0
 );
 
 -- -----------------------------------------------------
@@ -66,6 +66,7 @@ CREATE TABLE IF NOT EXISTS Paciente (
   telefono TEXT,
   id_obra_social INTEGER,
   nro_afiliado TEXT,
+  noti_reserva_email_act INTEGER DEFAULT 0,
   FOREIGN KEY (id_usuario) REFERENCES Usuario(id_usuario) ON DELETE SET NULL,
   FOREIGN KEY (id_obra_social) REFERENCES ObraSocial(id_obra_social) ON DELETE SET NULL
 );
@@ -91,6 +92,7 @@ CREATE TABLE IF NOT EXISTS Medico (
   nombre TEXT NOT NULL,
   apellido TEXT NOT NULL,
   telefono TEXT,
+  noti_cancel_email_act INTEGER DEFAULT 0,
   FOREIGN KEY (id_usuario) REFERENCES Usuario(id_usuario),
   FOREIGN KEY (id_especialidad) REFERENCES Especialidad(id_especialidad)
 );

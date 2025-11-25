@@ -43,7 +43,8 @@ async def create_medico(medico_data: dict, service: MedicoService = Depends(get_
         telefono=medico_data['telefono'],
         id_usuario=medico_data.get('id_usuario'),
         matricula=medico_data['matricula'],
-        id_especialidad=medico_data.get('id_especialidad')
+        id_especialidad=medico_data.get('id_especialidad'),
+        noti_cancel_email_act=medico_data.get('noti_cancel_email_act', 1)
     )
     resultado = service.create(medico)
     return jsonable_encoder(resultado)

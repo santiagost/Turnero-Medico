@@ -19,8 +19,8 @@ class UsuarioService:
         return UsuarioResponse(
             id_usuario=usuario_dict['id_usuario'],
             email=usuario_dict['email'],
-            creado_en=usuario_dict['creado_en'],
-            activo=usuario_dict['activo']
+            activo=bool(usuario_dict['activo']),
+            recordatorios_activados=bool(usuario_dict['recordatorios_activados'])
         )
 
         
@@ -39,16 +39,24 @@ class UsuarioService:
 
     def get_by_id(self, usuario_id: int) -> Optional[UsuarioResponse]:
         """Obtiene un usuario por ID"""
-        self.cursor.execute("SELECT * FROM usuario WHERE id_usuario = ?", (usuario_id,))
-        row = self.cursor.fetchone()
-        if row:
-            usuario_dict = dict(row)
-            return UsuarioResponse(
-                id_usuario=usuario_dict['id_usuario'],
-                email=usuario_dict['email'],
-                creado_en=usuario_dict['creado_en'],
-                activo=usuario_dict['activo']
-            )
+        # self.cursor.execute("SELECT * FROM usuario WHERE id_usuario = ?", (usuario_id,))
+        # row = self.cursor.fetchone()
+    
+        usuario = self._get_usuario_completo(usuario_id)
+        if usuario is None:
+            raise ValueError("Usuario no encontrado")
+        return usuario
+        
+
+
+        # if row:
+        #     usuario_dict = dict(row)
+        #     return UsuarioResponse(
+        #         id_usuario=usuario_dict['id_usuario'],
+        #         email=usuario_dict['email'],
+        #         creado_en=usuario_dict['creado_en'],
+        #         activo=usuario_dict['activo']
+        #     )
         return None
     
 
