@@ -47,9 +47,9 @@ async def get_proximos_turnos_paciente(paciente_id: int, service: TurnoService =
 # listado de todos los turnos de un determinado paciente dados entre 2 fechas desde hasta
 @router.get("/paciente/historial", response_model=List[dict])
 async def get_historial_turnos_paciente(
-    paciente_id: int, 
-    fecha_desde: str, 
-    fecha_hasta: str, 
+    paciente_id: int,
+    fecha_desde: str,
+    fecha_hasta: str,
     service: TurnoService = Depends(get_turno_service)
 ):
     """Obtiene el historial de turnos de un paciente entre dos fechas"""

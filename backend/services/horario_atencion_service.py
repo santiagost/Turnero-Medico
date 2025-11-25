@@ -1,3 +1,4 @@
+from datetime import date, datetime
 import sqlite3
 from typing import List, Optional
 from models.horarioAtencion import HorarioAtencionResponse, HorarioAtencionCreate, HorarioAtencionUpdate
@@ -159,3 +160,43 @@ class HorarioAtencionService:
         except sqlite3.IntegrityError as e:
             self.db.rollback()
             raise ValueError("Error al eliminar el horario de atención: " + str(e))
+
+    # funciones de negocio
+
+    def esta_dentro_de_horario(self, id_medico: int, fecha_hora_inicio: str, fecha_hora_fin: str) -> bool:
+        """Verifica si un médico está dentro de su horario de atención en una fecha y hora dada"""
+        # dia_semana = fecha_hora_inicio.weekday()  # 0=lunes, 6=domingo
+
+        fecha_hora_inicio_objeto = datetime.strptime(fecha_hora_inicio, "%Y-%m-%d %H:%M:%S")
+        dia_semana = fecha_hora_inicio_objeto.weekday() # 0=lunes, 6=domingo 
+
+        fecha_hora_fin_objeto = datetime.strptime(fecha_hora_fin, "%Y-%m-%d %H:%M:%S")
+        
+             
+
+
+        self.cursor.execute("""
+            SELECT ha.hora_inicio, ha.hora_fin
+            FROM horarioatencion ha
+            WHERE ha.id_medico = ? AND ha.dia_semana = ?
+        """, (id_medico, dia_semana))
+
+        horarios = self.cursor.fetchall()
+
+        for horario in horarios:
+            hora_inicio = horario['hora_inicio']
+            hora_fin = horario['hora_fin']
+
+            hora_inicio_objeto = datetime.strptime(hora_inicio, "%H:%M").time()
+            hora_fin_objeto = datetime.strptime(hora_fin, "%H:%M").time()
+
+
+            print("Comparando con horario:", hora_inicio_objeto, "-", hora_fin_objeto)
+            print("Turno solicitado:", fecha_hora_inicio, "-", fecha_hora_fin)
+
+            if hora_inicio_objeto <= fecha_hora_inicio_objeto.time() and hora_fin_objeto >= fecha_hora_fin_objeto.time():
+                return True
+        return False
+    
+
+    

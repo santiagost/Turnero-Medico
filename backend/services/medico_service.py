@@ -114,7 +114,6 @@ class MedicoService:
         """Obtiene un médico por su ID"""
         return self._get_medico_completo(medico_id)
     
-
     # devuelve {id, nombre-apellido}
     def get_ligero(self):
         """Obtiene una lista ligera de médicos (id, nombre, apellido)"""
@@ -223,3 +222,11 @@ class MedicoService:
         except sqlite3.IntegrityError as e:
             self.db.rollback()
             raise ValueError(f"Error al eliminar el médico: {str(e)}")
+        
+
+    # FUNCIONES DE NEGOCIO
+
+    
+
+
+        
