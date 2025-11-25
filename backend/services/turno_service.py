@@ -350,3 +350,27 @@ class TurnoService:
         except sqlite3.IntegrityError as e:
             self.db.rollback()
             raise ValueError("Error al marcar el turno como atendido: " + str(e))
+        
+    def marcar_turnos_ausentes(self):
+        """Marca como ausentes los turnos que no fueron atendidos y ya pasaron"""
+        try:
+            self.cursor.execute("""
+                SELECT id_turno FROM Turno
+                WHERE id_estado_turno = (
+                    SELECT id_estado_turno FROM EstadoTurno WHERE nombre = 'Pendiente'
+                )
+                AND datetime(fecha_hora_fin) < datetime('now', 'localtime')
+            """)
+            
+            turnos_a_marcar = self.cursor.fetchall()
+            
+            for i in turnos_a_marcar:
+                self.update(i['id_turno'], {'id_estado_turno': 4})  # 4 es el estado 'Ausente'
+                print(f"Turno ID {i['id_turno']} marcado como Ausente.")
+            
+            return len(turnos_a_marcar)
+        
+        except sqlite3.Error as e:
+            raise ValueError("Error al marcar turnos como ausentes: " + str(e))
+        except Exception as e:
+            raise ValueError("Error inesperado al marcar turnos como ausentes: " + str(e))

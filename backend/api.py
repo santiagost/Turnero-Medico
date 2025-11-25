@@ -39,6 +39,31 @@ def chequear_recordatorios_background(): # para testear el scheduler
             conn.close()
 
 
+def marcar_turnos_ausentes_background():
+    """Marca como 'Ausente' los turnos pasados que no fueron atendidos ni cancelados."""
+    conn = None
+    try:
+        # 1. Crear conexión independiente (check_same_thread=False es CLAVE)
+        conn = sqlite3.connect(database_url, check_same_thread=False)
+        conn.row_factory = sqlite3.Row # Para manejar diccionarios
+        
+        # 2. Instanciar el servicio con esta conexión
+        service = TurnoService(conn)
+        
+        # 3. Ejecutar la lógica de marcar ausentes
+        cantidad = service.marcar_turnos_ausentes()
+
+        if cantidad > 0:
+            print(f"[AUSENTES] Se marcaron {cantidad} turnos como ausentes.")
+            
+    except Exception as e:
+        print(f"[AUSENTES] Error: {e}")
+        
+    finally:
+        # 4. Cerrar la conexión siempre
+        if conn:
+            conn.close()
+
 # --- LIFESPAN (Ciclo de vida de FastAPI) ---
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -47,6 +72,7 @@ async def lifespan(app: FastAPI):
     
     # Configuramos para que corra cada 10 o 30 segundos
     scheduler.add_job(chequear_recordatorios_background, 'interval', seconds=3600)
+    scheduler.add_job(marcar_turnos_ausentes_background, 'interval', seconds=15)
     scheduler.start()
 
     print("Scheduler de notificaciones INICIADO")
@@ -112,6 +138,7 @@ FastAPIApp.include_router(consulta_router)
 FastAPIApp.include_router(usuario_rol_router)
 FastAPIApp.include_router(receta_router)
 FastAPIApp.include_router(horario_atencion_router)
+FastAPIApp.include_router(analytics_router)
 
 # Evento de cierre: cerrar la conexión a la base de datos
 @app.on_event("shutdown")
