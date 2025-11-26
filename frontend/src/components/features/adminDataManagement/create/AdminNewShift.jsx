@@ -10,36 +10,44 @@ import Button from "../../../ui/Button";
 import Modal from "../../../ui/Modal";
 import PrincipalCard from "../../../ui/PrincipalCard";
 import IconButton from "../../../ui/IconButton";
+import ToggleSwitch from "../../../ui/ToggleSwitch";
 
 import { FaSearch } from "react-icons/fa";
 import { LiaUndoAltSolid } from "react-icons/lia";
 
 import {
-
-    doctorOptions,
-    mockDoctors,
     getMockDoctorSchedule,
     mockDoctorAvailability,
-    mockPatients
+    mockPatients,
 } from "../../../../utils/mockData";
 
 import { getSpecialtyOptions } from "../../../../../services/specialty.service";
-import { getSocialWorkOptions } from "../../../../../services/socialWork.service"
-
-
-import { newAdminShiftSchema } from "../../../../validations/shiftSchemas"
-import ToggleSwitch from "../../../ui/ToggleSwitch";
+import { getSocialWorkOptions } from "../../../../../services/socialWork.service";
+import {
+    getDoctorById,
+    getDoctorOptions,
+} from "../../../../../services/doctor.service";
+import { getAllDoctorsWithFilters } from "../../../../../services/doctor.service";
+import { newAdminShiftSchema } from "../../../../validations/shiftSchemas";
 
 const sectionVariants = {
     hidden: { opacity: 0, height: 0, y: -20, transition: { duration: 0.3 } },
-    visible: { opacity: 1, height: "auto", y: 0, transition: { duration: 0.2, delay: 0.1 } },
+    visible: {
+        opacity: 1,
+        height: "auto",
+        y: 0,
+        transition: { duration: 0.2, delay: 0.1 },
+    },
     exit: { opacity: 0, height: 0, y: -20, transition: { duration: 0.2 } },
 };
 
 const AdminNewShift = () => {
     const [isPatientManual, setIsPatientManual] = useState(false);
     const [isPatientFound, setIsPatientFound] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
     const toast = useToast();
+
     const [formData, setFormData] = useState({
         patient: {
             dni: "",
@@ -51,92 +59,127 @@ const AdminNewShift = () => {
             membershipNumber: "",
             socialWorkId: "",
         },
-        specialty: "",
-        doctor: "",
+        specialtyId: "",
+        doctorId: "",
         date: "",
         time: "",
         reason: "",
     });
 
     const [errors, setErrors] = useState({});
+
+    // --- ESTADOS PARA OPCIONES Y DATOS VISUALES ---
+    const [allDoctorOptions, setAllDoctorOptions] = useState([]);
+    const [filteredDoctorOptions, setFilteredDoctorOptions] = useState([]);
+    const [specialtyOptions, setSpecialtyOptions] = useState([
+        { value: "", label: "" },
+    ]);
+    const [socialWorkOptions, setSocialWorkOptions] = useState([
+        { value: "", label: "" },
+    ]);
+
+    // Estado separado para guardar TODA la info del doctor seleccionado (para el calendario)
+    const [selectedDoctorDetails, setSelectedDoctorDetails] = useState(null);
     const [doctorScheduleConfig, setDoctorScheduleConfig] = useState([]);
-    const [isLoading, setIsLoading] = useState(false);
 
-
-    const [filteredDoctorOptions, setFilteredDoctorOptions] = useState(doctorOptions);
+    // Estados del Calendario
     const [selectedWeek, setSelectedWeek] = useState();
     const [selectedShift, setSelectedShift] = useState();
     const [currentWeekShifts, setCurrentWeekShifts] = useState([]);
 
-    const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+    const doctorOptionsWithEmpty = [
+        { value: "", label: "Seleccione Médico..." },
+        ...filteredDoctorOptions,
+    ];
 
-
-
-    const doctorOptionsWithAll = [{ value: "", label: "" }, ...filteredDoctorOptions];
-
-    const [specialtyOptionsWithEmpty, setSpecialtyOptions] = useState([
-        { value: "", label: "" }
-    ]);
-    const [socialWorkOptionsWithEmpty, setSocialWorkOptions] = useState([
-        { value: "", label: "" }
-    ]);
-
+    // --- CARGA INICIAL DE OPCIONES ---
     useEffect(() => {
         const fetchOptions = async () => {
             try {
-                const specialtyFromBackend = await getSpecialtyOptions();
-                const socialWorkFromBackend = await getSocialWorkOptions();
+                const specialtyData = await getSpecialtyOptions();
+                const socialWorkData = await getSocialWorkOptions();
+                const doctorData = await getDoctorOptions();
 
-                setSpecialtyOptions([
-                    { value: "", label: "" },
-                    ...specialtyFromBackend
-                ]);
-                setSocialWorkOptions([
-                    { value: "", label: "" },
-                    ...socialWorkFromBackend
-                ]);
-                
-
+                setSpecialtyOptions([{ value: "", label: "" }, ...specialtyData]);
+                setSocialWorkOptions([{ value: "", label: "" }, ...socialWorkData]);
+                setAllDoctorOptions(doctorData);
+                setFilteredDoctorOptions(doctorData);
             } catch (error) {
-                console.error("No se pudieron cargar las opciones", error);
+                console.error("Error cargando opciones", error);
+                toast.error("Error cargando listas de opciones");
             }
         };
-
         fetchOptions();
     }, []);
 
-
-    const selectedDoctorObj = mockDoctors.find(
-        (doc) => doc.doctorId === parseInt(formData.doctor)
-    );
-
-    const getSpecialtyName = () => {
-        const found = specialtyOptionsWithEmpty.find((s) => s.value === parseInt(formData.specialty));
-        return found ? found.label : "";
-    };
-
+    // --- EFECTO: CUANDO CAMBIA EL DOCTOR SELECCIONADO (BUSCAR DETALLES) ---
     useEffect(() => {
-        if (formData.specialty === "") {
-            setFilteredDoctorOptions(doctorOptions);
-        } else {
-            const filteredDocs = mockDoctors.filter(
-                (doc) => doc.specialty.specialtyId === parseInt(formData.specialty)
-            );
-            const newOptions = filteredDocs.map((doc) => ({
-                value: doc.doctorId,
-                label: `Dr/a. ${doc.firstName} ${doc.lastName}`,
-            }));
-            setFilteredDoctorOptions(newOptions);
+        if (!formData.doctorId) {
+            setSelectedDoctorDetails(null);
+            setDoctorScheduleConfig([]);
+            return;
         }
-    }, [formData.specialty]);
 
+        const fetchFullDoctorDetails = async () => {
+            try {
+                const data = await getDoctorById(formData.doctorId);
+                setSelectedDoctorDetails(data);
+
+                if (data?.specialty && !formData.specialtyId) {
+                    setFormData((prev) => ({
+                        ...prev,
+                        specialtyId: data.specialty.specialtyId,
+                    }));
+                }
+
+                setDoctorScheduleConfig(mockDoctorAvailability);
+            } catch (error) {
+                console.error("Error buscando detalles del doctor", error);
+            }
+        };
+
+        fetchFullDoctorDetails();
+    }, [formData.doctorId]);
+
+    // --- EFECTO: FILTRAR MEDICOS POR ESPECIALIDAD ---
     useEffect(() => {
-        if (selectedWeek?.from) {
+        const filterDoctors = async () => {
+            if (!formData.specialtyId) {
+                setFilteredDoctorOptions(allDoctorOptions);
+                return;
+            }
+
+            setIsLoading(true);
+            try {
+                const doctorsList = await getAllDoctorsWithFilters({
+                    specialtyId: formData.specialtyId,
+                });
+
+                const mappedOptions = doctorsList.map((doc) => ({
+                    value: doc.doctorId,
+                    label: `Dr/a. ${doc.lastName}, ${doc.firstName}`,
+                }));
+                setFilteredDoctorOptions(mappedOptions);
+            } catch (error) {
+                console.error("Error filtrando médicos:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        filterDoctors();
+    }, [formData.specialtyId, allDoctorOptions]);
+
+    // --- EFECTO: CARGAR TURNOS AL CAMBIAR SEMANA O DOCTOR ---
+    useEffect(() => {
+        if (selectedWeek?.from && formData.doctorId) {
+            // Aquí iría la llamada real al back para buscar turnos ocupados
             const mocks = getMockDoctorSchedule(addDays(selectedWeek.from, 1));
             setCurrentWeekShifts(mocks);
         }
-    }, [selectedWeek, formData.doctor]);
+    }, [selectedWeek, formData.doctorId]);
 
+    // --- EFECTO: SELECCIONAR UN TURNO (SLOT) ---
     useEffect(() => {
         if (selectedShift && selectedShift.date) {
             setFormData((prev) => ({
@@ -150,97 +193,67 @@ const AdminNewShift = () => {
         }
     }, [selectedShift]);
 
-    useEffect(() => {
-        if (formData.doctor) {
-            setDoctorScheduleConfig(mockDoctorAvailability);
-        } else {
-            setDoctorScheduleConfig([]);
-        }
-    }, [formData.doctor]);
-
     const handleChange = (e) => {
         const { name, value } = e.target;
-        const patientFields = ["dni", "firstName", "lastName", "telephone", "membershipNumber", "socialWorkId"];
+        const patientFields = [
+            "dni",
+            "firstName",
+            "lastName",
+            "telephone",
+            "membershipNumber",
+            "socialWorkId",
+        ];
 
         if (patientFields.includes(name)) {
+            // Lógica de Paciente
             setFormData((prev) => ({
                 ...prev,
-                patient: {
-                    ...prev.patient,
-                    [name]: value,
-                },
+                patient: { ...prev.patient, [name]: value },
             }));
-            if (name === "dni" && isPatientFound) {
-                setIsPatientFound(false);
-            }
-        } else if (name === "doctor") {
+            if (name === "dni" && isPatientFound) setIsPatientFound(false);
+        } else if (name === "specialtyId") {
+            // Si cambia la especialidad, reseteamos doctor y turno
             setSelectedShift(null);
-            if (value !== "") {
-                const selectedDoctor = mockDoctors.find(
-                    (doc) => doc.doctorId === parseInt(value)
-                );
-                if (selectedDoctor) {
-                    setFormData((prev) => ({
-                        ...prev,
-                        doctor: value,
-                        specialty: selectedDoctor.specialty.specialtyId,
-                    }));
-                    if (errors.specialty) setErrors((prev) => ({ ...prev, specialty: null }));
-                }
-            } else {
-                setFormData((prev) => ({ ...prev, doctor: "" }));
-            }
-        } else if (name === "specialty") {
+            setFormData((prev) => ({ ...prev, specialtyId: value, doctorId: "" }));
+        } else if (name === "doctorId") {
+            // Ojo: name en el Select debe ser "doctorId"
+            // Si cambia el doctor, reseteamos el turno seleccionado
             setSelectedShift(null);
-            setFormData((prev) => ({
-                ...prev,
-                specialty: value,
-                doctor: "",
-            }));
+            setFormData((prev) => ({ ...prev, doctorId: value }));
         } else {
-            setFormData((prev) => ({
-                ...prev,
-                [name]: value,
-            }));
+            // Otros campos (reason, date, time)
+            setFormData((prev) => ({ ...prev, [name]: value }));
         }
 
-        if (errors[name]) {
-            setErrors((prevErrors) => ({ ...prevErrors, [name]: null }));
-        }
+        if (errors[name]) setErrors((prev) => ({ ...prev, [name]: null }));
     };
 
+    // --- BUSQUEDA DE PACIENTE ---
     const handleSearchPatient = () => {
         const dniToSearch = formData.patient.dni;
-        console.log("Buscando DNI:", dniToSearch);
-
         if (!dniToSearch) {
-            setErrors((prev) => ({ ...prev, dni: "Ingrese un DNI para buscar." }));
-            toast.warning("Por favor, ingrese un DNI para buscar.");
+            toast.warning("Ingrese un DNI");
             return;
         }
 
         const foundPatient = mockPatients.find((p) => p.dni === dniToSearch);
 
         if (foundPatient) {
-            const extractedSocialWorkId = foundPatient.socialWork
-                ? foundPatient.socialWork.socialWorkId
-                : foundPatient.socialWorkId || "";
-
             setFormData((prev) => ({
                 ...prev,
                 patient: {
                     ...prev.patient,
                     ...foundPatient,
-                    socialWorkId: extractedSocialWorkId
+                    socialWorkId: foundPatient.socialWork?.socialWorkId || "",
                 },
             }));
             setIsPatientFound(true);
             setErrors((prev) => ({ ...prev, dni: null }));
-            toast.info("Paciente encontrado en el sistema.");
+            toast.info("Paciente encontrado.");
         } else {
             setIsPatientFound(false);
             if (!isPatientManual) {
-                // ... (limpieza de campos) ...
+                // Limpiar datos si no se encuentra y no es manual
                 setFormData((prev) => ({
                     ...prev,
                     patient: {
@@ -252,21 +265,16 @@ const AdminNewShift = () => {
                         socialWorkId: "",
                     },
                 }));
-                setErrors((prev) => ({ ...prev, dni: "Paciente no encontrado." }));
-                toast.warning("Paciente no encontrado. Puede cargarlo manualmente.");
+                toast.warning("Paciente no encontrado.");
             }
         }
     };
 
+    // --- TOGGLE MANUAL ---
     const handleToggleChange = () => {
         const newState = !isPatientManual;
-
-        if (isPatientFound && newState) {
-            toast.info("Atención: Si cambias estos datos, se actualizará el registro del paciente existente.");
-        }
-
         setIsPatientManual(newState);
-
+        // Si apaga manual y no hay encontrado, limpiar
         if (!newState && !isPatientFound) {
             setFormData((prev) => ({
                 ...prev,
@@ -282,9 +290,8 @@ const AdminNewShift = () => {
         }
     };
 
-
     const validateStep1 = () => {
-        let step1Fields = ["specialty", "doctor", "date", "time"];
+        let step1Fields = ["specialtyId", "doctorId", "date", "time"];
         if (isPatientManual || isPatientFound) {
             step1Fields = [
                 ...step1Fields,
@@ -293,7 +300,7 @@ const AdminNewShift = () => {
                 "lastName",
                 "telephone",
                 "socialWorkId",
-                "membershipNumber"
+                "membershipNumber",
             ];
         }
 
@@ -301,12 +308,18 @@ const AdminNewShift = () => {
         let isValid = true;
 
         step1Fields.forEach((field) => {
-            const rule = newAdminShiftSchema[field];
+            // Nota: Debes asegurarte que 'newAdminShiftSchema' valide 'specialtyId' y 'doctorId'
+            // en lugar de objetos 'specialty' y 'doctor'.
+            // Si el schema espera objetos, necesitarás ajustarlo, o hacer un bypass temporal aquí.
+            const rule =
+                newAdminShiftSchema[field] ||
+                newAdminShiftSchema[field.replace("Id", "")];
 
             if (rule) {
-                const valueToValidate = formData.patient?.[field] !== undefined
-                    ? formData.patient[field]
-                    : formData[field];
+                const valueToValidate =
+                    formData.patient?.[field] !== undefined
+                        ? formData.patient[field]
+                        : formData[field];
 
                 const error = rule(valueToValidate, formData);
                 if (error) {
@@ -325,50 +338,28 @@ const AdminNewShift = () => {
         if (validateStep1()) {
             setIsConfirmModalOpen(true);
         } else {
-            toast.warning("Por favor, completa todos los campos requeridos del paciente y el turno.");
-            console.log("Errores de validación:", errors);
+            toast.warning("Por favor, completa todos los campos requeridos.");
+            console.log("Errores:", errors);
         }
     };
 
     const handleConfirmShift = async () => {
-        const reasonRule = newAdminShiftSchema.reason;
-        const reasonError = reasonRule ? reasonRule(formData.reason) : null;
-
-        if (reasonError) {
-            setErrors(prev => ({ ...prev, reason: reasonError }));
-            toast.error("El motivo de consulta es obligatorio.");
+        if (!formData.reason) {
+            setErrors((prev) => ({ ...prev, reason: "Motivo requerido" }));
             return;
         }
 
         setIsLoading(true);
         try {
-            // AQUI VA LA LLAMADA AL BACKEND
+            console.log("Enviando al Backend:", formData);
             // await axios.post('/api/shifts', formData);
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            await new Promise((resolve) => setTimeout(resolve, 1000));
 
-            // Simulación de error
-            // await new Promise((_, reject) => setTimeout(() => reject({ response: { data: { message: "Error al asignar turno." } } }), 1000));
-
-            console.log("Confirmado y enviando al backend:", formData);
-
-            toast.success("Turno asignado exitosamente.");
-
+            toast.success("Turno creado!");
+            handleResetClick();
             setIsConfirmModalOpen(false);
-
-            setFormData({
-                patient: { dni: "", firstName: "", lastName: "", telephone: "", membershipNumber: "", socialWorkId: "" },
-                specialty: "", doctor: "", date: "", time: "", reason: ""
-            });
-            setSelectedWeek(undefined);
-            setSelectedShift(undefined);
-            setIsPatientFound(false);
-            setIsPatientManual(false);
-            setErrors({});
-
         } catch (error) {
-            console.error("Error al crear turno:", error);
-            const errorMessage = error.response?.data?.message || "Ocurrió un error al intentar asignar el turno.";
-            toast.error(errorMessage);
+            toast.error("Error al crear turno");
         } finally {
             setIsLoading(false);
         }
@@ -403,17 +394,24 @@ const AdminNewShift = () => {
                 membershipNumber: "",
                 socialWorkId: "",
             },
-            specialty: "",
-            doctor: "",
+            specialtyId: "",
+            doctorId: "",
             date: "",
             time: "",
             reason: "",
         });
-        setErrors({});
-        setIsPatientManual(false);
-        setIsPatientFound(false);
+        setSelectedDoctorDetails(null);
+        setSelectedShift(null);
         setSelectedWeek(undefined);
-        setSelectedShift(undefined);
+        setIsPatientFound(false);
+        setIsPatientManual(false);
+    };
+
+    const getSelectedSpecialtyLabel = () => {
+        const found = specialtyOptions.find(
+            (opt) => String(opt.value) === String(formData.specialtyId)
+        );
+        return found ? found.label : "-";
     };
 
     return (
@@ -447,9 +445,7 @@ const AdminNewShift = () => {
                                 onClick={handleSearchPatient}
                                 size={"big"}
                             />
-                            <motion.div
-                                whileTap={{ scale: 0.9, rotate: -180 }}
-                            >
+                            <motion.div whileTap={{ scale: 0.9, rotate: -180 }}>
                                 <IconButton
                                     icon={<LiaUndoAltSolid size={30} />}
                                     type={"button"}
@@ -529,7 +525,7 @@ const AdminNewShift = () => {
                                     onChange={handleChange}
                                     onBlur={handleBlur}
                                     error={errors.socialWorkId}
-                                    options={socialWorkOptionsWithEmpty}
+                                    options={socialWorkOptions}
                                     size="small"
                                     required
                                     disable={isPatientFound && !isPatientManual}
@@ -542,21 +538,21 @@ const AdminNewShift = () => {
                 <div className="col-span-5 flex flex-row gap-4 mt-2">
                     <Select
                         tittle="Especialidad"
-                        name="specialty"
-                        value={formData.specialty}
+                        name="specialtyId"
+                        value={formData.specialtyId}
                         onChange={handleChange}
-                        options={specialtyOptionsWithEmpty}
+                        options={specialtyOptions}
                         onBlur={handleBlur}
-                        error={errors.specialty}
+                        error={errors.specialtyId}
                     />
                     <Select
                         tittle="Médico"
-                        name="doctor"
-                        value={formData.doctor}
+                        name="doctorId"
+                        value={formData.doctorId}
                         onChange={handleChange}
-                        options={doctorOptionsWithAll}
+                        options={doctorOptionsWithEmpty}
                         onBlur={handleBlur}
-                        error={errors.doctor}
+                        error={errors.doctorId}
                     />
                     <Input
                         tittle="Fecha"
@@ -579,7 +575,7 @@ const AdminNewShift = () => {
                 </div>
                 <div className="col-span-5">
                     <AnimatePresence>
-                        {selectedDoctorObj && (
+                        {selectedDoctorDetails && (
                             <motion.div
                                 className="grid grid-cols-4 m-4 gap-4"
                                 key="doctor-availability-section"
@@ -591,13 +587,16 @@ const AdminNewShift = () => {
                             >
                                 <div className="col-span-1 items-center justify-start pt-10 flex flex-col">
                                     <div className="mb-4 text-start">
-                                        <p className="text-custom-gray text-sm">Disponibilidad de:</p>
+                                        <p className="text-custom-gray text-sm">
+                                            Disponibilidad de:
+                                        </p>
                                         <p className="text-xl font-bold text-custom-blue">
-                                            Dr/a. {selectedDoctorObj.firstName}{" "}
-                                            {selectedDoctorObj.lastName}
+                                            Dr/a. {selectedDoctorDetails.firstName}{" "}
+                                            {selectedDoctorDetails.lastName}
                                         </p>
                                         <p className="text-sm mt-2">
-                                            Por favor, seleccione una semana para ver los turnos disponibles
+                                            Por favor, seleccione una semana para ver los turnos
+                                            disponibles
                                         </p>
                                     </div>
                                     <Calendar
@@ -631,8 +630,6 @@ const AdminNewShift = () => {
                 </div>
             </form>
 
-
-
             <Modal isOpen={isConfirmModalOpen} onClose={closeConfirmModal}>
                 <PrincipalCard
                     title="Confirmar Nuevo Turno"
@@ -646,13 +643,19 @@ const AdminNewShift = () => {
                                     </span>
                                 </div>
                                 <div className="flex justify-between mb-2">
-                                    <span className="font-semibold text-gray-600">Especialidad:</span>
-                                    <span className="text-custom-dark-blue">{getSpecialtyName()}</span>
+                                    <span className="font-semibold text-gray-600">
+                                        Especialidad:
+                                    </span>
+                                    <span className="text-custom-dark-blue">
+                                        {getSelectedSpecialtyLabel()}
+                                    </span>
                                 </div>
                                 <div className="flex justify-between mb-2">
                                     <span className="font-semibold text-gray-600">Médico:</span>
                                     <span className="text-custom-dark-blue">
-                                        {selectedDoctorObj ? `Dr/a. ${selectedDoctorObj.firstName} ${selectedDoctorObj.lastName}` : '-'}
+                                        {selectedDoctorDetails
+                                            ? `Dr/a. ${selectedDoctorDetails.firstName} ${selectedDoctorDetails.lastName}`
+                                            : "-"}
                                     </span>
                                 </div>
                                 <div className="flex justify-between mb-2">
@@ -661,7 +664,9 @@ const AdminNewShift = () => {
                                 </div>
                                 <div className="flex justify-between">
                                     <span className="font-semibold text-gray-600">Hora:</span>
-                                    <span className="text-custom-dark-blue font-bold">{formData.time} hs</span>
+                                    <span className="text-custom-dark-blue font-bold">
+                                        {formData.time} hs
+                                    </span>
                                 </div>
                             </div>
 

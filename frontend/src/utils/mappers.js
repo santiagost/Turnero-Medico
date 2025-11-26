@@ -96,10 +96,7 @@ export const mapDoctorFromBackend = (item) => {
     licenseNumber: item.matricula,
     telephone: item.telefono,
     userId: item.id_usuario,
-    specialty: {
-      specialtyId: item.especialidad.id_especialidad,
-      name: item.especialidad.nombre,
-    },
+    specialty: item.especialidad ? mapSpecialtyFromBackend(item.especialidad) : null,
     emailNotificationActive: item.noti_cancel_email_act
   };
 };
