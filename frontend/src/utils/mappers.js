@@ -162,3 +162,51 @@ export const mapShiftFromBackend = (item) => {
     } : null
   };
 };
+
+
+// ESTADISTICAS
+
+//   { "total_turnos": 5, "turnos_atendidos": 0, "turnos_cancelados": 2, "turnos_pendientes": 0, "turnos_ausentes": 3, "pacientes_atendidos": 0 }
+export const mapDailyStatsFromBackend = (item) => {
+  if (!item) return {};
+  return {
+    totalShifts: item.total_turnos,
+    attendedPatients: item.pacientes_atendidos,
+    attendedShifts: item.turnos_atendidos,
+    canceledShifts: item.turnos_cancelados,
+    pendingShifts: item.turnos_pendientes,
+    missedShifts: item.turnos_ausentes
+  };
+};
+
+
+
+// { "id_turno": 1, "fecha": "2024-01-10", "hora": "09:00:00", "paciente": "Messi, Lionel", "obra_social": "OSDE", "estado": "Cancelado" }
+export const mapMedicalPerformanceFromBackend = (item) => {
+  if (!item) return {};
+  return {
+    shiftId: item.id_turno,
+    date: item.fecha,
+    time: item.hora,
+    name: item.paciente,
+    socialWork: item.obra_social,
+    status: item.estado,
+  };
+};
+
+// Mapper genérico para gráficos (Volumen, Asistencia, Especialidad)
+export const mapChartDataFromBackend = (item) => {
+  if (!item) return {};
+
+  return {
+    // Eje X: Agregamos 'item.dateLabel'
+    label: item.dateLabel || item.especialidad || item.asistencias || item.label,
+    
+    // Eje Y: Agregamos 'item.pacientes'
+    value: item.pacientes || item.cantidad || item.total_turnos || item.valor || item.value || 0,
+    
+    // Datos extra (si los hubiera)
+    attended: item.asistencias || 0,
+    absent: item.ausencias || 0,
+  };
+};

@@ -1,52 +1,28 @@
 import React, { useEffect, useState } from "react";
 import { FaFilePdf, FaUserMd } from "react-icons/fa";
-import { format, parseISO, isWithinInterval, startOfDay, endOfDay } from "date-fns";
 
 import Select from "../../ui/Select";
 import Button from "../../ui/Button";
 import StatusBadge from "../../ui/StatusBadge";
 
-import { doctorOptions, doctorScheduleMock } from "../../../utils/mockData";
+import { useToast } from "../../../hooks/useToast"
 
-// --- CAPA DE SERVICIO SIMULADA (Esto simula la lógica de tu Backend) ---
-// Cuando tengas la API, borrarás esta función completa.
-const simulatedBackendService = (doctorId, from, to) => {
-    return new Promise((resolve) => {
-        setTimeout(() => {
-            if (!doctorId || !from || !to) {
-                resolve([]);
-                return;
-            }
-
-            const startDate = startOfDay(parseISO(from));
-            const endDate = endOfDay(parseISO(to));
-            const docIdInt = parseInt(doctorId);
-
-            // Simulación de la Query de Base de Datos
-            const filteredRaw = doctorScheduleMock.filter(shift => {
-                const shiftDate = parseISO(shift.startTime);
-                const isDoctor = shift.doctor.doctorId === docIdInt;
-                const isInDateRange = isWithinInterval(shiftDate, { start: startDate, end: endDate });
-                return isDoctor && isInDateRange;
-            });
-
-            resolve(filteredRaw);
-        }, 500);
-    });
-};
+import { getDoctorOptions } from "../../../../services/doctor.service"
+import { downloadMedicalPerformancePDF, getMedicalPerformance } from "../../../../services/report.service";
 
 const mapToTableFormat = (rawData) => {
     return rawData.map(shift => ({
         id: shift.shiftId,
-        date: format(parseISO(shift.startTime), 'yyyy-MM-dd'),
-        time: format(parseISO(shift.startTime), 'HH:mm'),
-        patient: `${shift.patient.lastName}, ${shift.patient.firstName}`,
-        socialWork: shift.patient.socialWork ? shift.patient.socialWork.name : "Particular",
-        status: shift.status.name // Extraemos el string del objeto status
+        date: shift.date,
+        time: shift.time,
+        patient: shift.name,
+        socialWork: shift.socialWork,
+        status: shift.status
     }));
 };
 
 const ShiftForDoctor = ({ filters }) => {
+    const toast = useToast();
     const [selectedDoctor, setSelectedDoctor] = useState("");
     const [shifts, setShifts] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -63,19 +39,9 @@ const ShiftForDoctor = ({ filters }) => {
             setError(null);
 
             try {
-                /*
-                // AQUI VA LA LLAMADA AL BACKEND
-                Doctores Options
-
-
-                Estadisticas para ese doctor
-                */
-
-                // 2. CÓDIGO ACTUAL (Mock Service):
-                console.log(`📡 Fetching Mock Data: Doc ${selectedDoctor}, ${filters.fromDate} to ${filters.toDate}`);
-                const rawData = await simulatedBackendService(selectedDoctor, filters.fromDate, filters.toDate);
-                
-                const formattedData = mapToTableFormat(rawData);
+                const data = await getMedicalPerformance(filters.fromDate, filters.toDate, selectedDoctor)
+                console.log(data);
+                const formattedData = mapToTableFormat(data);
                 setShifts(formattedData);
 
             } catch (err) {
@@ -90,15 +56,63 @@ const ShiftForDoctor = ({ filters }) => {
         fetchShifts();
     }, [filters, selectedDoctor]);
 
+    const [doctorOptions, setDoctorOptions] = useState([
+        { value: "", label: "" }
+    ]);
+
+    useEffect(() => {
+        const fetchOptions = async () => {
+            try {
+                const dataFromBackend = await getDoctorOptions();
+
+                setDoctorOptions([
+                    ...dataFromBackend
+                ]);
+            } catch (error) {
+                console.error("No se pudieron cargar las opciones", error);
+            }
+        };
+
+        fetchOptions();
+    }, []);
+
     const handleDoctorChange = (e) => {
         setSelectedDoctor(e.target.value);
     };
 
-    const handleExportPDF = () => {
-        // AQUI VA LA LLAMADA AL BACKEND
-        const docLabel = doctorOptions.find(d => d.value.toString() === selectedDoctor)?.label;
-        // Aquí luego llamarás a tu endpoint de descarga de PDF
-        alert(`Generando PDF para: ${docLabel}`);
+    const handleExportPDF = async () => {
+        // 1. Validamos que haya fechas seleccionadas
+        if (!filters.fromDate || !filters.toDate) {
+            toast.error("Por favor seleccione un rango de fechas.");
+            return;
+        }
+
+        try {
+            const doctorId = selectedDoctor ? selectedDoctor : null;
+            const pdfData = await downloadMedicalPerformancePDF(
+                filters.fromDate,
+                filters.toDate,
+                doctorId
+            );
+            const blob = new Blob([pdfData], { type: 'application/pdf' });
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `reporte_medico_${filters.fromDate}.pdf`);
+            document.body.appendChild(link);
+            link.click();
+            link.parentNode.removeChild(link);
+            window.URL.revokeObjectURL(url);
+            toast.success("Reporte descargado correctamente");
+
+        } catch (error) {
+            console.error(error);
+            if (error.response && error.response.status === 404) {
+                toast.error("No hay datos para generar el reporte en esas fechas.");
+            } else {
+                toast.error("Error al descargar el reporte");
+            }
+        }
     };
 
     return (
@@ -171,6 +185,7 @@ const ShiftForDoctor = ({ filters }) => {
                                     <td className="py-3 px-4 text-sm text-gray-600">{shift.socialWork}</td>
                                     <td className="py-3 px-4 text-center">
                                         <div className="flex justify-center">
+                                            {console.log(shift.status)}
                                             <StatusBadge status={shift.status} />
                                         </div>
                                     </td>

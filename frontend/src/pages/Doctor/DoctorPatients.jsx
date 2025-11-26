@@ -201,7 +201,7 @@ const DoctorPatients = () => {
                       
                       {/* Aquí usamos isLoadingPatient para mostrar spinner SOLO en las consultas */}
                       {isLoadingPatient ? (
-                         <div className="flex justify-center py-10 text-custom-blue"><Spinner /></div>
+                         <div className="flex justify-center text-custom-blue"><Spinner /></div>
                       ) : consultations.length > 0 ? (
                         consultations.map(consultation => (
                           <ConsultationCard

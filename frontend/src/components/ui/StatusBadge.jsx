@@ -10,8 +10,11 @@ const StatusBadge = ({ status }) => {
             colors = "bg-custom-red/20 text-custom-red";
             break;
         case "Pendiente":
-        default:
             colors = "bg-custom-orange/20 text-custom-orange";
+            break;
+        case "Ausente":
+        default:
+            colors = "bg-custom-gray/20 text-custom-gray";
             break;
     }
 
