@@ -102,3 +102,15 @@ async def delete_paciente(paciente_id: int, service: PacienteService = Depends(g
     
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    
+@router.post("/registrar", response_model=dict, status_code=status.HTTP_201_CREATED)
+async def registrar_paciente(usuario_data: dict, service: PacienteService = Depends(get_paciente_service)):
+    """Registra un nuevo paciente junto con su usuario"""
+    try:
+        resultado = service.registrar_paciente(usuario_data)
+        return jsonable_encoder(resultado)
+    
+    except KeyError as e:
+        raise HTTPException(status_code=400, detail=f"Falta el campo obligatorio: {str(e)}")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))

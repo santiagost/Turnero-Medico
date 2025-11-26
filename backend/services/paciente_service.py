@@ -1,6 +1,7 @@
 import sqlite3
 from typing import List, Optional
-from models.paciente import PacienteResponse
+from models.paciente import PacienteResponse, PacienteCreate, PacienteUpdate
+from models.usuarioRol import UsuarioRolCreate, UsuarioRolResponse
 from services.usuario_service import UsuarioService
 from services.obra_social_service import ObraSocialService
 
@@ -238,3 +239,70 @@ class PacienteService:
 
         paciente_id = dict(row)['id_paciente']
         return self._get_paciente_completo(paciente_id)
+    
+    def registrar_paciente(self, usuario_data: dict) -> PacienteResponse:
+        from services.usuario_rol_service import UsuarioRolService
+        from services.rol_service import RolService
+        from services.usuario_service import UsuarioService
+
+        rol_service = RolService(self.db)
+        usuario_rol_service = UsuarioRolService(self.db)
+        usuario_service = UsuarioService(self.db)
+
+        """Crea un nuevo usuario con rol de paciente"""
+        try:
+            # 1) Verificar si el email está en uso con rol Paciente
+            exists = usuario_service.get_by_email(usuario_data["email"])
+                        
+            roles = usuario_rol_service.get_by_usuario_id(exists.id_usuario) if exists else []
+            roles_names = [role.rol.nombre for role in roles] if roles else []
+
+            if exists and "Paciente" in roles_names:
+                raise ValueError("El email ya se encuentra registrado como Paciente")
+
+            # 2) Buscar si existe el paciente por DNI
+            paciente = self.get_by_dni(usuario_data["dni"])
+
+            # 3) Si no existe, crear paciente
+            if not paciente:
+                paciente = PacienteCreate(
+                    nombre=usuario_data["nombre"],
+                    apellido=usuario_data["apellido"],
+                    dni=usuario_data["dni"],
+                    telefono=usuario_data["telefono"],
+                    fecha_nacimiento=usuario_data["fecha_nacimiento"]
+                )
+                paciente = self.create(paciente)
+
+            # 4) Crear usuario
+            usuario = usuario_service.create(
+                email=usuario_data["email"],
+                password=usuario_data["password"]
+            )
+            id_usuario = usuario.id_usuario
+
+            # 5) Asociar usuario con paciente
+            paciente_update = PacienteUpdate(id_usuario=id_usuario)
+            self.update(paciente.id_paciente, paciente_update)
+
+            # 6) Crear usuario rol
+            rol = rol_service.get_by_name("Paciente")
+            usuario_rol_service.create(
+                UsuarioRolCreate(
+                    id_usuario=id_usuario,
+                    id_rol=rol.id_rol
+                )
+            )
+
+            return PacienteResponse(
+                id_paciente=paciente.id_paciente,
+                dni=paciente.dni,
+                nombre=paciente.nombre,
+                apellido=paciente.apellido,
+                telefono=paciente.telefono,
+                fecha_nacimiento=paciente.fecha_nacimiento,
+            )
+
+        except sqlite3.IntegrityError as e:
+            self.db.rollback()
+            raise ValueError("Error al crear el usuario: " + str(e))
