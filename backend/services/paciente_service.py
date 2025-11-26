@@ -237,8 +237,8 @@ class PacienteService:
             
                               
             self.cursor.execute("""
-                INSERT INTO Paciente (dni, nombre, apellido, telefono, fecha_nacimiento, id_obra_social)
-                VALUES (?, ?, ?, ?, ?, ?)
+                INSERT INTO Paciente (dni, nombre, apellido, telefono, fecha_nacimiento, id_obra_social, nro_afiliado, noti_reserva_email_act)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 usuario_data["dni"],
                 usuario_data["nombre"],
@@ -246,6 +246,8 @@ class PacienteService:
                 usuario_data.get("telefono"),
                 usuario_data.get("fecha_nacimiento"),
                 usuario_data.get("id_obra_social", 3),
+                usuario_data.get("nro_afiliado", None),
+                usuario_data.get("noti_reserva_email_act", 1)
             ))
             self.db.commit()
             id_paciente = self.cursor.lastrowid
