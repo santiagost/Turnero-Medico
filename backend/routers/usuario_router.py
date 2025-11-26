@@ -35,11 +35,7 @@ async def get_usuario_by_id(usuario_id: int, service: UsuarioService = Depends(g
 @router.post("/", response_model=dict, status_code=status.HTTP_201_CREATED)
 async def create_usuario(usuario_data: dict, service: UsuarioService = Depends(get_usuario_service)):
     try:
-        usuario = UsuarioCreate(
-            email=usuario_data['email'],
-            password=usuario_data['password']
-        )
-        resultado = service.create(usuario)
+        resultado = service.create(usuario_data)
         return jsonable_encoder(resultado)
     
     except KeyError as e:
@@ -75,4 +71,18 @@ async def delete_usuario(usuario_id: int, service: UsuarioService = Depends(get_
     
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-                              
+
+
+@router.put("/perfil/{id_usuario}", response_model=dict)
+async def update_perfil_usuario(
+    id_usuario: int,
+    usuario_update: dict,
+    service: UsuarioService = Depends(get_usuario_service)
+):
+    """Actualiza el perfil del usuario según su rol"""
+    try:
+        resultado = service.editar_perfil(id_usuario, usuario_update)
+        return jsonable_encoder(resultado)
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))

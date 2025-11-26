@@ -16,6 +16,7 @@ from .usuario_rol_router import router as usuario_rol_router
 from .receta_router import router as receta_router
 from .horario_atencion_router import router as horario_atencion_router
 from .analytics_router import router as analytics_router
+from .auth_router import router as auth_router
 
 # Lista de todos los routers disponibles
 __all__ = ["path_router",
@@ -31,4 +32,5 @@ __all__ = ["path_router",
            "usuario_rol_router",
            "receta_router",
            "horario_atencion_router",
-           "analytics_router"]
+           "analytics_router",
+           "auth_router"]

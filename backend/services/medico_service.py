@@ -251,5 +251,15 @@ class MedicoService:
         return pacientes
     
 
+    def get_by_usuario_id(self, id_usuario: int) -> Optional[MedicoResponse]:
+        """Obtiene un médico por su ID de usuario"""
+        self.cursor.execute("SELECT id_medico FROM medico WHERE id_usuario = ?", (id_usuario,))
+        row = self.cursor.fetchone()
+
+        if not row:
+            return None
+
+        medico_id = dict(row)['id_medico']
+        return self._get_medico_completo(medico_id)
 
         

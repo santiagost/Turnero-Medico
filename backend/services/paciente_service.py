@@ -166,6 +166,9 @@ class PacienteService:
             if paciente_data.noti_reserva_email_act is not None:
                 update_fields.append("noti_reserva_email_act = ?")
                 update_values.append(bool(paciente_data.noti_reserva_email_act))
+            if paciente_data.id_usuario is not None:
+                update_fields.append("id_usuario = ?")
+                update_values.append(paciente_data.id_usuario)
             
             if not update_fields:
                 raise ValueError("No se proporcionaron campos para actualizar")
@@ -196,3 +199,42 @@ class PacienteService:
         except sqlite3.IntegrityError as e:
             self.db.rollback()
             raise ValueError("Error al eliminar el paciente: " + str(e))
+    
+    
+    def get_by_dni(self, dni: str) -> Optional[PacienteResponse]:
+        """Obtiene un paciente por su DNI"""
+        self.cursor.execute("SELECT id_paciente FROM Paciente WHERE dni = ?", (dni,))
+        row = self.cursor.fetchone()
+
+        if not row:
+            return None
+
+        paciente_id = dict(row)['id_paciente']
+        return self._get_paciente_completo(paciente_id)
+
+
+    def get_by_usuario_id(self, id_usuario: int) -> Optional[PacienteResponse]:
+        """Obtiene un paciente por su ID de usuario"""
+        self.cursor.execute("SELECT id_paciente FROM Paciente WHERE id_usuario = ?", (id_usuario,))
+        row = self.cursor.fetchone()
+
+        if not row:
+            return None
+
+        paciente_id = dict(row)['id_paciente']
+        return self._get_paciente_completo(paciente_id)
+
+
+    def get_by_obra_social_y_nro_afiliado(self, id_obra_social: int, nro_afiliado: str) -> Optional[PacienteResponse]:
+        """Obtiene un paciente por su obra social y número de afiliado"""
+        self.cursor.execute("""
+            SELECT id_paciente FROM Paciente 
+            WHERE id_obra_social = ? AND nro_afiliado = ?
+        """, (id_obra_social, nro_afiliado))
+        row = self.cursor.fetchone()
+
+        if not row:
+            return None
+
+        paciente_id = dict(row)['id_paciente']
+        return self._get_paciente_completo(paciente_id)

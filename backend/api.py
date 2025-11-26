@@ -139,6 +139,7 @@ FastAPIApp.include_router(usuario_rol_router)
 FastAPIApp.include_router(receta_router)
 FastAPIApp.include_router(horario_atencion_router)
 FastAPIApp.include_router(analytics_router)
+FastAPIApp.include_router(auth_router)
 
 # Evento de cierre: cerrar la conexión a la base de datos
 @app.on_event("shutdown")

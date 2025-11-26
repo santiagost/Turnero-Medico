@@ -101,7 +101,19 @@ class RolService:
             raise ValueError(f"Error al eliminar el rol: {e}")
         
                     
-            
+    def get_by_name(self, nombre: str) -> Optional[RolResponse]:
+        """Obtiene un rol por su nombre"""
+        self.cursor.execute("SELECT * FROM rol WHERE nombre = ?", (nombre,))
+        row = self.cursor.fetchone()
+        if not row:
+            raise ValueError(f"Rol '{nombre}' no existe")
+
+        role_dict = dict(row)
+        return RolResponse(
+            id_rol=role_dict['id_rol'],
+            nombre=role_dict['nombre'],
+            descripcion=role_dict.get('descripcion')
+        )
             
 
 

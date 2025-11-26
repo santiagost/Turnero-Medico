@@ -67,16 +67,16 @@ INSERT INTO ObraSocial (nombre, cuit, direccion, telefono, mail) VALUES
 ('Particular', NULL, NULL, NULL, NULL);
 
 -- =================================================================================================
--- USUARIOS
+-- USUARIOS  (La contraseña es: 123)
 INSERT INTO Usuario (email, password_hash, activo, recordatorios_activados) VALUES
-('admin@turnero.com', '123', 1, 1),      -- ID 1
-('house@hospital.com', '123', 1, 1),     -- ID 2 (Medico Cardio)
-('meredith@hospital.com', '123', 1, 1),  -- ID 3 (Medico Clinica)
-('leomessi@gmail.com', '123', 1, 1),     -- ID 4 (Paciente)
-('fitopaez@rock.com', '123', 1, 1),      -- ID 5 (Paciente)
-('facu.witt@gmail.com', '123', 1, 1),    -- ID 6 (Paciente)
-('jeremias@doc.com', '123', 1, 1),       -- ID 7 (Medico Pediatria)
-('pimple@doc.com', '123', 1, 1);         -- ID 8 (Medico Dermatologia - NUEVO)
+('admin@turnero.com', '$2b$12$JRWeXGGLnY6xixy8JmrazeomyJ0rhC9KCub./99DkEdLfiER690oa', 1, 1),      -- ID 1
+('house@hospital.com', '$2b$12$JRWeXGGLnY6xixy8JmrazeomyJ0rhC9KCub./99DkEdLfiER690oa', 1, 1),     -- ID 2 (Medico Cardio)
+('meredith@hospital.com', '$2b$12$JRWeXGGLnY6xixy8JmrazeomyJ0rhC9KCub./99DkEdLfiER690oa', 1, 1),  -- ID 3 (Medico Clinica)
+('leomessi@gmail.com', '$2b$12$JRWeXGGLnY6xixy8JmrazeomyJ0rhC9KCub./99DkEdLfiER690oa', 1, 1),     -- ID 4 (Paciente)
+('fitopaez@rock.com', '$2b$12$JRWeXGGLnY6xixy8JmrazeomyJ0rhC9KCub./99DkEdLfiER690oa', 1, 1),      -- ID 5 (Paciente)
+('facu.witt@gmail.com', '$2b$12$JRWeXGGLnY6xixy8JmrazeomyJ0rhC9KCub./99DkEdLfiER690oa', 1, 1),    -- ID 6 (Paciente)
+('jeremias@doc.com', '$2b$12$JRWeXGGLnY6xixy8JmrazeomyJ0rhC9KCub./99DkEdLfiER690oa', 1, 1),       -- ID 7 (Medico Pediatria)
+('pimple@doc.com', '$2b$12$JRWeXGGLnY6xixy8JmrazeomyJ0rhC9KCub./99DkEdLfiER690oa', 1, 1);         -- ID 8 (Medico Dermatologia - NUEVO)
 
 -- =================================================================================================
 -- Asignar Roles

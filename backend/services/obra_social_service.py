@@ -166,7 +166,14 @@ class ObraSocialService:
             raise ValueError("Error al eliminar la obra social: " + str(e))
         
 
-
+    def get_by_name(self, nombre: str) -> Optional[ObraSocialResponse]:
+        """Obtiene una obra social por su nombre"""
+        self.cursor.execute("SELECT id_obra_social FROM obrasocial WHERE nombre = ?", (nombre,))
+        row = self.cursor.fetchone()
+        if not row:
+            return None
+        obra_social_id = dict(row)['id_obra_social']
+        return self._get_obra_social_completa(obra_social_id)
     
     
     
