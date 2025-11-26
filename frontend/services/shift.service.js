@@ -26,10 +26,15 @@ export const getShiftById = async (shiftId) => {
 // Endpoint: GET /turnos/paciente/proximos/{id}
 export const getNextShiftsForPatient = async (patientId) => {
   try {
-    const response = await axiosClient.get(`/turnos/paciente/proximos/${patientId}`);
+    const response = await axiosClient.get(
+      `/turnos/paciente/proximos/${patientId}`
+    );
     return response.data.map(mapShiftFromBackend);
   } catch (error) {
-    console.error(`Error al obtener próximos turnos del paciente ${patientId}:`, error);
+    console.error(
+      `Error al obtener próximos turnos del paciente ${patientId}:`,
+      error
+    );
     throw error;
   }
 };
@@ -46,7 +51,10 @@ export const getPatientHistory = async (patientId, startDate, endDate) => {
     });
     return response.data.map(mapShiftFromBackend);
   } catch (error) {
-    console.error(`Error al obtener historial del paciente ${patientId}:`, error);
+    console.error(
+      `Error al obtener historial del paciente ${patientId}:`,
+      error
+    );
     throw error;
   }
 };
@@ -91,11 +99,11 @@ export const createShift = async (shiftData) => {
 };
 
 // Endpoint: PUT /turnos/{id}
-export const updateShift = async (shiftId, shiftData) => {
+export const editShift = async (shiftId, shiftData) => {
   // Nota: El backend espera un dict genérico, enviamos solo lo que queremos actualizar
   // o el objeto completo mapeado, dependiendo de cómo manejes el form.
   // Aquí asumo que envías keys en snake_case o las transformas.
-  
+
   const payload = {};
   if (shiftData.patientId) payload.id_paciente = shiftData.patientId;
   if (shiftData.doctorId) payload.id_medico = shiftData.doctorId;
@@ -114,21 +122,16 @@ export const updateShift = async (shiftId, shiftData) => {
 };
 
 // Endpoint: POST /turnos/cancelar
-// Nota: Tu backend define los argumentos como Query Params en un POST (no Body)
-export const cancelPatientShifts = async (patientId, shiftId) => {
+export const cancelShiftById = async (shiftId) => {
   try {
-    // Axios POST: (url, body, config{params})
-    // Enviamos body null porque los datos van en query params según tu router
-    const response = await axiosClient.post("/turnos/cancelar", null, {
-      params: {
-        id_paciente: patientId,
-        id_turno: shiftId,
-      },
-    });
-    // Devuelve una lista de turnos cancelados
-    return response.data.map(mapShiftFromBackend);
+    const payload = {
+      id_turno: shiftId,
+    };
+    const response = await axiosClient.post("/turnos/cancelar", payload);
+    const data = mapShiftFromBackend(response.data);
+    return data;
   } catch (error) {
-    console.error(`Error al cancelar turno ${shiftId} del paciente ${patientId}:`, error);
+    console.error(`Error al cancelar turno ${shiftId}:`, error);
     throw error;
   }
 };
@@ -150,8 +153,8 @@ export const triggerNotificationTest = async () => {
     const response = await axiosClient.get("/turnos/prueba_notificaciones");
     // La respuesta es { mensaje: "...", turnos: [...] }
     return {
-        message: response.data.mensaje,
-        notifiedShifts: response.data.turnos.map(mapShiftFromBackend)
+      message: response.data.mensaje,
+      notifiedShifts: response.data.turnos.map(mapShiftFromBackend),
     };
   } catch (error) {
     console.error("Error al probar notificaciones:", error);

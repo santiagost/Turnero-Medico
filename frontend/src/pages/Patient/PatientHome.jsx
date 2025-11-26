@@ -7,8 +7,6 @@ import SectionCard from '../../components/ui/SectionCard'
 import ShiftList from '../../components/features/medicalShift/ShiftList';
 import Spinner from '../../components/ui/Spinner';
 
-
-import { patientScheduleMock, mockShiftStatus } from '../../utils/mockData'; 
 import NewMedicalShift from '../../components/features/schedule/newMedicalShift';
 
 import Modal from '../../components/ui/Modal';
@@ -16,9 +14,15 @@ import PrincipalCard from '../../components/ui/PrincipalCard';
 import Button from '../../components/ui/Button';
 
 
+import { getNextShiftsForPatient } from '../../../services/shift.service';
+import { cancelShiftById } from '../../../services/shift.service';
+
+
 const PatientHome = () => {
-    const { user } = useAuth();
+    const { user, profile } = useAuth();
     const toast = useToast();
+
+    const CURRENT_PATIENT = profile.patientId;
 
     const [patientSchedule, setPatientSchedule] = useState([]); 
     const [isLoadingShifts, setIsLoadingShifts] = useState(true); 
@@ -37,13 +41,8 @@ const PatientHome = () => {
         setIsLoadingShifts(true);
 
         try {
-            // AQUI VA LA LLAMADA AL BACKEND
-            // const response = await axios.get(`/api/shifts/patient/${user.id}`);
-            
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            const responseData = patientScheduleMock;
-            
-            setPatientSchedule(responseData);
+            const data = await getNextShiftsForPatient(3) //CURRENT_PATIENT
+            setPatientSchedule(data);
 
         } catch (error) {
             console.error("Error al cargar turnos:", error);
@@ -52,7 +51,7 @@ const PatientHome = () => {
         } finally {
             setIsLoadingShifts(false);
         }
-    }, [user?.userId]);
+    }, [CURRENT_PATIENT]);
 
 
     useEffect(() => {
@@ -79,11 +78,9 @@ const PatientHome = () => {
         setLoadingCancel(true);
 
         try {
-            // AQUI VA LA LLAMADA AL BACKEND
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            console.log(shiftToCancel)
+            const data = await cancelShiftById(shiftToCancel)
 
-            // Simulación de éxito. En una app real, el backend devolvería el éxito,
-            // pero la línea clave aquí es la recarga:
             toast.success("Turno cancelado exitosamente.");
             await fetchPatientShifts(); 
 

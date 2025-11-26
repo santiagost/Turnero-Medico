@@ -69,16 +69,22 @@ async def get_agenda_medico(
     turnos = service.get_agenda_desde_hasta(id_medico, fecha_desde, fecha_hasta)
     return jsonable_encoder(turnos)
 
-@router.post("/cancelar", response_model=List[dict])
-async def cancelar_turnos_paciente(
-    id_paciente: int,
-    id_turno: int,
+@router.post("/cancelar", response_model=dict)
+async def cancelar_turno(
+    data: dict, 
     service: TurnoService = Depends(get_turno_service)
-):
-    """Cancela todos los turnos futuros de un paciente a partir de una fecha y hora dada"""
-    turnos_cancelados = service.cancelar_turno_futuro_paciente(id_paciente, id_turno)
-    return jsonable_encoder(turnos_cancelados)
+    ):
+    """Marca un turno específico como 'Cancelado' por su ID."""
 
+    try:
+        id_turno = data.get('id_turno')
+        if id_turno is None:
+            raise HTTPException(status_code=400, detail="Falta el campo 'id_turno' en el cuerpo de la solicitud.")
+        turno_cancelado = service.marcar_como_cancelado(id_turno) 
+        return jsonable_encoder(turno_cancelado)
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 @router.post("/", response_model=dict, status_code=status.HTTP_201_CREATED)
 async def create_turno(turno_data: dict, service: TurnoService = Depends(get_turno_service)):
