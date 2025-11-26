@@ -14,6 +14,9 @@ import PrincipalCard from '../../components/ui/PrincipalCard';
 import AdminDoctorSchedulePanel from '../../components/features/adminDataManagement/edit/AdminDoctorSchedulePanel';
 import { useToast } from '../../hooks/useToast';
 
+import { deleteDoctor, editDoctor } from '../../../services/doctor.service';
+import { updateAvailabilitiesForDoctor } from '../../../services/availability.service';
+
 const AdminDoctors = () => {
   const [showNewDoctor, setShowNewDoctor] = useState(false);
   const toggleNewDoctor = () => setShowNewDoctor(prev => !prev);
@@ -21,8 +24,10 @@ const AdminDoctors = () => {
   const toast = useToast();
   const [selectedDoctorId, setSelectedDoctorId] = useState(doctorId ? parseInt(doctorId) : "");
 
-  const [loadingSave, setLoadingSave] = useState(false);   // Para editar datos personales
+  const [loadingSave, setLoadingSave] = useState(false);
   const [loadingDelete, setLoadingDelete] = useState(false);
+  const [loadingSchedule, setLoadingSchedule] = useState(false); // Spinner específico para horarios
+  const [refreshTrigger, setRefreshTrigger] = useState(0)
 
   const sectionVariants = {
     hidden: {
@@ -44,7 +49,6 @@ const AdminDoctors = () => {
 
   useEffect(() => {
     if (selectedDoctorId && detailSectionRef.current && scrollContainerRef.current) {
-
       const timerId = setTimeout(() => {
         const targetPosition = detailSectionRef.current.offsetTop;
         scrollContainerRef.current.scrollTo({
@@ -59,6 +63,7 @@ const AdminDoctors = () => {
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
   const [isDiscardModalOpen, setIsDiscardModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  
   const [doctorIdToDelete, setDoctorIdToDelete] = useState(null);
   const [dataToSave, setDataToSave] = useState(null);
 
@@ -77,20 +82,16 @@ const AdminDoctors = () => {
 
 
   const handleScheduleSave = async (updatedSchedule) => {
-    console.log("Guardando horario...", updatedSchedule);
-
+    setLoadingSchedule(true);
     try {
-      // AQUI VA LA LLAMADA AL BACKEND
-      // await axios.put(...)
-      toast.info("Guardando configuración horaria...");
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
+      await updateAvailabilitiesForDoctor(selectedDoctorId, updatedSchedule);
       toast.success("Horarios actualizados correctamente.");
-      setSelectedDoctorId(null); 
 
     } catch (error) {
       console.error(error);
       toast.error("Error al actualizar los horarios.");
+    } finally {
+        setLoadingSchedule(false);
     }
   };
 
@@ -99,19 +100,13 @@ const AdminDoctors = () => {
   }
 
   const confirmSave = async () => {
-    setLoadingSave(true); // Activar spinner
+    setLoadingSave(true); 
 
     try {
-      // AQUI VA LA LLAMADA AL BACKEND
-      // await axios.put(`/api/doctors/${selectedDoctorId}`, dataToSave);
-
-      await new Promise(resolve => setTimeout(resolve, 1500)); // Simulación
-
-      // Simulación de error
-      // throw new Error("Email duplicado");
-
-      console.log("Datos guardados:", dataToSave);
-
+      await editDoctor(selectedDoctorId, dataToSave);
+      
+      // Actualizamos la lista de búsqueda
+      setRefreshTrigger(prev => prev + 1);
       toast.success("Datos del médico actualizados correctamente.");
 
       setIsSaveModalOpen(false);
@@ -123,38 +118,33 @@ const AdminDoctors = () => {
       const errorMsg = error.response?.data?.message || "Ocurrió un error al guardar los cambios.";
       toast.error(errorMsg);
     } finally {
-      setLoadingSave(false); // Desactivar spinner
+      setLoadingSave(false);
     }
   };
 
   const confirmDelete = async () => {
-    setLoadingDelete(true); // Activar spinner
+    setLoadingDelete(true);
 
     try {
-      // AQUI VA LA LLAMADA AL BACKEND
-      // await axios.delete(`/api/doctors/${doctorIdToDelete}`);
-
-      await new Promise(resolve => setTimeout(resolve, 1500)); // Simulación
-
-      console.log("Doctor eliminado ID:", doctorIdToDelete);
-
+      await deleteDoctor(doctorIdToDelete);
+      
+      // Actualizamos la lista de búsqueda
+      setRefreshTrigger(prev => prev + 1);
       toast.success("Médico eliminado del sistema.");
 
       setIsDeleteModalOpen(false);
-      setDoctorIdToDelete(null);
-
+      
       // Si el doctor eliminado era el que se estaba editando, cerramos el panel
       if (selectedDoctorId === doctorIdToDelete) {
         setSelectedDoctorId(null);
       }
-
-      // Aquí podrías disparar un refresh de la lista si tuvieras un estado global o context
+      setDoctorIdToDelete(null);
 
     } catch (error) {
       console.error("Error al eliminar:", error);
       toast.error("No se pudo eliminar al médico. Verifica que no tenga turnos pendientes.");
     } finally {
-      setLoadingDelete(false); // Desactivar spinner
+      setLoadingDelete(false);
     }
   };
 
@@ -211,7 +201,7 @@ const AdminDoctors = () => {
               style={{ overflow: 'hidden' }}
             >
               <SectionCard tittle={"Crear Médico"} content={
-                <AdminNewDoctor />
+                <AdminNewDoctor refresh={setRefreshTrigger}/>
               } />
             </motion.div>
           )}
@@ -221,7 +211,7 @@ const AdminDoctors = () => {
           Buscar Médicos
         </h1>
         <SectionCard tittle={"Buscar Médico"} content={
-          <AdminDoctorFilterPanel viewMode="admin" doctorToDelete={handleDoctorToDelete} doctorToEdit={handleDoctorToEdit} />
+          <AdminDoctorFilterPanel viewMode="admin" doctorToDelete={handleDoctorToDelete} doctorToEdit={handleDoctorToEdit} refreshTrigger={refreshTrigger}/>
         } />
 
         <AnimatePresence>

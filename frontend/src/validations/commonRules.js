@@ -26,7 +26,7 @@ export const commonRules = {
 
   telephone: (value) => {
     if (!value) return "El teléfono es requerido.";
-    if (!REGEX.phone.test(value)) return "Teléfono inválido (10-13 números).";
+    if (!REGEX.phone.test(value)) return "Teléfono inválido (10-15 números).";
     return null;
   },
 

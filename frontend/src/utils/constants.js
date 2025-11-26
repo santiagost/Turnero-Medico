@@ -11,7 +11,7 @@ export const REGEX = {
   lastname: /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/,
   email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
   dni: /^\d{7,8}$/,
-  phone: /^\d{10,13}$/,
+  phone: /^[\d\s-]{10,15}$/,
   password: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d\S]{8,}$/,
 };
 

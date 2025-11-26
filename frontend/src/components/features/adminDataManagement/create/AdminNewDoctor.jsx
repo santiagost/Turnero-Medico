@@ -4,7 +4,7 @@ import Select from '../../../ui/Select';
 import Button from '../../../ui/Button';
 
 import { getSpecialtyOptions } from '../../../../../services/specialty.service';
-
+import { createDoctor } from '../../../../../services/doctor.service';
 import { adminCreateDoctorSchema } from '../../../../validations/adminSchemas';
 import ROLES from '../../../../utils/constants';
 import { useToast } from '../../../../hooks/useToast';
@@ -20,7 +20,7 @@ const initialDoctorState = {
     specialtyId: ""
 };
 
-const AdminNewDoctor = () => {
+const AdminNewDoctor = ({ refresh }) => {
     const [doctorData, setDoctorData] = useState(initialDoctorState);
     const [errors, setErrors] = useState({});
     const toast = useToast();
@@ -89,14 +89,11 @@ const AdminNewDoctor = () => {
         setIsLoading(true); // Activar spinner
 
         try {
-            // AQUI VA LA LLAMADA AL BACKEND
-            // await axios.post('/api/doctors', doctorData);
+           const data = await createDoctor(doctorData);
 
-            // Simulación de espera
-            await new Promise(resolve => setTimeout(resolve, 1500));
-
-            // Simulación de error (Descomentar para probar)
-            // throw new Error("El correo electrónico ya está registrado.");
+            if (refresh) {
+                refresh(prev => prev + 1);
+            }
 
             console.log("Datos del nuevo médico a guardar:", doctorData);
 
@@ -108,8 +105,7 @@ const AdminNewDoctor = () => {
 
         } catch (error) {
             console.error("Error al crear médico:", error);
-            const errorMessage = error.response?.data?.message || error.message || "Ocurrió un error al intentar registrar al médico.";
-            toast.error(errorMessage);
+            toast.error("Ocurrió un error al intentar registrar al médico.");
         } finally {
             setIsLoading(false); // Desactivar spinner
         }

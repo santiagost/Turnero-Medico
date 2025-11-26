@@ -49,6 +49,7 @@ export const adminCreateDoctorSchema = {
   specialtyId: commonRules.simpleRequired("especialidad"),
 };
 
+
 // --- Esquema de Obra Social ---
 export const adminCreateSocialWorkSchema = {
   name: (value) => {

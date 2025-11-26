@@ -9,10 +9,9 @@ import Select from '../../../ui/Select';
 import Button from '../../../ui/Button';
 import IconButton from '../../../ui/IconButton';
 import { useToast } from '../../../../hooks/useToast';
-import { mockDoctors } from '../../../../utils/mockData';
 
 import { getSpecialtyOptions } from '../../../../../services/specialty.service'
-
+import { getAllDoctorsWithFilters } from '../../../../../services/doctor.service';
 
 export const initialFiltersState = {
     licenseNumber: "",
@@ -21,7 +20,7 @@ export const initialFiltersState = {
     order: "alpha_asc"
 };
 
-const AdminDoctorFilterPanel = ({ doctorToDelete, doctorToEdit, viewMode = "detail" }) => {
+const AdminDoctorFilterPanel = ({ doctorToDelete, doctorToEdit, viewMode = "detail", refreshTrigger}) => {
     const navigate = useNavigate();
     const toast = useToast();
     const [localFilters, setLocalFilters] = useState(initialFiltersState);
@@ -43,7 +42,6 @@ const AdminDoctorFilterPanel = ({ doctorToDelete, doctorToEdit, viewMode = "deta
         const fetchOptions = async () => {
             try {
                 const dataFromBackend = await getSpecialtyOptions();
-                
                 setSpecialtyOptions([
                     { value: "", label: "Todas" },
                     ...dataFromBackend
@@ -52,7 +50,6 @@ const AdminDoctorFilterPanel = ({ doctorToDelete, doctorToEdit, viewMode = "deta
                 console.error("No se pudieron cargar las opciones", error);
             }
         };
-
         fetchOptions();
     }, []);
 
@@ -62,58 +59,39 @@ const AdminDoctorFilterPanel = ({ doctorToDelete, doctorToEdit, viewMode = "deta
         setLocalFilters(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleSearchClick = async (e) => {
-        e.preventDefault();
 
+    const performSearch = async () => {
         setIsLoadingSearch(true);
         setSearchResults([]);
-        setHasSearched(false);
 
         try {
-            // AQUI VA LA LLAMADA AL BACKEND
-            // const params = { ...localFilters };
-            // const response = await axios.get('/api/doctors/search', { params });
-            // const foundDoctors = response.data;
+            const filters = {
+                licenseNumber: localFilters.licenseNumber || null,
+                lastName: localFilters.name || null, 
+                specialtyId: localFilters.specialty || null
+            };
 
-            // SIMULACIÓN (Delay de 500ms)
-            await new Promise(resolve => setTimeout(resolve, 500));
+            let doctors = await getAllDoctorsWithFilters(filters);
 
-            // --- Lógica Mock de Filtrado ---
-            let foundDoctors = [...mockDoctors];
-
-            // 1. Filtro por Matrícula
-            if (localFilters.licenseNumber) {
-                foundDoctors = foundDoctors.filter(d =>
-                    d.licenseNumber.toLowerCase().includes(localFilters.licenseNumber.toLowerCase())
-                );
-            }
-            // 2. Filtro por Nombre
-            if (localFilters.name) {
-                const searchText = localFilters.name.toLowerCase();
-                foundDoctors = foundDoctors.filter(d =>
-                    `${d.firstName} ${d.lastName}`.toLowerCase().includes(searchText)
-                );
-            }
-            // 3. Filtro por Especialidad
-            if (localFilters.specialty) {
-                foundDoctors = foundDoctors.filter(d =>
-                    d.specialty.specialtyId === parseInt(localFilters.specialty)
-                );
+            if (localFilters.order) {
+                doctors.sort((a, b) => {
+                    const nameA = a.lastName ? a.lastName.toLowerCase() : "";
+                    const nameB = b.lastName ? b.lastName.toLowerCase() : "";
+                    
+                    return localFilters.order === 'alpha_asc'
+                        ? nameA.localeCompare(nameB)
+                        : nameB.localeCompare(nameA);
+                });
             }
 
-            // 4. Orden
-            foundDoctors.sort((a, b) =>
-                localFilters.order === 'alpha_asc'
-                    ? a.lastName.localeCompare(b.lastName)
-                    : b.lastName.localeCompare(a.lastName)
-            );
-            // --- Fin Lógica Mock ---
+            setSearchResults(doctors);
 
-            setSearchResults(foundDoctors);
-            setHasSearched(true);
+            const hasActiveFilters = 
+                localFilters.licenseNumber || 
+                localFilters.name || 
+                localFilters.specialty;
 
-            // Feedback opcional con Toast si no hay resultados
-            if (foundDoctors.length === 0) {
+            if (doctors.length === 0 && hasActiveFilters) {
                 toast.warning("Búsqueda sin resultados.");
             }
 
@@ -124,6 +102,18 @@ const AdminDoctorFilterPanel = ({ doctorToDelete, doctorToEdit, viewMode = "deta
             setIsLoadingSearch(false);
         }
     };
+
+    const handleSearchClick = (e) => {
+        e.preventDefault();
+        setHasSearched(true);
+        performSearch();
+    };
+
+    useEffect(() => {
+        if (hasSearched) {
+            performSearch();
+        }
+    }, [refreshTrigger]);
 
     const handleResetClick = () => {
         setLocalFilters(initialFiltersState);
@@ -179,7 +169,7 @@ const AdminDoctorFilterPanel = ({ doctorToDelete, doctorToEdit, viewMode = "deta
                 />
 
                 <div className='flex flex-row items-center justify-center h-full gap-5 text-white'>
-                    <Button text={"Buscar"} icon={<FaSearch />} variant={"primary"} type={"submit"} size={"big"}  />
+                    <Button text={"Buscar"} icon={<FaSearch />} variant={"primary"} type={"submit"} size={"big"} />
                     <motion.div whileTap={{ scale: 0.9, rotate: -180 }}>
                         <IconButton
                             icon={<LiaUndoAltSolid size={30} />}
@@ -224,7 +214,7 @@ const AdminDoctorFilterPanel = ({ doctorToDelete, doctorToEdit, viewMode = "deta
                                     <span className="text-sm w-48 truncate">{doc.user.email}</span>
                                     <span className="text-sm w-36 truncate font-medium">{doc.specialty.name}</span>
                                 </div>
-                                
+
                                 {viewMode === 'admin' ? (
                                     // VISTA 1: Página de Doctores (Editar/Eliminar)
                                     <div className="flex items-center gap-3">

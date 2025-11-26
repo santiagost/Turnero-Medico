@@ -1,3 +1,26 @@
+export const mapBackendDayToFrontend = (backendDay) => {
+  return (backendDay + 1) % 7;
+};
+
+export const mapFrontendDayToBackend = (frontendDay) => {
+  const day = Number(frontendDay);
+  return (day + 6) % 7;
+};
+
+// USUARIOS
+
+// { "email": "house@hospital.com", "id_usuario": 2, "activo": true, "recordatorios_activados": true }
+export const mapUserFromBackend = (item) => {
+  if (!item) return {};
+
+  return {
+    userId: item.id_usuario,
+    email: item.email,
+    isActive: item.activo,
+    remindersActive: item.recordatorios_activados
+  };
+};
+
 // ESPECIALIDADES
 
 // { "nombre": "Cardiología", "id_especialidad": 1, "descripcion": "Enfermedades del corazón y sistema circulatorio" }
@@ -59,7 +82,7 @@ export const mapPatientFromBackend = (item) => {
     lastName: item.apellido,
     telephone: item.telefono,
     birthDate: item.fecha_nacimiento,
-    userId: item.id_usuario, // Puede venir nulo si no está vinculado
+    user: item.usuario ? mapUserFromBackend(item.usuario) : null,
     socialWork: {
       socialWorkId: item.obra_social.id_obra_social,
       name: item.obra_social.nombre,
@@ -95,7 +118,7 @@ export const mapDoctorFromBackend = (item) => {
     lastName: item.apellido,
     licenseNumber: item.matricula,
     telephone: item.telefono,
-    userId: item.id_usuario,
+    user: item.usuario ? mapUserFromBackend(item.usuario) : null,
     specialty: item.especialidad ? mapSpecialtyFromBackend(item.especialidad) : null,
     emailNotificationActive: item.noti_cancel_email_act
   };
@@ -207,3 +230,22 @@ export const mapChartDataFromBackend = (item) => {
     absent: item.ausencias || 0,
   };
 };
+
+// HORARIOS DE ATENCION
+
+// { "id_horario_atencion": 1, "id_medico": 10, "dia_semana": "Lunes", "hora_inicio": "09:00", "hora_fin": "13:00", "duracion_turno_min": 30 }
+export const mapAvailabilityFromBackend = (item) => {
+  if (!item) return {};
+
+  return {
+    availabilityId: item.id_horario_atencion,
+    doctorId: item.id_medico,
+    dayOfWeek: mapBackendDayToFrontend(item.dia_semana), 
+    startTime: item.hora_inicio, // Formato "HH:MM"
+    endTime: item.hora_fin,      // Formato "HH:MM"
+    durationMinutes: item.duracion_turno_min,
+    id: item.id_horario_atencion || Date.now() + Math.random() 
+  };
+};
+
+

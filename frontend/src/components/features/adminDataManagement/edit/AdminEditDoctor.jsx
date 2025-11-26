@@ -4,12 +4,13 @@ import Select from '../../../ui/Select';
 import Button from '../../../ui/Button';
 
 
-import { mockDoctors } from '../../../../utils/mockData';
+import Spinner from '../../../ui/Spinner';
 import { adminCreateDoctorSchema } from '../../../../validations/adminSchemas';
 import ROLES from '../../../../utils/constants';
 import { useToast } from '../../../../hooks/useToast';
 
 import { getSpecialtyOptions } from '../../../../../services/specialty.service';
+import { getDoctorById } from '../../../../../services/doctor.service';
 
 
 
@@ -17,17 +18,19 @@ const initialDoctorState = {
     firstName: "",
     lastName: "",
     dni: "",
-    profile: `${ROLES["Doctor"]}`,
+    role: `${ROLES["Doctor"]}`,
     telephone: "",
     email: "",
     licenseNumber: "",
-    specialtyId: ""
+    specialtyId: "",
+    userId: ""
 };
 
 const AdminEditDoctor = ({ doctorId, onSave, onCancel }) => {
     const [doctorData, setDoctorData] = useState(initialDoctorState);
     const [errors, setErrors] = useState({});
     const toast = useToast();
+    const [isLoading, setIsLoading] = useState(true);
 
     const [specialtyOptions, setSpecialtyOptions] = useState([
         { value: "", label: "" }
@@ -49,24 +52,37 @@ const AdminEditDoctor = ({ doctorId, onSave, onCancel }) => {
         fetchOptions();
     }, []);
 
+
     useEffect(() => {
-        // AQUI VA LA LLAMADA AL BACKEND
-        // getDoctorById(doctorId)
+        const fetchDoctorData = async () => {
+            try {
+                setIsLoading(true);
+                const data = await getDoctorById(doctorId);
+                console.log(data)
+                setDoctorData({
+                    firstName: data.firstName,
+                    lastName: data.lastName,
+                    dni: data.dni,
+                    telephone: data.telephone,
+                    licenseNumber: data.licenseNumber,
+                    email: data.user ? data.user.email : "",
+                    specialtyId: data.specialty ? data.specialty.specialtyId : "",
+                    userId: data.user ? data.user.userId : null
+                });
 
-        console.log("Cargando datos del médico ID:", doctorId);
-        const doctor = mockDoctors.find(d => d.doctorId === doctorId);
+            } catch (error) {
+                console.error("Error cargando doctor:", error);
+                toast.error("No se pudo cargar la información del médico.");
 
-        if (doctor) {
-            setDoctorData({
-                firstName: doctor.firstName,
-                lastName: doctor.lastName,
-                dni: doctor.dni,
-                profile: ROLES["Doctor"],
-                telephone: doctor.telephone,
-                email: doctor.user.email,
-                licenseNumber: doctor.licenseNumber,
-                specialtyId: doctor.specialty.specialtyId
-            });
+                if (onCancel) onCancel();
+
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        if (doctorId) {
+            fetchDoctorData();
         }
 
     }, [doctorId]);
@@ -120,6 +136,14 @@ const AdminEditDoctor = ({ doctorId, onSave, onCancel }) => {
         }
     };
 
+    if (isLoading) {
+        return (
+            <div className="flex justify-center items-center p-10 h-64">
+                <Spinner />
+            </div>
+        );
+    }
+
     return (
         <div className="p-4 ">
             <form onSubmit={handleSubmit} className="grid grid-cols-4 gap-4" noValidate>
@@ -156,7 +180,7 @@ const AdminEditDoctor = ({ doctorId, onSave, onCancel }) => {
                 <Input
                     tittle="Perfil"
                     name="profile"
-                    value={doctorData.profile}
+                    value={initialDoctorState.role}
                     disable={true}
                     size="small"
                 />

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { IoIosAdd, } from "react-icons/io";
 import { LiaTrashAltSolid } from "react-icons/lia";
 
@@ -9,8 +9,8 @@ import Input from '../../../ui/Input';
 import IconButton from '../../../ui/IconButton';
 import Select from '../../../ui/Select';
 
-// Mock Data Inicial (si no hay datos previos)
-import { mockDoctorAvailability } from '../../../../utils/mockData';
+import { getAvailabilitiesByDoctor } from '../../../../../services/availability.service';
+
 import { daysOptions } from '../../../../utils/dateUtils';
 import { WEEKDAYS } from '../../../../utils/constants';
 import { useToast } from '../../../../hooks/useToast';
@@ -34,6 +34,7 @@ const AdminDoctorSchedulePanel = ({ doctorId, onSaveSuccess }) => {
     const toast = useToast();
     // Estado de la disponibilidad (Array de horarios)
     const [schedule, setSchedule] = useState([]);
+    const [initialSchedule, setInitialSchedule] = useState([]);
     const [errors, setErrors] = useState({});
     const [formData, setFormData] = useState(initialFormState);
 
@@ -46,14 +47,24 @@ const AdminDoctorSchedulePanel = ({ doctorId, onSaveSuccess }) => {
     const [isSaving, setIsSaving] = useState(false);
 
     useEffect(() => {
+        const fetchAvailability = async () => {
+            try {
+                const dataFromBackend = await getAvailabilitiesByDoctor(doctorId);
+
+
+                setSchedule(dataFromBackend);
+                setInitialSchedule(dataFromBackend);
+
+            } catch (error) {
+                toast.error("Error al cargar los horarios del médico.");
+                console.error("No se pudieron cargar las opciones", error);
+            }
+        };
+
         if (doctorId) {
-            // Mapeamos el mock data para asegurarnos de que cada elemento tenga un ID único.
-            const sanitizedData = mockDoctorAvailability.map((item, index) => ({
-                ...item,
-                id: item.id || `slot-${index}-${Date.now()}`
-            }));
-            setSchedule(sanitizedData);
+            fetchAvailability();
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [doctorId]);
 
     const handleChange = (e) => {
@@ -63,6 +74,29 @@ const AdminDoctorSchedulePanel = ({ doctorId, onSaveSuccess }) => {
             setErrors(prevErrors => ({ ...prevErrors, [name]: null }));
         }
     };
+
+    // --- DETECCIÓN DE CAMBIOS ---
+    const hasChanges = useMemo(() => {
+        // Función helper para normalizar los datos antes de comparar
+        // Quita IDs únicos y estandariza tipos de datos
+        const normalize = (list) => {
+            return list.map(item => ({
+                day: Number(item.dayOfWeek),
+                start: item.startTime,
+                end: item.endTime,
+                duration: Number(item.durationMinutes)
+            })).sort((a, b) => {
+                // Ordenamos por día y luego por hora para que el orden del array no afecte la comparación
+                if (a.day !== b.day) return a.day - b.day;
+                return a.start.localeCompare(b.start);
+            });
+        };
+
+        const initialString = JSON.stringify(normalize(initialSchedule));
+        const currentString = JSON.stringify(normalize(schedule));
+
+        return initialString !== currentString;
+    }, [schedule, initialSchedule]);
 
     const handleBlur = (e) => {
         const { name, value } = e.target;
@@ -88,19 +122,22 @@ const AdminDoctorSchedulePanel = ({ doctorId, onSaveSuccess }) => {
         setErrors(newErrors);
 
         if (isValid) {
+            // Verificar colisión básica (mismo día) - Podrías mejorar esto validando cruce de horas
             const existingSlot = schedule.find(s =>
-                String(s.dayOfWeek) === String(formData.dayOfWeek)
+                // Aseguramos comparar números o strings iguales
+                Number(s.dayOfWeek) === Number(formData.dayOfWeek) &&
+                // Validación simple: Si ya hay un turno que empieza a la misma hora (opcional)
+                s.startTime === formData.startTime
             );
 
-            if (existingSlot) {
-                toast.warning("Ya existe un horario para este día. Elimínelo antes de agregar uno nuevo.");
-                return;
-            }
+            // Nota: Tu lógica original impedía más de 1 turno por día. 
+            // Si permites múltiples turnos por día (ej: mañana y tarde), quita esta validación estricta
+            // y valida solapamiento de horas.
 
             const newSlot = {
                 ...formData,
-                dayOfWeek: Number(formData.dayOfWeek),
-                id: Date.now() + Math.random()
+                dayOfWeek: Number(formData.dayOfWeek), // Asegurar que sea número para el filtro de la UI
+                id: Date.now() + Math.random() // ID temporal para el front
             };
 
             setSchedule(prev => [...prev, newSlot]);
@@ -120,23 +157,22 @@ const AdminDoctorSchedulePanel = ({ doctorId, onSaveSuccess }) => {
         setIsSaving(true);
         if (onSaveSuccess) {
             await onSaveSuccess(schedule);
+            setInitialSchedule([...schedule]); 
         }
         setIsSaving(false);
         setIsConfirmModalOpen(false);
     };
 
     const handleDiscard = () => {
-        const sanitizedData = mockDoctorAvailability.map((item, index) => ({
-            ...item,
-            id: item.id || `slot-${index}-${Date.now()}`
-        }));
-        setSchedule(sanitizedData);
+        setSchedule([...initialSchedule]);
         setIsDiscardModalOpen(false);
         toast.info("Cambios descartados. Se restauró la configuración original.");
     };
 
     // --- LÓGICA DE POSICIONAMIENTO EN LA GRILLA ---
     const calculatePosition = (startTime, endTime) => {
+        if (!startTime || !endTime) return { top: 0, height: 0 };
+
         const [startH, startM] = startTime.split(':').map(Number);
         const [endH, endM] = endTime.split(':').map(Number);
 
@@ -250,15 +286,17 @@ const AdminDoctorSchedulePanel = ({ doctorId, onSaveSuccess }) => {
                             <div key={dayIndex} className="relative border-r border-gray-100 last:border-r-0 h-full">
                                 {renderGridLines()}
                                 {schedule
+                                    // Aquí el filtro funciona gracias a que transformamos dayOfWeek en el service
                                     .filter(item => Number(item.dayOfWeek) === dayIndex)
                                     .map((slot) => {
                                         const { top, height } = calculatePosition(slot.startTime, slot.endTime);
                                         return (
                                             <div
-                                                key={slot.id}
+                                                key={slot.id || slot.availabilityId} // Usamos ID seguro
                                                 style={{ top: `${top}px`, height: `${height}px` }}
                                                 className="absolute left-1 right-1 rounded-lg bg-custom-mid-light-blue/80 border border-custom-blue p-2 flex flex-col justify-between overflow-hidden group hover:z-10 transition-all cursor-pointer hover:bg-custom-red hover:border-custom-red"
                                             >
+                                                {/* Botón borrar */}
                                                 <button
                                                     onClick={(e) => {
                                                         e.stopPropagation();
@@ -269,6 +307,8 @@ const AdminDoctorSchedulePanel = ({ doctorId, onSaveSuccess }) => {
                                                 >
                                                     <LiaTrashAltSolid size={40} className="text-white" />
                                                 </button>
+
+                                                {/* Contenido Card */}
                                                 <div className="flex justify-between items-start transition-opacity group-hover:opacity-0">
                                                     <span className="text-xs font-bold text-custom-mid-dark-blue leading-none">
                                                         {slot.startTime} hs
@@ -296,8 +336,8 @@ const AdminDoctorSchedulePanel = ({ doctorId, onSaveSuccess }) => {
             <div className="flex flex-col items-center gap-4 mt-4">
                 <h3 className="text-custom-dark-blue font-bold text-lg">Confirmar y registrar Horario del Médico</h3>
                 <div className="flex gap-6">
-                    <Button text="Descartar" variant="secondary" onClick={() => setIsDiscardModalOpen(true)} />
-                    <Button text="Confirmar" variant="primary" onClick={() => setIsConfirmModalOpen(true)} />
+                    <Button text="Descartar" variant="secondary" onClick={() => setIsDiscardModalOpen(true)} disable={!hasChanges} />
+                    <Button text="Confirmar" variant="primary" onClick={() => setIsConfirmModalOpen(true)} disable={!hasChanges}/>
                 </div>
             </div>
 

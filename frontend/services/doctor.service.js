@@ -1,8 +1,8 @@
 import axiosClient from "./axiosClient";
-import { 
-  mapDoctorFromBackend, 
+import {
+  mapDoctorFromBackend,
   mapDoctorOptionFromBackend,
-  mapMyPatients
+  mapMyPatients,
 } from "../src/utils/mappers";
 
 // Endpoint: GET /medicos/ligero/
@@ -38,7 +38,7 @@ export const getAllDoctorsWithFilters = async ({
   licenseNumber,
   userId,
   specialtyId,
-  telephone
+  telephone,
 } = {}) => {
   try {
     const response = await axiosClient.get("/medicos/", {
@@ -50,7 +50,7 @@ export const getAllDoctorsWithFilters = async ({
         matricula: licenseNumber || null,
         id_usuario: userId || null,
         id_especialidad: specialtyId || null,
-        telefono: telephone || null
+        telefono: telephone || null,
       },
     });
 
@@ -65,7 +65,9 @@ export const getAllDoctorsWithFilters = async ({
 // Endpoint: GET /medicos/mis_pacientes/{medico_id}
 export const getMyPatients = async (doctorId) => {
   try {
-    const response = await axiosClient.get(`/medicos/mis_pacientes/${doctorId}`);
+    const response = await axiosClient.get(
+      `/medicos/mis_pacientes/${doctorId}`
+    );
     const data = response.data.map(mapMyPatients);
     return data;
   } catch (error) {
@@ -82,9 +84,9 @@ export const createDoctor = async (body) => {
     lastName,
     licenseNumber,
     telephone,
-    userId,
     specialtyId,
-    emailNotificationActive
+    email,
+    emailNotificationActive,
   } = body;
 
   const doctorBody = {
@@ -93,9 +95,10 @@ export const createDoctor = async (body) => {
     apellido: lastName,
     matricula: licenseNumber,
     telefono: telephone,
-    id_usuario: userId,
+    email: email,
     id_especialidad: specialtyId,
-    noti_cancel_email_act: emailNotificationActive !== undefined ? emailNotificationActive : 1
+    noti_cancel_email_act:
+      emailNotificationActive !== undefined ? emailNotificationActive : 1,
   };
 
   try {
@@ -109,27 +112,18 @@ export const createDoctor = async (body) => {
 };
 
 // Endpoint: PUT /medicos/{id}
-export const updateDoctor = async (doctorId, body) => {
-  const {
-    firstName,
-    lastName,
-    telephone,
-    specialtyId
-  } = body;
+export const editDoctor = async (doctorId, body) => {
+  const { firstName, lastName, telephone, specialtyId } = body;
 
-  
   const doctorBody = {
     nombre: firstName,
     apellido: lastName,
     telefono: telephone,
-    id_especialidad: specialtyId
+    id_especialidad: specialtyId,
   };
 
   try {
-    const response = await axiosClient.put(
-      `/medicos/${doctorId}`,
-      doctorBody
-    );
+    const response = await axiosClient.put(`/medicos/${doctorId}`, doctorBody);
     const data = mapDoctorFromBackend(response.data);
     return data;
   } catch (error) {
