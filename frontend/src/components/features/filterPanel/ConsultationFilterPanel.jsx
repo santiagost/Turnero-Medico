@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Input from '../../ui/Input';
 import Select from '../../ui/Select';
 import Button from '../../ui/Button';
@@ -8,33 +8,21 @@ import { motion } from 'framer-motion';
 import { FaSearch } from "react-icons/fa";
 import { LiaUndoAltSolid } from "react-icons/lia";
 
+import { getDoctorOptions } from '../../../../services/doctor.service';
+import { getSpecialtyOptions } from '../../../../services/specialty.service';
+
 export const initialFiltersState = {
     specialty: "",
     doctor: "",
-    date: "",
+    attentionDate: "",
     order: "date_desc"
 };
 
-export const hasActiveFilters = (currentFilters, consultationId) => {
-    // 1. Chequea si existe un ID de consulta en la URL (si existe, SIEMPRE hay filtro activo)
-    if (!!consultationId) {
-        return true;
-    }
-    
-    // 2. Compara cada clave del filtro local con el estado inicial
-    for (const key in initialFiltersState) {
-        // Solo verificamos las claves que no son 'order' (ya que el orden siempre tiene un valor por defecto)
-        if (key !== 'order') {
-            if (currentFilters[key] && currentFilters[key] !== initialFiltersState[key]) {
-                return true; // Hay un filtro activo
-            }
-        }
-    }
-    return false;
-};
-
-const ConsultationFilterPanel = ({ onSearch, specialties = [], doctors = [] }) => {
+const ConsultationFilterPanel = ({ onSearch }) => {
     const [localFilters, setLocalFilters] = useState(initialFiltersState);
+
+    const [specialtyOptionsWithAll, setSpecialtyOptions] = useState([{ value: "", label: "Todas" }]);
+    const [doctorOptionsWithAll, setDoctorOptions] = useState([{ value: "", label: "Todos" }]);
 
     const orderOptions = [
         { value: "date_desc", label: "Más reciente" },
@@ -43,11 +31,22 @@ const ConsultationFilterPanel = ({ onSearch, specialties = [], doctors = [] }) =
         { value: "alpha_desc", label: "Orden Alfabético (Z-A)" }
     ];
 
+    useEffect(() => {
+        const fetchOptions = async () => {
+            try {
+                const [specialtyBackend, doctorBackend] = await Promise.all([
+                    getSpecialtyOptions(),
+                    getDoctorOptions()
+                ]);
 
-    const doctorOptionsWithAll = [
-        { value: "", label: "Todos" },
-        ...doctors
-    ];
+                setSpecialtyOptions([{ value: "", label: "Todas" }, ...specialtyBackend]);
+                setDoctorOptions([{ value: "", label: "Todos" }, ...doctorBackend]);
+            } catch (error) {
+                console.error("No se pudieron cargar las opciones", error);
+            }
+        };
+        fetchOptions();
+    }, []);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -77,7 +76,7 @@ const ConsultationFilterPanel = ({ onSearch, specialties = [], doctors = [] }) =
                 name="specialty"
                 value={localFilters.specialty}
                 onChange={handleChange}
-                options={specialties}
+                options={specialtyOptionsWithAll}
                 size="small"
             />
 
@@ -93,8 +92,8 @@ const ConsultationFilterPanel = ({ onSearch, specialties = [], doctors = [] }) =
             <Input
                 tittle="Por Fecha"
                 type="date"
-                name="date"
-                value={localFilters.date}
+                name="attentionDate"
+                value={localFilters.attentionDate}
                 onChange={handleChange}
                 size="small"
             />

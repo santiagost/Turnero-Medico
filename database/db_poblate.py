@@ -134,7 +134,7 @@ INSERT INTO HorarioAtencion (id_medico, dia_semana, hora_inicio, hora_fin, durac
 
 INSERT INTO Turno (id_paciente, id_medico, id_estado_turno, fecha_hora_inicio, fecha_hora_fin, motivo_consulta, recordatorio_notificado, reserva_notificada) VALUES
 (1, 1, 3, '2024-01-10 09:00:00', '2024-01-10 09:30:00', 'Dolor en la pierna izquierda', 1, 1),
-(2, 2, 1, '2024-12-25 10:00:00', '2024-12-25 10:20:00', 'Chequeo general de garganta', 1, 0),
+(1, 2, 1, '2024-01-11 10:00:00', '2024-01-11 10:20:00', 'Chequeo general de garganta', 1, 0),
 (2, 2, 1, '2024-12-26 10:00:00', '2024-12-26 10:20:00', 'para marcar como ausente', 1, 0),
 (2, 2, 1, '2024-12-27 10:00:00', '2024-12-27 10:20:00', 'para marcar como ausente', 1, 0),
 (2, 2, 1, '2024-12-28 10:00:00', '2024-12-28 10:20:00', 'para marcar como ausente', 1, 0),
@@ -155,6 +155,9 @@ INSERT INTO Turno (id_paciente, id_medico, id_estado_turno, fecha_hora_inicio, f
 
 INSERT INTO Consulta (id_turno, diagnostico, notas_privadas_medico, tratamiento, fecha_consulta) VALUES
 (1, 'Contractura muscular leve', 'El paciente refiere mucho entrenamiento', 'Reposo y kinesiología', '2024-01-10 09:25:00');
+
+INSERT INTO Consulta (id_turno, diagnostico, notas_privadas_medico, tratamiento, fecha_consulta) VALUES
+(2, 'Contractura muscular leve', 'El paciente refiere mucho entrenamiento', 'Reposo y kinesiología', '2024-01-11 09:25:00');
 
 -- ============================================================================================================================================
 -- Recetas (Para la consulta anterior)

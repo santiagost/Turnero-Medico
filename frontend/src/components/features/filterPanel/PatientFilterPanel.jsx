@@ -20,8 +20,6 @@ const PatientFilterPanel = ({ onSearch }) => {
     const [localFilters, setLocalFilters] = useState(initialFiltersState);
 
     const orderOptions = [
-        { value: "date_desc", label: "Más reciente" },
-        { value: "date_asc", label: "Más antiguo" },
         { value: "alpha_asc", label: "Orden Alfabético (A-Z)" },
         { value: "alpha_desc", label: "Orden Alfabético (Z-A)" }
     ];

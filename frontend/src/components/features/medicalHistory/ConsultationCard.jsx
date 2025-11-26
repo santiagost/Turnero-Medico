@@ -102,7 +102,7 @@ const ConsultationCard = ({ consultation, type, forceOpen = false }) => {
     const renderDoctorCompactView = () => (
         <motion.div key="compact-doctor" variants={contentVariants} initial="hidden" animate="visible" exit="hidden" className="flex justify-between items-center w-full">
             <span className="font-semibold text-lg">{new Date(consultation.consultationDate).toLocaleDateString()}</span>
-            <span className="font-bold text-xl text-custom-dark-blue grow text-center">{consultation?.shift?.doctor?.specialty.name}</span>
+            <span className="font-bold text-xl text-custom-dark-blue grow text-center">{consultation?.shift?.doctor?.specialty?.name}</span>
             <span className="text-custom-dark-blue">Dr. {consultation?.shift?.doctor?.firstName} {consultation?.shift?.doctor?.lastName}</span>
             <motion.div animate={{ rotate: 0 }}><IoIosArrowDown size={24} className="ml-2" /></motion.div>
         </motion.div>
@@ -112,14 +112,14 @@ const ConsultationCard = ({ consultation, type, forceOpen = false }) => {
         <motion.div key="expanded-doctor" variants={contentVariants} initial="hidden" animate="visible" exit="hidden" className="flex flex-col w-full">
             <div className="flex justify-between items-center w-full mb-4">
                 <span className="font-semibold text-lg">{new Date(consultation.consultationDate).toLocaleDateString()}</span>
-                <span className="font-bold text-xl text-custom-dark-blue grow text-center">{consultation?.shift?.doctor?.specialty.name}</span>
+                <span className="font-bold text-xl text-custom-dark-blue grow text-center">{consultation?.shift?.doctor?.specialty?.name}</span>
                 <span className="text-custom-dark-blue">Dr. {consultation?.shift?.doctor?.firstName} {consultation?.shift?.doctor?.lastName}</span>
                 <div animate={{ rotate: 180 }}><IoIosArrowDown size={24} className="mx-2" /></div>
             </div>
 
             <div className="grid grid-cols-2 gap-4 text-custom-dark-blue mt-2 p-4 bg-blue-100 rounded-lg">
                 <div>
-                    <h3 className="font-bold text-lg mb-2">{consultation?.shift?.doctor?.specialty.name}</h3>
+                    <h3 className="font-bold text-lg mb-2">{consultation?.shift?.doctor?.specialty?.name}</h3>
                     <p><span className="font-semibold">Médico:</span> Dr. {consultation?.shift?.doctor?.firstName} {consultation?.shift?.doctor?.lastName}</p>
                     <p><span className="font-semibold">Fecha de Consulta:</span> {new Date(consultation.consultationDate).toLocaleDateString()}</p>
                     <p><span className="font-semibold">Motivo de consulta:</span> {consultation?.shift?.reason}</p>

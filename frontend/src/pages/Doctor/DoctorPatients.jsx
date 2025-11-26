@@ -1,213 +1,142 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import AnimatedPage from '../../components/layout/AnimatedPage';
 import { useNavigate, useParams } from 'react-router-dom';
 
-import { completedConsultationsMock } from '../../utils/mockData';
+// Utils y Hooks
 import { calculateAge } from '../../utils/dateUtils';
-
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
 
+// Components UI
 import SectionCard from '../../components/ui/SectionCard';
 import ConsultationCard from '../../components/features/medicalHistory/ConsultationCard';
 import PatientFilterPanel from '../../components/features/filterPanel/PatientFilterPanel';
 import IconButton from '../../components/ui/IconButton';
 import Spinner from '../../components/ui/Spinner';
-
 import { IoMdArrowBack } from "react-icons/io";
+
+// Services
+import { getMyPatients } from '../../../services/doctor.service';
+import { getPatientById } from '../../../services/patient.service';
+import { getConsultationsByPatient, getPatientIdsByDate } from '../../../services/consultation.service';
 
 const DoctorPatients = () => {
   const { profile } = useAuth();
-  const toast = useToast();
   const navigate = useNavigate();
   const { patientId } = useParams();
+  const toast = useToast();
 
-  const CURRENT_DOCTOR_ID = profile.doctorId;
-
+  // --- ESTADOS ---
   const [myPatients, setMyPatients] = useState([]);
-  const [patient, setPatient] = useState(null);
+  const [searchResults, setSearchResults] = useState([]);
+  const [patient, setPatient] = useState(null); 
   const [consultations, setConsultations] = useState([]);
 
-  const [searchResults, setSearchResults] = useState([]);
-  const [searchMessage, setSearchMessage] = useState("Cargando lista de pacientes...");
-  const [currentOrder, setCurrentOrder] = useState('date_desc');
 
-  const [isLoadingSearch, setIsLoadingSearch] = useState(true);
-  const [isLoadingConsultations, setIsLoadingConsultations] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(true); 
+  const [isLoadingPatient, setIsLoadingDetail] = useState(false);
 
-
-  // 1. ENDPOINT: GET TODOS LOS PACIENTES (o Búsqueda con Filtros)
-  const searchPatients = useCallback(async (filters = {}) => {
-    setIsLoadingSearch(true);
-    setPatient(null);
-    setSearchMessage("");
-
-    try {
-      // AQUI VA LA LLAMADA AL BACKEND (Endpoint 1)
-      // const params = { doctorId: CURRENT_DOCTOR_ID, ...filters };
-      // const response = await axios.get('/api/patients/search', { params });
-
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      // --- LOGICA MOCK ---
-      // Primero obtenemos la "Base de datos" de pacientes de este doctor
-      const allMyPatients = [...new Map(
-        completedConsultationsMock
-          .filter(c => c.shift?.doctor?.doctorId === CURRENT_DOCTOR_ID)
-          .map(c => [c.shift.patient.patientId, c.shift.patient])
-      ).values()];
-
-      let results = allMyPatients;
-
-      // Aplicamos filtros
-      if (filters.dni) {
-        results = results.filter(p => p.dni === filters.dni);
-      } else if (filters.name) {
-        results = results.filter(p =>
-          `${p.firstName} ${p.lastName}`.toLowerCase().includes(filters.name.toLowerCase())
-        );
-      } else if (filters.attentionDate) {
-        results = results.filter(p => {
-          return completedConsultationsMock.some(c => {
-            const isPatient = c.shift?.patient?.patientId === p.patientId;
-            const isDoctor = c.shift?.doctor?.doctorId === CURRENT_DOCTOR_ID;
-            const consultDate = c.consultationDate?.split('T')[0];
-            return isPatient && isDoctor && consultDate === filters.attentionDate;
-          });
-        });
-      }
-      // --- FIN MOCK ---
-
-      // Actualizamos estado principal y resultados
-      setMyPatients(allMyPatients); // Guardamos la base por si acaso
-      setSearchResults(results);
-
-      if (results.length > 0) {
-        setSearchMessage(`${results.length} paciente(s) encontrado(s).`);
-      } else {
-        setSearchMessage("No se encontró ningún paciente con esos criterios.");
-        if (Object.keys(filters).length > 0) toast.warning("Búsqueda sin resultados.");
-      }
-
-    } catch (error) {
-      console.error(error);
-      toast.error("Error al buscar pacientes.");
-    } finally {
-      setIsLoadingSearch(false);
-    }
-  }, [CURRENT_DOCTOR_ID, toast]);
-
+  const [searchMessage, setSearchMessage] = useState("Cargando...");
+  const patientsLoadedRef = useRef(false);
 
   useEffect(() => {
-    if (!patientId) {
-      searchPatients();
-    }
-  }, [searchPatients, patientId]);
+    const initMasterList = async () => {
+      if (patientsLoadedRef.current) return; // Evita recargas
 
-
-
-  // 2. ENDPOINT: GET PACIENTE POR ID
-  useEffect(() => {
-    const loadPatientById = async () => {
-      if (!patientId) {
-        setPatient(null);
-        return;
-      }
-
-      const existing = searchResults.find(p => p.patientId === Number(patientId));
-      if (existing) {
-        setPatient(existing);
-        return;
-      }
-
+      setIsInitializing(true);
       try {
-        // AQUI VA LA LLAMADA AL BACKEND (Endpoint 2)
-        // const response = await axios.get(`/api/patients/${patientId}`);
-        // setPatient(response.data);
+        const data = await getMyPatients(profile.doctorId);
+        setMyPatients(data);
+        setSearchResults(data);
+        patientsLoadedRef.current = true;
 
-        // MOCK: Buscamos en el mock global
-        await new Promise(resolve => setTimeout(resolve, 500));
-        const foundInMock = completedConsultationsMock
-          .find(c => c.shift.patient.patientId === Number(patientId))?.shift.patient;
+        if (data.length === 0) setSearchMessage("No tienes pacientes asignados.");
+        else setSearchMessage(`${data.length} paciente(s) en total.`);
 
-        if (foundInMock) {
-          setPatient(foundInMock);
-        } else {
-          toast.error("Paciente no encontrado.");
-          navigate("/doctor/patients");
-        }
       } catch (error) {
         console.error(error);
+        toast.error("Error al cargar la lista inicial.");
+      } finally {
+        setIsInitializing(false);
       }
     };
 
-    loadPatientById();
-  }, [patientId, searchResults, navigate, toast]);
+    initMasterList();
+  }, [profile.doctorId, toast]);
 
 
-
-  // 3. ENDPOINT: GET CONSULTAS (HISTORIAL)
-  const fetchConsultations = useCallback(async (selectedPatient, order) => {
-    if (!selectedPatient) {
-      setConsultations([]);
-      return;
-    }
-
-    setIsLoadingConsultations(true);
-
+  const handleSelectPatient = async (selectedBasicData) => {
+    setPatient(selectedBasicData); 
+    setIsLoadingDetail(true);
+    
     try {
-      // AQUI VA LA LLAMADA AL BACKEND (Endpoint 3)
-      // const response = await axios.get('/api/consultations', { params: ... });
+      const id = selectedBasicData.patientId;
+      
+      const [fullData, history] = await Promise.all([
+        getPatientById(id),
+        getConsultationsByPatient(id)
+      ]);
 
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      let results = completedConsultationsMock.filter(c =>
-        c.shift.patient.patientId === selectedPatient.patientId &&
-        c.shift.doctor.doctorId === CURRENT_DOCTOR_ID
-      );
-
-      results.sort((a, b) => {
-        const dateA = new Date(a.consultationDate);
-        const dateB = new Date(b.consultationDate);
-        const nameA = `${a.lastName}, ${a.firstName}`;
-        const nameB = `${b.lastName}, ${b.firstName}`;
-
-        switch (order) {
-          case 'date_asc': return dateA - dateB;
-          case 'date_desc': return dateB - dateA;
-          case 'alpha_asc': return nameA.localeCompare(nameB);
-          case 'alpha_desc': return nameB.localeCompare(nameA);
-          default: return 0;
-        }
-      });
-
-      setConsultations(results);
+      setPatient(fullData);
+      setConsultations(history);
 
     } catch (error) {
-      console.error("Error al cargar historial:", error);
-      toast.error("Error al cargar el historial del paciente.");
-      setConsultations([]);
+      console.error("Error cargando detalle:", error);
+      toast.error("No se pudo cargar el historial completo.");
     } finally {
-      setIsLoadingConsultations(false);
+      setIsLoadingDetail(false);
     }
-  }, [CURRENT_DOCTOR_ID, toast]);
-
-  useEffect(() => {
-    if (patient) {
-      fetchConsultations(patient, currentOrder);
-    }
-  }, [patient, currentOrder, fetchConsultations]);
-
-
-  const handleSelectPatient = (selected) => {
-    setPatient(selected);
-    setSearchMessage("");
   };
 
   const handleGoBackToSearch = () => {
-    navigate("/doctor/patients");
     setPatient(null);
+    setConsultations([]);
   };
+
+
+  const handleSearch = async (filters) => {
+    let results = [...myPatients];
+
+    if (filters.attentionDate) {
+      try {
+        const patientsWithConsultationsIds = await getPatientIdsByDate(filters.attentionDate);
+        results = results.filter(p => 
+          patientsWithConsultationsIds.includes(p.patientId)
+        );
+
+      } catch (error) {
+        console.error("Error filtrando por fecha:", error);
+        toast.error("Error al buscar por fecha.");
+        results = []; 
+      }
+    }
+
+    if (filters.dni) {
+      results = results.filter(p => p.dni.toLowerCase().includes(filters.dni.toLowerCase()));
+    }
+    if (filters.name) {
+      const term = filters.name.toLowerCase();
+      results = results.filter(p => 
+        p.firstName.toLowerCase().includes(term) || 
+        p.lastName.toLowerCase().includes(term)
+      );
+    }
+    
+    const sortOrder = filters.order || 'alpha_asc';
+    results.sort((a, b) => {
+        const nameA = `${a.lastName}, ${a.firstName}`;
+        const nameB = `${b.lastName}, ${b.firstName}`;
+        return sortOrder === 'alpha_desc' ? nameB.localeCompare(nameA) : nameA.localeCompare(nameB);
+    });
+
+    setSearchResults(results);
+    
+    if (results.length === 0) {
+      toast.warning("Búsqueda sin resultados.")
+      setSearchMessage("No se encontraron resultados.");
+    }
+  };
+
 
   return (
     <AnimatedPage>
@@ -216,52 +145,63 @@ const DoctorPatients = () => {
           Historial Clínico de Pacientes
         </h1>
 
-        <SectionCard tittle={"Filtra entre tus Pacientes"} content={
-          <PatientFilterPanel
-            onSearch={searchPatients}
-          />
-        } />
+        <SectionCard
+          tittle={"Filtra entre tus Pacientes"}
+          content={<PatientFilterPanel onSearch={handleSearch} />}
+        />
 
-        {patient ? (
+        {/* CONTENIDO PRINCIPAL */}
+        
+        {isInitializing ? (
+           <div className="flex justify-center py-20 text-custom-blue"><Spinner /></div>
+        ) : patient ? (
+          
+          // CASO 2: VISTA DETALLE (Se muestra instantáneamente)
           <>
             <div className='flex flex-row items-center justify-between mt-5 text-custom-dark-blue'>
               <h1 className="text-2xl font-bold mb-6">Listado de Consultas</h1>
               <p>(haz click en una consulta para ver en detalle)</p>
             </div>
-            <SectionCard complexHeader={
-              <div className="relative flex flex-row items-center justify-center">
-                <div className="absolute left-0">
-                  <IconButton icon={<IoMdArrowBack size={30} onClick={handleGoBackToSearch} type="button" />} />
+
+            <SectionCard
+              complexHeader={
+                <div className="relative flex flex-row items-center justify-center">
+                  <div className="absolute left-0">
+                    <IconButton icon={<IoMdArrowBack size={30} onClick={handleGoBackToSearch} type="button" />} />
+                  </div>
+                  <p className='text-custom-dark-blue text-center font-bold text-2xl'>
+                    Historial Clínico del Paciente
+                  </p>
                 </div>
-                <p className='text-custom-dark-blue text-center font-bold text-2xl'>Historial Clínico del Paciente</p>
-              </div>
-            }
+              }
               content={
                 <div className="mx-2 my-1">
-                  {/* Datos del Paciente */}
+                  {/* Datos Personales (Siempre visibles porque usamos setPatient optimista) */}
                   <div className="w-full px-5 py-2">
                     <div className="flex flex-row items-center justify-between">
                       <p className="font-bold text-xl">{patient.lastName}, {patient.firstName}</p>
                     </div>
                     <div className="mx-2 my-1">
-                      <div className="flex flex-row items-center justify-between">
+                      <div className="flex flex-row items-center justify-between gap-4 flex-wrap">
                         <p className="font-semibold">Edad: <span className="font-normal">{calculateAge(patient.birthDate)} años</span></p>
                         <p className="font-semibold">DNI: <span className="font-normal">{patient.dni}</span></p>
                         <p className="font-semibold">Teléfono: <span className="font-normal">{patient.telephone}</span></p>
-                        <p className="font-semibold">Obra Social: <span className="font-normal">{patient.socialWork?.name || "No Aplica"}</span></p>
-                        <p className="font-semibold">Número de Afiliado: <span className="font-normal">{patient.membershipNumber || "No Aplica"}</span></p>
+                        <p className="font-semibold">Obra Social: <span className="font-normal">{patient.socialWork?.name || "Particular"}</span></p>
+                        <p className="font-semibold">Afiliado: <span className="font-normal">{patient.membershipNumber || "-"}</span></p>
                       </div>
                     </div>
                   </div>
 
-                  {/* Lista de Consultas (Con Spinner) */}
+                  <hr className="my-2 border-gray-200" />
+
+                  {/* Historial de Consultas */}
                   <div className="w-full px-5 py-2">
-                    <p className="font-bold text-xl text-start">Ultimas Consultas</p>
-                    <div className="mx-2 my-1">
-                      {isLoadingConsultations ? (
-                        <div className="flex justify-center py-10 min-h-[100px] items-center text-custom-blue">
-                          <Spinner />
-                        </div>
+                    <p className="font-bold text-xl text-start mb-4">Ultimas Consultas</p>
+                    <div className="mx-2 my-1 flex flex-col gap-3">
+                      
+                      {/* Aquí usamos isLoadingPatient para mostrar spinner SOLO en las consultas */}
+                      {isLoadingPatient ? (
+                         <div className="flex justify-center py-10 text-custom-blue"><Spinner /></div>
                       ) : consultations.length > 0 ? (
                         consultations.map(consultation => (
                           <ConsultationCard
@@ -271,45 +211,40 @@ const DoctorPatients = () => {
                           />
                         ))
                       ) : (
-                        <p className="text-center text-gray-500 p-4">
-                          Este paciente no tiene consultas en su historial.
+                        <p className="text-center text-gray-500 p-6 bg-gray-50 rounded-lg">
+                          Este paciente no tiene consultas registradas.
                         </p>
                       )}
                     </div>
                   </div>
                 </div>
-              } />
+              }
+            />
           </>
+
         ) : (
-          // --- VISTA LISTA DE RESULTADOS ---
-          isLoadingSearch ? (
-            <SectionCard content={
-              <div className="flex justify-center py-10 min-h-[150px] items-center text-custom-blue animate-pulse">
-                <Spinner />
-              </div>
-            } />
-          ) : searchResults.length > 0 ? (
-            <SectionCard tittle={"Resultados de la Búsqueda"} content={
-              <div className="flex flex-col gap-2 p-4">
-                {searchResults.map(p => (
-                  <div
-                    key={p.patientId}
-                    className="flex justify-between items-center p-3 bg-white rounded-lg shadow-sm hover:bg-custom-light-blue/25 cursor-pointer transition-colors"
-                    onClick={() => handleSelectPatient(p)}
-                  >
-                    <span className="font-bold">{p.lastName}, {p.firstName}</span>
-                    <span className="text-custom-gray">DNI: {p.dni}</span>
-                  </div>
-                ))}
-              </div>
-            } />
-          ) : (
-            <SectionCard content={
-              <p className="text-center text-custom-gray p-4">
-                {searchMessage}
-              </p>
-            } />
-          )
+          // CASO 3: VISTA LISTA
+          <SectionCard
+            tittle={"Resultados de la Búsqueda"}
+            content={
+              searchResults.length > 0 ? (
+                <div className="flex flex-col gap-2 p-4">
+                  {searchResults.map(p => (
+                    <div
+                      key={p.patientId}
+                      className="flex justify-between items-center p-3 bg-white rounded-lg shadow-sm hover:bg-custom-light-blue/25 cursor-pointer transition-colors"
+                      onClick={() => handleSelectPatient(p)}
+                    >
+                      <span className="font-bold">{p.lastName}, {p.firstName}</span>
+                      <span className="text-custom-gray">DNI: {p.dni}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-center text-custom-gray p-8">{searchMessage}</p>
+              )
+            }
+          />
         )}
       </div>
     </AnimatedPage>

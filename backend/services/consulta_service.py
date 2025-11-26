@@ -74,6 +74,23 @@ class ConsultaService:
         lista_ids = [row[0] for row in rows]
         
         return lista_ids
+    
+    def get_id_consultas_by_fecha_consulta(self, fecha_consulta: str) -> List[int]:
+        """Obtiene LISTA de IDs de consultas para una fecha (YYYY-MM-DD)"""
+        
+        # Usamos DISTINCT para que si un paciente fue 2 veces, no salga repetido
+        self.cursor.execute("""
+            SELECT id_consulta
+            FROM Consulta
+            WHERE DATE(fecha_consulta) = DATE(?)
+        """, (fecha_consulta,))
+        
+        rows = self.cursor.fetchall()
+        
+        # Convertimos la lista de tuplas [(1,), (5,)] en lista de enteros [1, 5]
+        lista_ids = [row[0] for row in rows]
+        
+        return lista_ids
 
     def create(self, consulta_data: ConsultaCreate) -> ConsultaResponse:
         """Crea una nueva consulta"""

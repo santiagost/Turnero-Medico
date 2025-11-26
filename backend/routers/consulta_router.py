@@ -40,6 +40,18 @@ async def get_pacientes_by_fecha(fecha_consulta: str, service: ConsultaService =
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+@router.get("/consultas_por_fecha", response_model=List[int])
+async def get_consultas_by_fecha(fecha_consulta: str, service: ConsultaService = Depends(get_consulta_service)):
+    """Obtiene IDs de consultas en una fecha específica"""
+    try:
+        consultas_ids = service.get_id_consultas_by_fecha_consulta(fecha_consulta)
+        if consultas_ids is None:
+            raise HTTPException(status_code=404, detail="No se encontraron consultas para la fecha dada")
+        return consultas_ids
+    
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
 @router.get("/{consulta_id}", response_model=dict)
 async def get_consulta_by_id(consulta_id: int, service: ConsultaService = Depends(get_consulta_service)):
     """Obtiene una consulta por ID"""
