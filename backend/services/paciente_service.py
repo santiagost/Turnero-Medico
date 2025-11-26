@@ -155,7 +155,12 @@ class PacienteService:
             raise ValueError("Error al actualizar el paciente: " + str(e))
     
     def delete(self, paciente_id: int) -> bool:
-        """Elimina un paciente por su ID"""
+        """Elimina un paciente por su ID y su usuario asociado si no tiene otro rol"""
+        from services.usuario_rol_service import UsuarioRolService
+        from services.usuario_service import UsuarioService
+        usuario_rol_service = UsuarioRolService(self.db)
+        usuario_service = UsuarioService(self.db)
+
         existing = self.get_by_id(paciente_id)
         if not existing:
             return False
@@ -163,6 +168,13 @@ class PacienteService:
         try:
             self.cursor.execute("DELETE FROM Paciente WHERE id_paciente = ?", (paciente_id,))
             self.db.commit()
+
+            # Eliminar usuario asociado si no tiene otro rol
+            if existing.id_usuario:
+                roles = usuario_rol_service.get_by_usuario_id(existing.id_usuario)
+                if len(roles) <= 1:
+                    usuario_service.delete(existing.id_usuario)
+
             return True
             
         except sqlite3.IntegrityError as e:
