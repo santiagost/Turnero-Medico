@@ -41,22 +41,11 @@ async def get_paciente_by_id(paciente_id: int, service: PacienteService = Depend
         raise HTTPException(status_code=404, detail="Paciente no encontrado")
     return jsonable_encoder(paciente)
 
-
 @router.post("/", response_model=dict, status_code=status.HTTP_201_CREATED)
-async def create_paciente(paciente_data: dict, service: PacienteService = Depends(get_paciente_service)):
-    """Crea un nuevo paciente"""
+async def create(usuario_data: dict, service: PacienteService = Depends(get_paciente_service)):
+    """Registra un nuevo paciente junto con su usuario"""
     try:
-        paciente = PacienteCreate(
-            dni=paciente_data['dni'],
-            nombre=paciente_data['nombre'],
-            apellido=paciente_data['apellido'],
-            telefono=paciente_data['telefono'],
-            id_usuario=paciente_data.get('id_usuario'),
-            fecha_nacimiento=paciente_data.get('fecha_nacimiento'),
-            id_obra_social=paciente_data.get('id_obra_social'),
-            nro_afiliado=paciente_data.get('nro_afiliado')
-        )
-        resultado = service.create(paciente)
+        resultado = service.create(usuario_data)
         return jsonable_encoder(resultado)
     
     except KeyError as e:
@@ -103,14 +92,3 @@ async def delete_paciente(paciente_id: int, service: PacienteService = Depends(g
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     
-@router.post("/registrar", response_model=dict, status_code=status.HTTP_201_CREATED)
-async def registrar_paciente(usuario_data: dict, service: PacienteService = Depends(get_paciente_service)):
-    """Registra un nuevo paciente junto con su usuario"""
-    try:
-        resultado = service.registrar_paciente(usuario_data)
-        return jsonable_encoder(resultado)
-    
-    except KeyError as e:
-        raise HTTPException(status_code=400, detail=f"Falta el campo obligatorio: {str(e)}")
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))

@@ -78,17 +78,8 @@ async def get_mis_pacientes(medico_id: int, service: MedicoService = Depends(get
 async def create_medico(medico_data: dict, service: MedicoService = Depends(get_medico_service)):
     """Crea un nuevo medico"""
     try:
-        medico = MedicoCreate(
-            dni=medico_data['dni'],
-            nombre=medico_data['nombre'],
-            apellido=medico_data['apellido'],
-            matricula=medico_data['matricula'],
-            telefono=medico_data.get('telefono'),
-            id_usuario=medico_data['id_usuario'],
-            id_especialidad=medico_data['id_especialidad'],
-            noti_cancel_email_act=medico_data.get('noti_cancel_email_act', 1)
-        )
-        resultado = service.create(medico)
+        
+        resultado = service.create(medico_data)
         HorarioAtencionService(service.db).crear_horarios_default_para_medico(resultado.id_medico)
         return jsonable_encoder(resultado)
     

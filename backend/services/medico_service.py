@@ -1,5 +1,6 @@
 import sqlite3
 from typing import List, Optional
+from models.usuarioRol import UsuarioRolCreate
 from models.medico import MedicoCreate, MedicoUpdate, MedicoResponse
 from services.usuario_service import UsuarioService
 from services.especialidad_service import EspecialidadService
@@ -133,44 +134,63 @@ class MedicoService:
         
         return medicos_ligeros
 
-    def create(self, medico_data: MedicoCreate) -> MedicoResponse:
+    def create(self, medico_data: dict) -> MedicoResponse:
         """Crea un nuevo médico"""
+
+        from services.usuario_service import UsuarioService
+        from services.rol_service import RolService
+        from services.usuario_rol_service import UsuarioRolService
+
+        usuario_service = UsuarioService(self.db)
+        rol_service = RolService(self.db)
+        usuario_rol_service = UsuarioRolService(self.db)
+
+        # from services.especialidad_service import EspecialidadService
+
         try:
+
+            usuario = usuario_service.get_by_email(medico_data['email'])
+            
+            if not usuario:
+                usuario = usuario_service.create(
+                    email=medico_data['email'],
+                    password=medico_data.get('password', 'defaultpassword123')
+                )
+            
+
+            roles = usuario_rol_service.get_by_usuario_id(usuario.id_usuario) if usuario else []
+            if usuario and any(rol.rol.nombre == 'Medico' for rol in roles):
+                raise ValueError(f"Ya existe un médico con el email {medico_data['email']}")
+            
             # Validar DNI único
-            self.cursor.execute("SELECT id_medico FROM medico WHERE dni = ?", (medico_data.dni,))
+            self.cursor.execute("SELECT id_medico FROM medico WHERE dni = ?", (medico_data.get("dni"),))
             if self.cursor.fetchone():
-                raise ValueError(f"Ya existe un médico con DNI {medico_data.dni}")
+                raise ValueError(f"Ya existe un médico con DNI { medico_data.get('dni') }")
             
             # Validar matrícula única
-            self.cursor.execute("SELECT id_medico FROM medico WHERE matricula = ?", (medico_data.matricula,))
+            self.cursor.execute("SELECT id_medico FROM medico WHERE matricula = ?", (medico_data.get("matricula"),))
             if self.cursor.fetchone():
-                raise ValueError(f"Ya existe un médico con matrícula {medico_data.matricula}")
+                raise ValueError(f"Ya existe un médico con matrícula { medico_data.get('matricula') }")
             
-            if medico_data.id_usuario:
-                # Validar que el usuario exista
-                usuario_service = UsuarioService(self.db)
-                usuario = usuario_service.get_by_id(medico_data.id_usuario)
-                if not usuario:
-                    raise ValueError(f"No existe un usuario con ID {medico_data.id_usuario}")
 
-            # Insertar nuevo médico
             self.cursor.execute("""
-                INSERT INTO Medico (dni, nombre, apellido, matricula, telefono, id_especialidad, id_usuario)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO Medico (dni, nombre, apellido, matricula, telefono, id_especialidad, id_usuario, noti_cancel_email_act)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """, (
-                medico_data.dni,
-                medico_data.nombre,
-                medico_data.apellido,
-                medico_data.matricula,
-                medico_data.telefono,
-                medico_data.id_especialidad,
-                medico_data.id_usuario
+                medico_data.get('dni'),
+                medico_data.get('nombre'),
+                medico_data.get('apellido'),
+                medico_data.get('matricula'),
+                medico_data.get('telefono'),
+                medico_data.get('id_especialidad'),
+                usuario.id_usuario,
+                medico_data.get('noti_cancel_email_act', 1)
             ))
-            
             self.db.commit()
-            
-            # Obtener el médico recién creado
             id_medico = self.cursor.lastrowid
+
+            # Asignar rol de Médico al usuario
+            usuario_rol_service.create(UsuarioRolCreate(usuario.id_usuario, rol_service.get_by_name('Medico').id_rol))
 
             return self._get_medico_completo(id_medico)
             

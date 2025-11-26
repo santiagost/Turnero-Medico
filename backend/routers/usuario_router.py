@@ -71,18 +71,4 @@ async def delete_usuario(usuario_id: int, service: UsuarioService = Depends(get_
     
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-
-
-@router.put("/perfil/{id_usuario}", response_model=dict)
-async def update_perfil_usuario(
-    id_usuario: int,
-    usuario_update: dict,
-    service: UsuarioService = Depends(get_usuario_service)
-):
-    """Actualiza el perfil del usuario según su rol"""
-    try:
-        resultado = service.editar_perfil(id_usuario, usuario_update)
-        return jsonable_encoder(resultado)
-
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    

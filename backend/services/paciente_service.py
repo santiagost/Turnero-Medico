@@ -94,53 +94,13 @@ class PacienteService:
         """Obtiene un paciente por su ID"""
         return self._get_paciente_completo(paciente_id)
     
-    def create(self, paciente_data) -> PacienteResponse:
-        """Crea un nuevo paciente"""
-        try:
-            # Validar DNI único
-            self.cursor.execute("SELECT id_paciente FROM Paciente WHERE dni = ?", (paciente_data.dni,))
-            if self.cursor.fetchone():
-                raise ValueError(f"Ya existe un paciente con DNI {paciente_data.dni}")
-            
-            # Validar nro_afiliado único para la obra social
-            if paciente_data.id_obra_social and paciente_data.nro_afiliado:
-                self.cursor.execute(
-                    "SELECT id_paciente FROM Paciente WHERE id_obra_social = ? AND nro_afiliado = ?",
-                    (paciente_data.id_obra_social, paciente_data.nro_afiliado)
-                )
-                if self.cursor.fetchone():
-                    raise ValueError(f"Ya existe un paciente con nro_afiliado {paciente_data.nro_afiliado} en la obra social")
-            
-            # Insertar nuevo paciente
-            self.cursor.execute("""
-                INSERT INTO Paciente (dni, nombre, apellido, fecha_nacimiento, telefono, id_obra_social, nro_afiliado, id_usuario)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                paciente_data.dni,
-                paciente_data.nombre,
-                paciente_data.apellido,
-                paciente_data.fecha_nacimiento,
-                paciente_data.telefono,
-                paciente_data.id_obra_social,
-                paciente_data.nro_afiliado,
-                paciente_data.id_usuario
-            ))
-            
-            self.db.commit()
-            
-            # Obtener el paciente recién creado
-            paciente_id = self.cursor.lastrowid
-            return self._get_paciente_completo(paciente_id)
-            
-        except sqlite3.IntegrityError as e:
-            self.db.rollback()
-            raise ValueError("Error al crear el paciente: " + str(e))
-    
     def update(self, paciente_id: int, paciente_data) -> Optional[PacienteResponse]:
         """Actualiza los datos de un paciente existente"""
         existing = self.get_by_id(paciente_id)
         if not existing:
             return None
+        
+        
         
         try:
             update_fields = []
@@ -159,6 +119,14 @@ class PacienteService:
                 update_fields.append("telefono = ?")
                 update_values.append(paciente_data.telefono)
             if paciente_data.id_obra_social is not None:
+                if paciente_data.nro_afiliado:
+                    self.cursor.execute(
+                        "SELECT id_paciente FROM Paciente WHERE id_obra_social = ? AND nro_afiliado = ?",
+                        (paciente_data.id_obra_social, paciente_data.nro_afiliado)
+                    )
+                    if self.cursor.fetchone():
+                        raise ValueError(f"Ya existe un paciente con nro_afiliado {paciente_data.nro_afiliado} en la obra social")
+                    
                 update_fields.append("id_obra_social = ?")
                 update_values.append(paciente_data.id_obra_social)
             if paciente_data.nro_afiliado is not None:
@@ -240,7 +208,8 @@ class PacienteService:
         paciente_id = dict(row)['id_paciente']
         return self._get_paciente_completo(paciente_id)
     
-    def registrar_paciente(self, usuario_data: dict) -> PacienteResponse:
+    
+    def create(self, usuario_data: dict) -> PacienteResponse:
         from services.usuario_rol_service import UsuarioRolService
         from services.rol_service import RolService
         from services.usuario_service import UsuarioService
@@ -262,28 +231,41 @@ class PacienteService:
 
             # 2) Buscar si existe el paciente por DNI
             paciente = self.get_by_dni(usuario_data["dni"])
+            if paciente:
+                raise ValueError("Ya existe un paciente con el DNI proporcionado")
 
-            # 3) Si no existe, crear paciente
-            if not paciente:
-                paciente = PacienteCreate(
-                    nombre=usuario_data["nombre"],
-                    apellido=usuario_data["apellido"],
-                    dni=usuario_data["dni"],
-                    telefono=usuario_data["telefono"],
-                    fecha_nacimiento=usuario_data["fecha_nacimiento"]
-                )
-                paciente = self.create(paciente)
+            
+                              
+            self.cursor.execute("""
+                INSERT INTO Paciente (dni, nombre, apellido, telefono, fecha_nacimiento, id_obra_social)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """, (
+                usuario_data["dni"],
+                usuario_data["nombre"],
+                usuario_data["apellido"],
+                usuario_data.get("telefono"),
+                usuario_data.get("fecha_nacimiento"),
+                usuario_data.get("id_obra_social", 3),
+            ))
+            self.db.commit()
+            id_paciente = self.cursor.lastrowid
+
 
             # 4) Crear usuario
-            usuario = usuario_service.create(
-                email=usuario_data["email"],
-                password=usuario_data["password"]
-            )
-            id_usuario = usuario.id_usuario
+            if exists:
+                id_usuario = exists.id_usuario
+            else:
+                print("entro aca")
+                usuario = usuario_service.create(
+                    email=usuario_data["email"],
+                    password=usuario_data.get("password", "defaultpassword123")
+                )
+                id_usuario = usuario.id_usuario
+
 
             # 5) Asociar usuario con paciente
             paciente_update = PacienteUpdate(id_usuario=id_usuario)
-            self.update(paciente.id_paciente, paciente_update)
+            self.update(id_paciente, paciente_update)
 
             # 6) Crear usuario rol
             rol = rol_service.get_by_name("Paciente")
@@ -294,14 +276,7 @@ class PacienteService:
                 )
             )
 
-            return PacienteResponse(
-                id_paciente=paciente.id_paciente,
-                dni=paciente.dni,
-                nombre=paciente.nombre,
-                apellido=paciente.apellido,
-                telefono=paciente.telefono,
-                fecha_nacimiento=paciente.fecha_nacimiento,
-            )
+            return self._get_paciente_completo(id_paciente)
 
         except sqlite3.IntegrityError as e:
             self.db.rollback()
