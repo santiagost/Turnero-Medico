@@ -48,7 +48,7 @@ export const createPatient = async (body) => {
     firstName,
     lastName,
     telephone,
-    userId,
+    email,
     birthDate,
     socialWorkId,
     membershipNumber,
@@ -60,7 +60,7 @@ export const createPatient = async (body) => {
     nombre: firstName,
     apellido: lastName,
     telefono: telephone,
-    id_usuario: userId || null,
+    email: email || null,
     fecha_nacimiento: birthDate,
     id_obra_social: socialWorkId || null,
     nro_afiliado: membershipNumber || null,
@@ -77,7 +77,7 @@ export const createPatient = async (body) => {
 };
 
 // Endpoint: PUT /pacientes/{id}
-export const updatePatient = async (patientId, body) => {
+export const editPatient = async (patientId, body) => {
   // Desestructuramos datos en inglés (Frontend)
   const {
     firstName,
@@ -86,7 +86,6 @@ export const updatePatient = async (patientId, body) => {
     telephone,
     socialWorkId,
     membershipNumber,
-    emailNotificationActive
   } = body;
 
   // Mapeamos a español (Backend)
@@ -96,7 +95,10 @@ export const updatePatient = async (patientId, body) => {
     fecha_nacimiento: birthDate,
     telefono: telephone,
     id_obra_social: socialWorkId || null,
-    nro_afiliado: membershipNumber || null,
+    nro_afiliado:
+      membershipNumber === undefined || membershipNumber === null
+        ? null
+        : membershipNumber,
   };
 
   try {

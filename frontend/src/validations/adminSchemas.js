@@ -10,31 +10,39 @@ export const medicationValidationSchema = {
 
 // --- Esquema para crear un nuevo paciente por el Admin ---
 export const adminCreatePatientSchema = (particularId = null) => {
-  return {
-    firstName: commonRules.name,
-    lastName: (value) => registerValidationSchema.lastname(value),
-    dni: commonRules.dni,
-    telephone: commonRules.telephone,
-    birthDate: commonRules.birthDate,
-    email: commonRules.email,
+    return {
+        firstName: commonRules.name,
+        lastName: (value) => registerValidationSchema.lastname(value),
+        dni: commonRules.dni,
+        telephone: commonRules.telephone,
+        birthDate: commonRules.birthDate,
+        email: commonRules.email,
 
-    // Regla dinámica
-    membershipNumber: (value, formData) => {
-      const isParticular = formData.socialWorkId == particularId;
+        // 🌟 REGLA DE VALIDACIÓN ADAPTADA PARA membershipNumber 🌟
+        membershipNumber: (value, formData) => {
+            const isParticular = formData.socialWorkId == particularId;
 
-      if (formData.socialWorkId && !isParticular && !value) {
-        return "El N° de afiliado es requerido para esta obra social.";
-      }
-      return null;
-    },
+            // 1. Caso: Obra Social NO Particular (Requiere N° de Afiliado)
+            if (formData.socialWorkId && !isParticular && !value) {
+                return "El N° de afiliado es requerido para esta obra social.";
+            }
 
-    socialWorkId: (value, formData) => {
-      if (!value && formData.membershipNumber) {
-        return "Seleccione una obra social.";
-      }
-      return null;
-    },
-  };
+            // 2. Caso: Obra Social SÍ Particular (NO Debe tener N° de Afiliado)
+            if (isParticular && value) {
+                return "No se requiere N° de afiliado para la Obra Social 'Particular'. Por favor, déjelo vacío.";
+            }
+
+            return null;
+        },
+        // -----------------------------------------------------------------
+
+        socialWorkId: (value, formData) => {
+            if (!value && formData.membershipNumber) {
+                return "Seleccione una obra social.";
+            }
+            return null;
+        },
+    };
 };
 
 // --- Esquema de Creación de Médico por Admin ---

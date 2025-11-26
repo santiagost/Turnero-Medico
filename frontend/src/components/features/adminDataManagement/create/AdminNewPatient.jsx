@@ -8,6 +8,7 @@ import { adminCreatePatientSchema } from '../../../../validations/adminSchemas';
 import ROLES from '../../../../utils/constants';
 import { useToast } from '../../../../hooks/useToast';
 import { getSocialWorkOptions } from '../../../../../services/socialWork.service';
+import { createPatient } from '../../../../../services/patient.service';
 
 const initialPatientState = {
     firstName: "",
@@ -21,7 +22,7 @@ const initialPatientState = {
     socialWorkId: ""
 };
 
-const AdminNewPatient = () => {
+const AdminNewPatient = ({ refresh }) => {
     const [patientData, setPatientData] = useState(initialPatientState);
     const [errors, setErrors] = useState({});
     const [isLoading, setIsLoading] = useState(false);
@@ -128,26 +129,18 @@ const AdminNewPatient = () => {
         setIsLoading(true); // Activar spinner
 
         try {
-            // AQUI VA LA LLAMADA AL BACKEND
-            // await axios.post('/api/patients', patientData);
-
-            // Simulación de espera
-            await new Promise(resolve => setTimeout(resolve, 1500));
-
-            // Simulación de error (Descomentar para probar)
-            // throw new Error("El DNI ya se encuentra registrado en el sistema.");
-
+            await createPatient(patientData); 
             console.log("Datos del nuevo paciente a guardar:", patientData);
-
             toast.success("Paciente registrado exitosamente.");
-
-            // Limpiar formulario
+            if (refresh) {
+                refresh(prev => prev + 1);
+            }
             setPatientData(initialPatientState);
             setErrors({});
 
         } catch (error) {
             console.error("Error al crear paciente:", error);
-            const errorMessage = error.message || "Ocurrió un error al intentar registrar al paciente.";
+            const errorMessage = error.response?.data?.message || "Ocurrió un error al intentar registrar al paciente.";
             toast.error(errorMessage);
         } finally {
             setIsLoading(false); // Desactivar spinner

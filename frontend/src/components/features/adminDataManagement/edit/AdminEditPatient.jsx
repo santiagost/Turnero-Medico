@@ -3,18 +3,20 @@ import Input from '../../../ui/Input';
 import Select from '../../../ui/Select';
 import Button from '../../../ui/Button';
 import { useToast } from '../../../../hooks/useToast';
-// 1. Importa los mocks de Pacientes y Obras Sociales, y el esquema de Paciente
-import { mockPatients } from '../../../../utils/mockData';
+import Spinner from '../../../ui/Spinner';
+
 import { adminCreatePatientSchema } from '../../../../validations/adminSchemas';
 import ROLES from '../../../../utils/constants';
+
 import { getSocialWorkOptions } from '../../../../../services/socialWork.service';
+import { getPatientById } from '../../../../../services/patient.service';
 
 // 2. Define el estado inicial para Paciente
 const initialPatientState = {
     firstName: "",
     lastName: "",
     dni: "",
-    profile: `${ROLES["Patient"]}`,
+    role: `${ROLES["Patient"]}`,
     telephone: "",
     birthDate: "",
     email: "",
@@ -26,6 +28,7 @@ const AdminEditPatient = ({ patientId, onSave, onCancel }) => {
     const [patientData, setPatientData] = useState(initialPatientState);
     const [errors, setErrors] = useState({});
     const toast = useToast();
+    const [isLoading, setIsLoading] = useState(true);
 
     const [socialWorksOptionsWithEmpty, setSocialWorkOptions] = useState([
         { value: "", label: "" }
@@ -58,27 +61,39 @@ const AdminEditPatient = ({ patientId, onSave, onCancel }) => {
     };
 
     useEffect(() => {
-        // AQUI VA LA LLAMADA AL BACKEND
-        // getPatientById(patientId)
+        const fetchPatientData = async () => {
+            if (!patientId) {
+                setIsLoading(false);
+                return;
+            }
 
-        console.log("Cargando datos del paciente ID:", patientId);
+            try {
+                setIsLoading(true);
+                const data = await getPatientById(patientId); 
 
-        const patient = mockPatients.find(p => p.patientId === patientId);
+                setPatientData({
+                    firstName: data.firstName,
+                    lastName: data.lastName,
+                    dni: data.dni,
+                    role: ROLES["Patient"], // Mantener el rol estático
+                    telephone: data.telephone,
+                    birthDate: data.birthDate,
+                    email: data.user ? data.user.email : "", // Acceso seguro al email
+                    membershipNumber: data.membershipNumber || "",
+                    socialWorkId: data.socialWork ? data.socialWork.socialWorkId : "" // Acceso seguro al ID
+                });
 
+            } catch (error) {
+                console.error("Error cargando paciente:", error);
+                toast.error("No se pudo cargar la información del paciente.");
+                if (onCancel) onCancel(); 
 
-        if (patient) {
-            setPatientData({
-                firstName: patient.firstName,
-                lastName: patient.lastName,
-                dni: patient.dni,
-                profile: ROLES["Patient"],
-                telephone: patient.telephone,
-                birthDate: patient.birthDate,
-                email: patient.user.email,
-                membershipNumber: patient.membershipNumber,
-                socialWorkId: patient.socialWork?.socialWorkId || ""
-            });
-        }
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchPatientData();
     }, [patientId]);
 
     // --- Handlers (usando el esquema de Paciente) ---
@@ -149,6 +164,14 @@ const AdminEditPatient = ({ patientId, onSave, onCancel }) => {
         }
     };
 
+    if (isLoading) {
+        return (
+            <div className="flex justify-center items-center p-10 h-64">
+                <Spinner />
+            </div>
+        );
+    }
+
     return (
         <div className="p-4">
             <form onSubmit={handleSubmit} className="grid grid-cols-4 gap-4" noValidate>
@@ -184,8 +207,8 @@ const AdminEditPatient = ({ patientId, onSave, onCancel }) => {
                 />
                 <Input
                     tittle="Perfil"
-                    name="profile"
-                    value={patientData.profile}
+                    name="role"
+                    value={patientData.role}
                     size="small"
                     disable={true}
                 />

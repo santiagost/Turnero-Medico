@@ -10,11 +10,9 @@ import Button from '../../../ui/Button';
 import IconButton from '../../../ui/IconButton';
 import Spinner from '../../../ui/Spinner';
 
-import {
-    mockPatients // <-- ¡Importa la lista completa de pacientes!
-} from '../../../../utils/mockData';
 
 import { getSocialWorkOptions } from '../../../../../services/socialWork.service'
+import { getAllPatientsWithFilters } from '../../../../../services/patient.service';
 
 export const initialFiltersState = {
     dni: "",
@@ -23,16 +21,14 @@ export const initialFiltersState = {
     order: "alpha_asc"
 };
 
-// --- Lista de pacientes (simulada) ---
-// En una app real, la API te daría esta lista
-const allPatients = mockPatients;
 
-const AdminPatientFilterPanel = ({ patientToDelete, patientToEdit, viewMode = "detail" }) => {
+const AdminPatientFilterPanel = ({ patientToDelete, patientToEdit, viewMode = "detail", refreshTrigger }) => {
     const navigate = useNavigate();
     const toast = useToast();
     const [localFilters, setLocalFilters] = useState(initialFiltersState);
     const [searchResults, setSearchResults] = useState([]);
     const [searchMessage, setSearchMessage] = useState("Busca un paciente para ver en detalle.");
+    const [hasSearched, setHasSearched] = useState(false);
     const [isLoadingSearch, setIsLoadingSearch] = useState(false);
 
     const orderOptions = [
@@ -69,69 +65,61 @@ const AdminPatientFilterPanel = ({ patientToDelete, patientToEdit, viewMode = "d
         }));
     };
 
-    const handleSearchClick = async (e) => {
-        e.preventDefault();
-
+    const performSearch = async () => {
         setIsLoadingSearch(true);
-        setSearchResults([]); // Limpiar resultados previos
-        setSearchMessage(""); // Limpiar mensaje
+        setSearchResults([]);
 
         try {
-            // 🚨 AQUI VA LA LLAMADA AL BACKEND
-            // const params = { ...localFilters };
-            // const response = await axios.get('/api/patients/search', { params });
-            // const foundPatients = response.data;
+            const filters = {
+                dni: localFilters.dni || null,
+                lastName: localFilters.name || null, 
+                socialWorkId: localFilters.socialWork || null
+            };
 
-            // SIMULACIÓN (Delay de 500ms)
-            await new Promise(resolve => setTimeout(resolve, 500));
+            let patients = await getAllPatientsWithFilters(filters);
 
-            // --- Lógica Mock de Filtrado ---
-            let foundPatients = [...allPatients];
-
-            if (localFilters.dni) {
-                foundPatients = foundPatients.filter(p => p.dni === localFilters.dni);
-            }
-            if (localFilters.name) {
-                foundPatients = foundPatients.filter(p =>
-                    `${p.firstName} ${p.lastName}`.toLowerCase().includes(localFilters.name.toLowerCase())
-                );
-            }
-            if (localFilters.socialWork) {
-                foundPatients = foundPatients.filter(p =>
-                    p.socialWork?.socialWorkId === parseInt(localFilters.socialWork)
-                );
+            if (localFilters.order) {
+                patients.sort((a, b) => {
+                    const nameA = a.lastName ? a.lastName.toLowerCase() : "";
+                    const nameB = b.lastName ? b.lastName.toLowerCase() : "";
+                    
+                    return localFilters.order === 'alpha_asc'
+                        ? nameA.localeCompare(nameB)
+                        : nameB.localeCompare(nameA);
+                });
             }
 
-            // Lógica de orden
-            foundPatients.sort((a, b) =>
-                localFilters.order === 'alpha_asc'
-                    ? a.lastName.localeCompare(b.lastName)
-                    : b.lastName.localeCompare(a.lastName)
-            );
-            // --- Fin Lógica Mock ---
+            setSearchResults(patients);
 
-            setSearchResults(foundPatients);
-
-            if (foundPatients.length === 0) {
-                setSearchMessage("No se encontraron pacientes con esos criterios.");
+            const hasActiveFilters = localFilters.dni || localFilters.name || localFilters.socialWork;
+            if (patients.length === 0 && hasActiveFilters) {
                 toast.warning("Búsqueda sin resultados.");
-            } else {
-                setSearchMessage(`${foundPatients.length} paciente(s) encontrado(s).`);
             }
 
         } catch (error) {
             console.error("Error buscando pacientes:", error);
             toast.error("Ocurrió un error al buscar pacientes.");
-            setSearchMessage("Error en la búsqueda.");
         } finally {
             setIsLoadingSearch(false);
         }
     };
 
+    const handleSearchClick = (e) => {
+        e.preventDefault();
+        setHasSearched(true);
+        performSearch();
+    };
+
+    useEffect(() => {
+        if (hasSearched) {
+            performSearch();
+        }
+    }, [refreshTrigger]);
+
     const handleResetClick = () => {
         setLocalFilters(initialFiltersState);
         setSearchResults([]);
-        setSearchMessage("Busca un paciente para ver en detalle.");
+        setHasSearched(false);
     };
 
     const handleViewDetails = (patientId) => {
@@ -214,7 +202,7 @@ const AdminPatientFilterPanel = ({ patientToDelete, patientToEdit, viewMode = "d
                                     <span className="font-semibold w-24">{p.dni}</span>
                                     <span className="font-bold text-lg w-48">{p.lastName}, {p.firstName}</span>
                                     <span className="text-sm w-36">{p.telephone}</span>
-                                    <span className="text-sm w-48 truncate">{p.user.email}</span>
+                                    <span className="text-sm w-48 truncate">{p?.user?.email}</span>
                                     <span className="text-sm w-24">{p.socialWork?.name || 'N/A'}</span>
                                 </div>
 

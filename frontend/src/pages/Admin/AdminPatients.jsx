@@ -12,6 +12,8 @@ import { useToast } from '../../hooks/useToast';
 import Modal from '../../components/ui/Modal';
 import PrincipalCard from '../../components/ui/PrincipalCard';
 
+import { deletePatient, editPatient } from '../../../services/patient.service';
+
 const AdminPatients = () => {
   const [showNewPatient, setShowNewPatient] = useState(false);
   const toggleNewPatient = () => setShowNewPatient(prev => !prev);
@@ -37,6 +39,7 @@ const AdminPatients = () => {
 
   const detailSectionRef = useRef(null);
   const { scrollContainerRef } = useOutletContext();
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   useEffect(() => {
     if (selectedPatientId && detailSectionRef.current && scrollContainerRef.current) {
@@ -76,36 +79,24 @@ const AdminPatients = () => {
   }
 
   const confirmDelete = async () => {
-    setLoadingDelete(true); // Activar spinner
+    setLoadingDelete(true);
 
     try {
-      console.log("Eliminando paciente ID:", patientIdToDelete);
-
-      // AQUI VA LA LLAMADA AL BACKEND
-      // await axios.delete(`/api/patients/${patientIdToDelete}`);
-
-      // Simulación de espera
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
-      // Simulación de error (descomentar para probar)
-      // throw new Error("No se puede eliminar un paciente con historial activo.");
+      await deletePatient(patientIdToDelete);
+      setRefreshTrigger(prev => prev + 1);
 
       toast.success("Paciente eliminado del sistema correctamente.");
 
       setIsDeleteModalOpen(false);
 
-      // Si el paciente eliminado era el seleccionado, cerramos el panel
       if (selectedPatientId === patientIdToDelete) {
         setSelectedPatientId(null);
       }
       setPatientIdToDelete(null);
 
-      // Aquí deberías disparar una recarga de la lista si usas un contexto global
-
     } catch (error) {
       console.error("Error al eliminar:", error);
-      const errorMsg = error.message || "Ocurrió un error al intentar eliminar el paciente.";
-      toast.error(errorMsg);
+      toast.error("Ocurrió un error al intentar eliminar el paciente.");
     } finally {
       setLoadingDelete(false); // Desactivar spinner
     }
@@ -122,22 +113,18 @@ const AdminPatients = () => {
     setLoadingSave(true); // Activar spinner
 
     try {
-      console.log("Guardando cambios en el paciente:", dataToSave);
-
-      // AQUI VA LA LLAMADA AL BACKEND
-      // await axios.put(`/api/patients/${selectedPatientId}`, dataToSave);
-
-      // Simulación de espera
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      const data = await editPatient(selectedPatientId, dataToSave);
+      console.log(data)
+      setRefreshTrigger(prev => prev + 1);
 
       toast.success("Datos del paciente actualizados correctamente.");
 
       setIsSaveModalOpen(false);
       setDataToSave(null);
-      setSelectedPatientId(null); // Cierra el panel de edición tras guardar
+      setSelectedPatientId(null);
 
     } catch (error) {
-      console.error("Error al guardar:", error);
+      console.error("Error al guardar:", error);      
       toast.error("Ocurrió un error al guardar los cambios del paciente.");
     } finally {
       setLoadingSave(false); // Desactivar spinner
@@ -190,7 +177,7 @@ const AdminPatients = () => {
               style={{ overflow: 'hidden' }}
             >
               <SectionCard tittle={"Crear Paciente"} content={
-                <AdminNewPatient />
+                <AdminNewPatient refresh={setRefreshTrigger} />
               } />
             </motion.div>
           )}
@@ -200,7 +187,7 @@ const AdminPatients = () => {
           Buscar Pacientes
         </h1>
         <SectionCard tittle={"Buscar Paciente"} content={
-          <AdminPatientFilterPanel viewMode="admin" patientToDelete={handlePatientToDelete} patientToEdit={handlePatientToEdit} />
+          <AdminPatientFilterPanel viewMode="admin" patientToDelete={handlePatientToDelete} patientToEdit={handlePatientToEdit} refreshTrigger={refreshTrigger}/>
         } />
 
         <AnimatePresence>
@@ -236,7 +223,7 @@ const AdminPatients = () => {
               </p>
               <div className="flex flex-row gap-10">
                 <Button text="Seguir Editando" variant="secondary" onClick={closeSaveModal} disable={loadingSave} />
-                <Button text="Guardar" variant="primary" onClick={confirmSave} isLoading={loadingSave}/>
+                <Button text="Guardar" variant="primary" onClick={confirmSave} isLoading={loadingSave} />
               </div>
             </div>
           }
@@ -274,7 +261,7 @@ const AdminPatients = () => {
               </p>
               <div className="flex flex-row gap-10">
                 <Button text="Cancelar" variant="secondary" onClick={closeDeleteModal} disable={loadingDelete} />
-                <Button text="Eliminar" variant="primary" onClick={confirmDelete} isLoading={loadingDelete}/>
+                <Button text="Eliminar" variant="primary" onClick={confirmDelete} isLoading={loadingDelete} />
               </div>
             </div>
           }
