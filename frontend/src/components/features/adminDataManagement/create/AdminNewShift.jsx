@@ -771,7 +771,11 @@ const AdminNewShift = ({ onShiftCreated }) => { // Agregar onShiftCreated si se 
                                     onBlur={handleBlur}
                                     error={errors.membershipNumber}
                                     size="small"
-                                    disable={isLoading || isParticularSelected()}
+                                    disable={
+                                        (isPatientFound && !isPatientManual) ||
+                                        isLoading ||
+                                        isParticularSelected()
+                                    }
                                     placeholder={isParticularSelected() ? "No requerido" : ""}
                                 />
                                 <Select
@@ -838,7 +842,7 @@ const AdminNewShift = ({ onShiftCreated }) => { // Agregar onShiftCreated si se 
                     <AnimatePresence>
                         {selectedDoctorDetails && (
                             <motion.div
-                                className="grid grid-cols-4 m-4 gap-4"
+                                className="grid grid-cols-5 2xl:grid-cols-4 m-4 gap-4"
                                 key="doctor-availability-section"
                                 variants={sectionVariants}
                                 initial="hidden"
@@ -846,11 +850,9 @@ const AdminNewShift = ({ onShiftCreated }) => { // Agregar onShiftCreated si se 
                                 exit="exit"
                                 style={{ overflow: "hidden" }}
                             >
-                                <div className="col-span-1 items-center justify-start pt-10 flex flex-col">
+                                <div className="col-span-2 2xl:col-span-1 items-center justify-start pt-10 flex flex-col w-full">
                                     <div className="mb-4 text-start">
-                                        <p className="text-custom-gray text-sm">
-                                            Disponibilidad de:
-                                        </p>
+                                        <p className="text-custom-gray text-sm">Disponibilidad de:</p>
                                         <p className="text-xl font-bold text-custom-blue">
                                             Dr/a. {selectedDoctorDetails.firstName}{" "}
                                             {selectedDoctorDetails.lastName}

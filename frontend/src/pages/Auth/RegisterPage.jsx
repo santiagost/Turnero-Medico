@@ -155,7 +155,7 @@ const RegisterPage = () => {
         ¡Para ingresar primero debemos saber datos de ti!
       </p>
 
-      <div className="grid grid-cols-2 items-center justify-center gap-x-4 gap-y-1 w-full">
+      <div className="grid grid-cols-2 items-center justify-center gap-x-4 gap-y-0 2xl:gap-y-1 w-full">
         <Input
           tittle={"Nombre"}
           type={"text"}
@@ -282,7 +282,7 @@ const RegisterPage = () => {
           error={errors.confirmPassword}
         />
       </div>
-      <div className="flex flex-row gap-10 mt-6">
+      <div className="flex flex-row gap-10 mt-4 2xl:mt-6">
         <Button
           text={"Ingresar"}
           variant="secondary"

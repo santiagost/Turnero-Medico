@@ -477,7 +477,7 @@ const NewMedicalShift = ({ onShiftCreated }) => {
             <AnimatePresence>
                 {selectedDoctorObj && (
                     <motion.div
-                        className="grid grid-cols-4 m-4 gap-4"
+                        className="grid grid-cols-5 2xl:grid-cols-4 m-4 gap-4"
                         key="doctor-availability-section"
                         variants={sectionVariants}
                         initial="hidden"
@@ -485,7 +485,7 @@ const NewMedicalShift = ({ onShiftCreated }) => {
                         exit="exit"
                         style={{ overflow: "hidden" }}
                     >
-                        <div className="col-span-1 items-center justify-start pt-10 flex flex-col">
+                        <div className="col-span-2 2xl:col-span-1 items-center justify-start pt-10 flex flex-col w-full">
                             <div className="mb-4 text-start">
                                 <p className="text-custom-gray text-sm">Disponibilidad de:</p>
                                 <p className="text-xl font-bold text-custom-blue">
@@ -497,10 +497,10 @@ const NewMedicalShift = ({ onShiftCreated }) => {
                                     disponibles
                                 </p>
                             </div>
-                            <Calendar
-                                selectedWeek={selectedWeek}
-                                setSelectedWeek={setSelectedWeek}
-                            />
+                                <Calendar
+                                    selectedWeek={selectedWeek}
+                                    setSelectedWeek={setSelectedWeek}
+                                />
                         </div>
 
                         <div className="bg-white col-span-3 items-center justify-center flex rounded-xl h-[65vh]">

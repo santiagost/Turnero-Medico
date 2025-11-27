@@ -98,3 +98,54 @@ export const deleteReceta = async (recetaId) => {
     }
 };
 
+
+// Endpoint: GET /recetas/pdf/{consulta_id}
+export const getRecetasPdfByConsultaId = async (consultaId) => {
+    try {
+        const response = await axiosClient.get(
+            `/recetas/pdf/${consultaId}`, 
+            {
+                responseType: 'blob' // Especifica que la respuesta es un blob binario
+            }
+        );
+
+        const pdfBlob = new Blob([response.data], { type: 'application/pdf' });
+        const pdfUrl = window.URL.createObjectURL(pdfBlob);
+        const contentDisposition = response.headers['content-disposition'];
+        let fileName = `recetas_consulta_${consultaId}.pdf`; // Nombre de archivo por defecto
+
+        if (contentDisposition) {
+            const fileNameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
+            if (fileNameMatch && fileNameMatch.length > 1) {
+                fileName = fileNameMatch[1];
+            }
+        }
+        
+        const link = document.createElement('a');
+        link.href = pdfUrl;
+        link.setAttribute('download', fileName); // Establece el nombre de archivo para la descarga
+        
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        
+        window.URL.revokeObjectURL(pdfUrl);
+
+        return true; // Indica que la descarga fue iniciada
+    } catch (error) {
+        console.error(`Error al descargar el PDF de recetas para la consulta ${consultaId}:`, error);
+        
+        if (error.response && error.response.data instanceof Blob) {
+            const errorText = await error.response.data.text();
+            try {
+                const errorJson = JSON.parse(errorText);
+                console.error("Mensaje de error del backend:", errorJson.detail);
+                throw new Error(errorJson.detail || `Error al descargar PDF para la consulta ${consultaId}`);
+            } catch (parseError) {
+                throw new Error(`Error al descargar PDF para la consulta ${consultaId}`);
+            }
+        }
+
+        throw error;
+    }
+};

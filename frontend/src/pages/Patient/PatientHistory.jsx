@@ -2,8 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import AnimatedPage from "../../components/layout/AnimatedPage";
 import { useAuth } from "../../hooks/useAuth";
 
-import { getConsultationsByPatient } from "../../../services/consultation.service";
-import { getConsultationsIdsByDate } from "../../../services/consultation.service";
+import { getConsultationsByPatient, getConsultationsIdsByDate, getConsultationById } from "../../../services/consultation.service";
 
 import { useToast } from "../../hooks/useToast";
 import SectionCard from "../../components/ui/SectionCard";
@@ -21,6 +20,11 @@ const PatientHistory = () => {
 
   const [allPatientConsultations, setAllPatientConsultations] = useState([]);
   const [filteredConsultations, setFilteredConsultations] = useState([]);
+
+  const [detailedConsultation, setDetailedConsultation] = useState(null);
+  const [isLoadingDetail, setIsLoadingDetail] = useState(false);
+
+  const [forceOpenId, setForceOpenId] = useState(null);
 
   const [activeFilters, setActiveFilters] = useState({
     ...initialFiltersState,
@@ -61,7 +65,48 @@ const PatientHistory = () => {
     fetchMasterData();
   }, [profile, toast]);
 
+  useEffect(() => {
+    const fetchDetailedConsultation = async (id) => {
+      const numericId = Number(id);
+      const compactConsultation = allPatientConsultations.find(
+        (c) => c.consultationId === numericId
+      );
+
+      if (!compactConsultation) {
+        // No se encuentra o la lista está vacía, no se puede forzar
+        setForceOpenId(null);
+        setDetailedConsultation(null);
+        // Opcional: toast.error("La consulta solicitada no está en tu historial.");
+        return;
+      }
+      setIsLoadingDetail(true);
+      setForceOpenId(numericId); // Establecemos para forzar la apertura primero
+
+      try {
+        const detailData = await getConsultationById(numericId);
+        setDetailedConsultation(detailData);
+      } catch (error) {
+        console.error(`Error al cargar detalles de consulta ${numericId}:`, error);
+        toast.error("Error al cargar los detalles de la consulta.");
+        setForceOpenId(null); // Si falla la carga detallada, deshacemos la apertura forzada
+        setDetailedConsultation(null);
+      } finally {
+        setIsLoadingDetail(false);
+      }
+    };
+    if (!isLoadingHistory && consultationId && !isLoadingDetail) {
+      fetchDetailedConsultation(consultationId);
+    }
+    if (!consultationId) {
+      setForceOpenId(null);
+      setDetailedConsultation(null);
+    }
+
+  }, [isLoadingHistory, consultationId, allPatientConsultations, toast]);
+
   const handleFilteredSearch = async (filtersFromPanel) => {
+    setForceOpenId(null);
+    setDetailedConsultation(null);
     let results = [...allPatientConsultations];
 
     if (filtersFromPanel.attentionDate) {
@@ -166,16 +211,21 @@ const PatientHistory = () => {
                   </p>
                 )
               ) : (
-                filteredConsultations.map((consultation) => (
-                  <ConsultationCard
-                    key={consultation.consultationId}
-                    consultation={consultation}
-                    type="Patient"
-                    forceOpen={
-                      consultation.consultationId.toString() === consultationId
-                    }
-                  />
-                ))
+                filteredConsultations.map((consultation) => {
+                  const isForcedOpen = consultation.consultationId === forceOpenId;
+                  let consultationData = consultation;
+                  if (isForcedOpen && detailedConsultation && detailedConsultation.consultationId === consultation.consultationId) {
+                    consultationData = detailedConsultation;
+                  }
+                  return (
+                    <ConsultationCard
+                      key={consultation.consultationId}
+                      consultation={consultationData} // Pasamos la versión detallada si aplica
+                      type="Patient"
+                      forceOpen={isForcedOpen}
+                    />
+                  );
+                })
               )}
             </div>
           }

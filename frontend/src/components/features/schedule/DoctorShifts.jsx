@@ -105,21 +105,21 @@ const DoctorShifts = () => {
     };
 
     return (
-        <div>
-
+        <>
             <div className="my-4 mx-2 h-full">
-                <div className="grid grid-cols-1 lg:grid-cols-4 m-4 gap-6">
-                    <div className="mb-4 text-start flex flex-col">
-                        <div className="col-span-1 flex flex-col gap-4 pt-2">
-                            <p className="text-sm mt-2 font-semibold text-custom-dark-blue">
-                                Por favor, seleccione una semana para ver los turnos
-                            </p>
-                            <Calendar
-                                selectedWeek={selectedWeek}
-                                setSelectedWeek={setSelectedWeek}
-                            />
+                <div className="grid grid-cols-5 2xl:grid-cols-4 m-4 gap-4">
+                    <div className="col-span-2 2xl:col-span-1 items-center justify-start pt-10 flex flex-col w-full">
+                            <div className="mb-4 text-start">
+                                <p className="text-sm mt-2 font-semibold text-custom-dark-blue">
+                                    Por favor, seleccione una semana para ver los turnos
+                                    disponibles
+                                </p>
+                            </div>
+                                <Calendar
+                                    selectedWeek={selectedWeek}
+                                    setSelectedWeek={setSelectedWeek}
+                                />
                         </div>
-                    </div>
 
                     <div className="bg-white col-span-3 items-center justify-center flex rounded-xl">
                         <WeeklySlots
@@ -235,7 +235,7 @@ const DoctorShifts = () => {
                     </div>
                 )}
             </RightSidebar>
-        </div>
+        </>
     );
 };
 

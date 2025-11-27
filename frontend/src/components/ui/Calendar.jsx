@@ -13,8 +13,8 @@ const Calendar = ({ selectedWeek, setSelectedWeek}) => {
         <DayPicker
             locale={es}
             classNames={{
-                root: `${defaultClassNames.root} p-5 bg-custom-light-blue/20 rounded-xl inline-block w-fit`,
-                day: `${defaultClassNames.day} rounded-full w-10 h-10 hover:bg-custom-light-blue/30`,
+                root: `${defaultClassNames.root} py-4 px-3 2xl:p-5 bg-custom-light-blue/20 rounded-xl inline-block w-fit`,
+                day: `${defaultClassNames.day} rounded-full !w-10 !h-10 hover:bg-custom-light-blue/30`,
 
                 selected: "bg-custom-light-blue text-custom-dark-blue border-none hover:bg-custom-dark-blue/50 hover:text-white",
                 range_middle: " border-custom-blue rounded-full",
@@ -58,7 +58,7 @@ const Calendar = ({ selectedWeek, setSelectedWeek}) => {
             }}
             footer={
                 selectedWeek?.from && selectedWeek?.to &&
-                <p className="my-2 text-custom-dark-blue">{`Semana del ${selectedWeek.from.toLocaleDateString()} al ${selectedWeek.to.toLocaleDateString()}`}</p>
+                <p className="my-2 text-custom-dark-blue font-semibold">{`Semana del ${selectedWeek.from.toLocaleDateString()} al ${selectedWeek.to.toLocaleDateString()}`}</p>
             }
         />
     );

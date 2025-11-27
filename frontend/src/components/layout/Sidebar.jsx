@@ -16,8 +16,8 @@ const navLinks = {
     Patient: {
         main: [
             { label: 'Inicio', icon: <GoHome size={45} />, path: '/patient/home' },
-            { label: 'Mi Agenda', icon: <FaRegCalendar size={45} />, path: '/patient/schedule' },
-            { label: 'Mi Historial', icon: <FiBookOpen size={45} />, path: '/patient/history' },
+            { label: 'Agenda', icon: <FaRegCalendar size={45} />, path: '/patient/schedule' },
+            { label: 'Historial', icon: <FiBookOpen size={45} />, path: '/patient/history' },
         ],
         bottom: [
             { label: 'Config.', icon: <IoSettingsOutline size={45} />, path: '/patient/settings' },

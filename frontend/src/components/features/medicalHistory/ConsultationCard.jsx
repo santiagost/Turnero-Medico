@@ -4,14 +4,14 @@ import Button from '../../ui/Button';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '../../../hooks/useToast';
 
-import { getRecetasByConsultaId } from '../../../../services/medication.service';
+import { getRecetasByConsultaId, getRecetasPdfByConsultaId } from '../../../../services/medication.service';
 
 const ConsultationCard = ({ consultation, type, forceOpen = false }) => {
     const [isExpanded, setIsExpanded] = useState(forceOpen);
     const [recetas, setRecetas] = useState([]);
     const [isLoadingRecetas, setIsLoadingRecetas] = useState(false);
     const toast = useToast();
-
+    const [isDownloading, setIsDownloading] = useState(false);
     const consultationId = consultation?.consultationId;
 
     useEffect(() => {
@@ -73,16 +73,31 @@ const ConsultationCard = ({ consultation, type, forceOpen = false }) => {
         </motion.div>
     );
 
+
     const renderPatientExpandedView = () => {
-        const handleDownloadReceta = () => {
-            if (isLoadingRecetas) {
-                toast.warning("Las recetas se están cargando, por favor espera.");
+        const handleDownloadReceta = async () => {
+            if (isLoadingRecetas || isDownloading) {
+                toast.warning("Por favor espera, la operación anterior está en curso.");
                 return;
             }
 
-            // ... (Lógica de descarga) ...
-            console.log("Iniciando descarga de receta...");
-            toast.success("Iniciando descarga de receta...");
+            if (!consultationId) {
+                toast.error("No se pudo obtener el detalle de la consulta.");
+                return;
+            }
+
+            setIsDownloading(true);
+            toast.info("Preparando descarga del PDF...");
+
+            try {
+                await getRecetasPdfByConsultaId(consultationId);
+                toast.success("Descarga iniciada. Revisa tus archivos.");
+            } catch (error) {
+                console.error("Error al descargar el PDF de recetas:", error);
+                toast.error("Fallo al generar o descargar el PDF de recetas.");
+            } finally {
+                setIsDownloading(false);
+            }
         };
 
         return (
@@ -144,6 +159,7 @@ const ConsultationCard = ({ consultation, type, forceOpen = false }) => {
             </motion.div>
         );
     }
+
 
     const renderDoctorCompactView = () => (
         <motion.div key="compact-doctor" variants={contentVariants} initial="hidden" animate="visible" exit="hidden" className="flex justify-between items-center w-full">

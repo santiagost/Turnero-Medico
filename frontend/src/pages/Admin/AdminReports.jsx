@@ -40,23 +40,23 @@ const AdminReports = () => {
         <SectionCard content={
           <>
             {/* Grafico de volumen de pacientes */}
-            <div className='flex flex-col items-center justify-center m-6 bg-white rounded-2xl pb-8 '>
+            <div className='flex flex-col items-center justify-center m-6 bg-white rounded-2xl'>
               <PatientVolume filters={filterData} />
             </div>
 
             {/* Graficos */}
             <div className='grid grid-cols-2 '>
-              <div className='flex flex-col items-center justify-center m-6 bg-white rounded-2xl pb-8 '>
+              <div className='flex flex-col items-center justify-center m-6 bg-white rounded-2xl'>
                 <ShiftForSpecialty filters={filterData} />
               </div>
 
-              <div className='flex flex-col items-center justify-center m-6 bg-white rounded-2xl pb-8 '>
+              <div className='flex flex-col items-center justify-center m-6 bg-white rounded-2xl'>
                 <AttendanceAndAbsence filters={filterData} />
               </div>
             </div>
 
             {/* Listado de turnos por medico */}
-            <div className='flex flex-col items-center justify-center m-6 bg-white rounded-2xl pb-8 '>
+            <div className='flex flex-col items-center justify-center m-6 bg-white rounded-2xl'>
               <ShiftForDoctor filters={filterData} />
             </div>
           </>} />
