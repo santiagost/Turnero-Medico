@@ -13,6 +13,8 @@ import ROLES from '../../utils/constants';
 import { FaRegEye, FaRegEyeSlash } from "react-icons/fa6";
 import Button from '../../components/ui/Button';
 
+import { userLogin } from '../../../services/auth.service';
+
 const LoginPage = () => {
     const { login, user, logout } = useAuth();
     const toast = useToast();
@@ -34,10 +36,6 @@ const LoginPage = () => {
     const inputPassswordType = showPassword ? "text" : "password";
     const passwordIcon = showPassword ? <FaRegEyeSlash size={25} /> : <FaRegEye size={25} />;
 
-    const handleLogin = (role) => {
-        logout();
-        login(role);
-    };
 
     useEffect(() => {
         if (user && user.role) {
@@ -99,32 +97,33 @@ const LoginPage = () => {
 
         if (isValid) {
             setLoading(true);
+            const { email, password, role } = formData;
 
             try {
-                // AQUI VA LA LLAMADA AL BACKEND
+                const result = await userLogin(formData);
+                await login(result);
 
-
-                // Simula la espera del backend (2 segundos)
-                await new Promise(resolve => setTimeout(resolve, 1000));
-
-                const loginSuccess = login(formData);
-
-                if (loginSuccess) {
-                    toast.success(`¡Bienvenido de nuevo!`);
-                } else {
-                    toast.error("Email, contraseña o rol incorrectos.");
-                }
+                toast.success(`¡Bienvenido de nuevo!`);
 
             } catch (error) {
-                console.error(error);
-                toast.error("Error de conexión al intentar ingresar.");
+                console.error("Error en el login:", error);
+
+                let errorMessage = "Error de conexión al intentar ingresar.";
+
+                if (error.detail) {
+                    errorMessage = error.detail;
+                } else if (error.message) {
+                    errorMessage = error.message;
+                }
+
+                toast.error(errorMessage);
+
             } finally {
                 setLoading(false);
             }
 
         } else {
             toast.warning("Por favor completa todos los campos requeridos.");
-            console.log("Formulario inválido:", errors);
         }
     };
 
@@ -182,7 +181,7 @@ const LoginPage = () => {
                 <Button
                     text={"Ingresar"}
                     variant={"primary"}
-                    type={"submit"} 
+                    type={"submit"}
                     isLoading={loading} />
                 <Button
                     text={"Registrarse"}

@@ -1,3 +1,18 @@
+const ROLE_MAP = {
+    Admin: "Secretario",
+    Doctor: "Medico",
+    Patient: "Paciente",
+};
+
+export const mapFrontendRoleToBackend = (frontendRoleKey) => {
+    return ROLE_MAP[frontendRoleKey] || frontendRoleKey;
+};
+
+export const mapBackendRoleToFrontend = (backendRoleName) => {
+    const key = Object.keys(ROLE_MAP).find(key => ROLE_MAP[key] === backendRoleName);
+    return key || backendRoleName; 
+};
+
 export const mapBackendDayToFrontend = (backendDay) => {
   return (backendDay + 1) % 7;
 };

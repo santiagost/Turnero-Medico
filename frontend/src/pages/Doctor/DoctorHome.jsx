@@ -53,9 +53,7 @@ const DoctorHome = () => {
     setIsLoadingShifts(true);
 
     try {
-      // 🚀 LLAMADA AL ENDPOINT: GET /turnos/medico/proximos/{medico_id}
       const data = await getNextShiftsForDoctor(CURRENT_DOCTOR_ID);
-      console.log(data)
 
       setDoctorSchedule(data);
 

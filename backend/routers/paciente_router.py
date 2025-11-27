@@ -26,10 +26,11 @@ async def get_all_pacientes(
     nombre: str = None,
     apellido: str = None,
     id_obra_social: int = None,
+    id_usuario: int = None,
     service: PacienteService = Depends(get_paciente_service)
 ):
     """Obtiene todos los pacientes"""
-    pacientes = service.get_all(id_paciente, dni, nombre, apellido, id_obra_social)
+    pacientes = service.get_all(id_paciente, dni, nombre, apellido, id_obra_social, id_usuario)
     return jsonable_encoder(pacientes)
 
 

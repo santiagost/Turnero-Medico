@@ -7,33 +7,9 @@ import PersonalDataSettings from '../../components/features/setings/PersonalData
 import NotificationSettings from '../../components/features/setings/NotificationSettings';
 import SecuritySettings from '../../components/features/setings/SecuritySettings';
 
-import { getSocialWorkOptions } from '../../../services/socialWork.service';
 
 const SettingsPage = () => {
-    const { user, profile } = useAuth();
-
-    const [socialWorkOptions, setSocialWorkOptions] = useState([
-        { value: "", label: "" }
-    ]);
-
-    useEffect(() => {
-        const fetchOptions = async () => {
-            try {
-
-                const socialWorkFromBackend = await getSocialWorkOptions();
-
-                setSocialWorkOptions([
-                    ...socialWorkFromBackend
-                ]);
-
-
-            } catch (error) {
-                console.error("No se pudieron cargar las opciones", error);
-            }
-        };
-
-        fetchOptions();
-    }, []);
+    const { user } = useAuth();
 
     if (!user) {
         return <div>Cargando configuración...</div>;
@@ -50,7 +26,7 @@ const SettingsPage = () => {
                     <div className='col-start-1 col-span-1 flex flex-col justify-center'>
                         <SectionCard
                             tittle={"Mis Datos"}
-                            content={<PersonalDataSettings user={user} profile={profile} socialWorks={socialWorkOptions} />}
+                            content={<PersonalDataSettings />}
                         />
                     </div>
                     <div className='col-start-2 col-span-1 flex flex-col justify-center'>

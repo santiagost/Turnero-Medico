@@ -9,7 +9,14 @@ import { useToast } from '../../../hooks/useToast';
 import Modal from '../../ui/Modal';
 import PrincipalCard from '../../ui/PrincipalCard';
 
-const PersonalDataSettings = ({ user, profile, socialWorks }) => {
+import { getSocialWorkOptions } from '../../../../services/socialWork.service'
+import { editDoctor } from '../../../../services/doctor.service';
+import { editPatient } from '../../../../services/patient.service';
+import { useAuth } from '../../../hooks/useAuth'
+
+const PersonalDataSettings = () => {
+    const { user, profile, updateProfileContext } = useAuth();
+    
     const toast = useToast();
     const [editMode, setEditMode] = useState(false);
     const [errors, setErrors] = useState({});
@@ -30,8 +37,38 @@ const PersonalDataSettings = ({ user, profile, socialWorks }) => {
     const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
     const [loadingSave, setLoadingSave] = useState(false);
 
+    const isPatient = user.role === 'Patient';
+    const isDoctor = user.role === 'Doctor';
+    const isAdmin = user.role === 'Admin';
+
+    const canEdit = !isAdmin;
+
+    const [socialWorks, setSocialWorksOptions] = useState([
+        { value: "", label: "" }
+    ]);
+
+    useEffect(() => {
+        const fetchOptions = async () => {
+            try {
+
+                const socialWorkFromBackend = await getSocialWorkOptions();
+
+                setSocialWorksOptions([
+                    ...socialWorkFromBackend
+                ]);
+
+
+            } catch (error) {
+                console.error("No se pudieron cargar las opciones", error);
+            }
+        };
+
+        fetchOptions();
+    }, []);
+
     useEffect(() => {
         if (profile && user) {
+            const socialWorkId = profile.socialWork?.socialWorkId;
             setFormData({
                 firstName: profile.firstName || "",
                 lastName: profile.lastName || "",
@@ -41,12 +78,12 @@ const PersonalDataSettings = ({ user, profile, socialWorks }) => {
                 birthDate: profile.birthDate || "",
                 email: user.email || "",
                 membershipNumber: profile.membershipNumber || "",
-                socialWork: profile.socialWork?.name || "",
+                socialWork: String(socialWorkId) || "",
                 specialty: profile.specialty?.name || "",
                 licenseNumber: profile.licenseNumber || "",
             });
         }
-    }, [user, profile]);
+    }, [user, profile, socialWorks]);
 
     const isParticularSelected = () => {
         if (!formData.socialWork || !socialWorks) return false;
@@ -107,7 +144,11 @@ const PersonalDataSettings = ({ user, profile, socialWorks }) => {
     };
 
     const toggleEditMode = () => {
-        setEditMode(true);
+        if (canEdit) {
+            setEditMode(true);
+        } else {
+            toast.info("Los administradores no pueden modificar sus datos personales desde esta sección.");
+        }
     };
 
     const handleSave = (e) => {
@@ -124,28 +165,73 @@ const PersonalDataSettings = ({ user, profile, socialWorks }) => {
 
     const confirmSave = async () => {
         setLoadingSave(true);
+        setIsConfirmModalOpen(false);
 
-        // AQUI VA LA LLAMADA AL BACKEND
-        // const dataToSend = { ...formData, role: user.role };
+        let profileId = null;
+        let serviceCall = null;
+        let dataToSend = {};
 
         try {
-            // Simulación de API (2 segundos)
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            if (isPatient) {
+                profileId = profile.patientId;
+                const particularId = getParticularId();
 
-            // Si es exitoso:
-            // await axios.put('/api/users/profile', dataToSend); 
 
+                let finalSocialWorkId = formData.socialWork;
+                let finalMembershipNumber = formData.membershipNumber;
+
+                if (formData.socialWork == particularId) {
+                    finalMembershipNumber = null;
+                }
+                if (finalMembershipNumber !== null && finalMembershipNumber === "") {
+                    finalMembershipNumber = null;
+                }
+
+                dataToSend = {
+                    firstName: profile.firstName,
+                    lastName: profile.lastName,
+                    birthDate: profile.birthDate,
+                    telephone: formData.telephone,
+                    socialWorkId: finalSocialWorkId,
+                    membershipNumber: finalMembershipNumber,
+                };
+
+                serviceCall = editPatient(profileId, dataToSend);
+
+            } else if (isDoctor) {
+                profileId = profile.doctorId;
+
+                dataToSend = {
+                    firstName: profile.firstName,
+                    lastName: profile.lastName,
+                    telephone: formData.telephone,
+                    specialtyId: profile.specialty?.specialtyId,
+                };
+
+                serviceCall = editDoctor(profileId, dataToSend);
+
+            } else {
+                // --- Lógica para Admin (No editable) ---
+                toast.warning("El administrador no puede modificar sus datos.");
+                setLoadingSave(false);
+                return;
+            }
+
+
+            const updatedProfileData = await serviceCall;
+            updateProfileContext(updatedProfileData);
             toast.success("Datos actualizados correctamente.");
 
-            // Cerramos todo
-            setIsConfirmModalOpen(false);
+            // Limpiar y resetear el modo edición
             setEditMode(false);
-            // 💡 Nota: Si la API devuelve el perfil actualizado, aquí actualizarías tu contexto Auth.
 
         } catch (error) {
-            console.error("Error al guardar datos:", error);
-            const errorMessage = error.response?.data?.message || "Error al conectar con el servidor.";
-            toast.error(errorMessage);
+            console.error(`Error al guardar datos de ${user.role}:`, error);
+
+            const errorData = error.response?.data || error;
+            toast.error("No se han podido aplicar los cambios, verificar los datos...");
+            setIsConfirmModalOpen(false); // Reabrir el modal o mostrar un mensaje de error
+
         } finally {
             setLoadingSave(false);
         }
@@ -161,6 +247,8 @@ const PersonalDataSettings = ({ user, profile, socialWorks }) => {
         setEditMode(false);
         setErrors({});
         if (profile && user) {
+            const socialWorkId = profile.socialWork?.socialWorkId;
+
             setFormData({
                 firstName: profile.firstName || "",
                 lastName: profile.lastName || "",
@@ -170,7 +258,7 @@ const PersonalDataSettings = ({ user, profile, socialWorks }) => {
                 birthDate: profile.birthDate || "",
                 email: user.email || "",
                 membershipNumber: profile.membershipNumber || "",
-                socialWork: profile.socialWork?.name || "",
+                socialWork: String(socialWorkId) || "",
                 specialty: profile.specialty?.name || "",
                 licenseNumber: profile.licenseNumber || "",
             });
@@ -308,30 +396,51 @@ const PersonalDataSettings = ({ user, profile, socialWorks }) => {
                 <>
                     <form className='flex flex-col justify-between' onSubmit={handleSave}>
                         <div className='grid grid-cols-2 gap-x-6 gap-y-1 m-6'>
-                            {/* --- Campos de Solo Lectura (Doctor/Admin) --- */}
-                            <Input tittle={"Nombre"} name={"name"} value={formData.firstName} size={"small"} disable={true} />
-                            <Input tittle={"Apellido"} name={"lastname"} value={formData.lastName} size={"small"} disable={true} />
-                            <Input tittle={"DNI"} name={"dni"} value={formData.dni} size={"small"} disable={true} />
-                            <Input tittle={"Perfil"} name={"role"} value={formData.role} disable={true} size={"small"} />
-
-                            {/* --- Campo Editable (Doctor/Admin) --- */}
-                            <Input
-                                tittle={"Teléfono"}
-                                type={"tel"}
-                                name={"telephone"}
-                                value={formData.telephone}
-                                disable={!editMode}
-                                onChange={updateFormData}
-                                size={"small"}
-                                onBlur={handleBlur}
-                                error={errors.telephone}
-                            />
-
-                            <Input tittle={"Correo Electrónico"} type={"email"} name={"email"} value={formData.email} disable={true} size={"small"} />
-
-                            {/* --- Campos Específicos de Doctor (Solo Lectura) --- */}
-                            {user.role === 'Doctor' && (
+                            {isAdmin ? (
                                 <>
+                                    <Input
+                                        tittle={"Perfil"}
+                                        name={"role"}
+                                        value={formData.role}
+                                        disable={true}
+                                        size={"small"}
+                                    />
+                                    {/* El correo se muestra en la segunda columna, debajo del perfil */}
+                                    <Input
+                                        tittle={"Correo Electrónico"}
+                                        type={"email"}
+                                        name={"email"}
+                                        value={formData.email}
+                                        disable={true}
+                                        size={"small"}
+                                    />
+                                </>
+
+                            ) : (
+                                // Renderizar todos los campos para DOCTOR
+                                <>
+                                    {/* --- Campos de Solo Lectura (Doctor) --- */}
+                                    <Input tittle={"Nombre"} name={"name"} value={formData.firstName} size={"small"} disable={true} />
+                                    <Input tittle={"Apellido"} name={"lastname"} value={formData.lastName} size={"small"} disable={true} />
+                                    <Input tittle={"DNI"} name={"dni"} value={formData.dni} size={"small"} disable={true} />
+                                    <Input tittle={"Perfil"} name={"role"} value={formData.role} disable={true} size={"small"} />
+
+                                    {/* --- Campo Editable (Doctor) --- */}
+                                    <Input
+                                        tittle={"Teléfono"}
+                                        type={"tel"}
+                                        name={"telephone"}
+                                        value={formData.telephone}
+                                        disable={!editMode || isAdmin} // isAdmin siempre deshabilitará
+                                        onChange={updateFormData}
+                                        size={"small"}
+                                        onBlur={handleBlur}
+                                        error={errors.telephone}
+                                    />
+
+                                    <Input tittle={"Correo Electrónico"} type={"email"} name={"email"} value={formData.email} disable={true} size={"small"} />
+
+                                    {/* --- Campos Específicos de Doctor (Solo Lectura) --- */}
                                     <Input tittle={"Especialidad"} name={"specialty"} value={formData.specialty} size={"small"} disable={true} />
                                     <Input tittle={"Matrícula"} name={"licenseNumber"} value={formData.licenseNumber} size={"small"} disable={true} />
                                 </>
@@ -339,13 +448,19 @@ const PersonalDataSettings = ({ user, profile, socialWorks }) => {
                         </div>
 
                         <div className='flex flex-row items-end justify-end m-4 gap-4'>
-                            {editMode ? (
-                                <>
-                                    <Button text={"Cancelar"} variant={"secondary"} type="button" onClick={handleCancel} />
-                                    <Button text={"Guardar Cambios"} variant={"primary"} type="submit" />
-                                </>
+                            {user.role === 'Doctor' ? (
+                                editMode ? (
+                                    <>
+                                        <Button text={"Cancelar"} variant={"secondary"} type="button" onClick={handleCancel} />
+                                        <Button text={"Guardar Cambios"} variant={"primary"} type="submit" />
+                                    </>
+                                ) : (
+                                    <Button text={"Editar Datos"} variant={"secondary"} type="button" onClick={toggleEditMode} />
+                                )
                             ) : (
-                                <Button text={"Editar Datos"} variant={"secondary"} type="button" onClick={toggleEditMode} />
+                                <span className='text-sm text-custom-gray'>
+                                    Datos inmodificables por esta vía.
+                                </span>
                             )}
                         </div>
                     </form>

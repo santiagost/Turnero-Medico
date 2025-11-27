@@ -9,6 +9,8 @@ import Input from "../../components/ui/Input";
 import { FaRegEye, FaRegEyeSlash } from "react-icons/fa6";
 import Button from "../../components/ui/Button";
 
+import { createPatient } from "../../../services/patient.service";
+
 const RegisterPage = () => {
   const toast = useToast();
   const navigate = useNavigate();
@@ -91,34 +93,40 @@ const RegisterPage = () => {
 
     if (isValid) {
       setLoading(true);
-      const { confirmPassword, confirmEmail, ...cleanData } = formData;
+      const { confirmPassword, confirmEmail, name, lastname, telephone, birthDate, email, password, dni } = formData;
 
-      const dataToSend = { ...cleanData, role: "Patient", };
-      console.log("Enviando al backend:", dataToSend);
+      const dataForService = {
+        dni: dni,
+        firstName: name,
+        lastName: lastname,
+        telephone: telephone,
+        birthDate: birthDate,
+        email: email,
+        password: password,
+      };
+
 
       try {
-        // AQUI VA LA LLAMADA AL BACKEND
-        // await api.register(dataToSend);
+        const result = await createPatient(dataForService, []);
+        toast.success("¡Cuenta de paciente creada exitosamente! Por favor, inicia sesión.");
 
-        // SIMULACION DE EXITO
-        await new Promise(resolve => setTimeout(resolve, 2000));
-
-        // SIMULACION DE ERROR
-        // await new Promise((_, reject) => setTimeout(() => reject({ response: { data: { message: "El email ya se encuentra registrado" } } }), 2000));
-
-
-        toast.success("¡Cuenta creada exitosamente! Redirigiendo...");
         setTimeout(() => {
           handleToLogin();
-        }, 2000);
+        }, 1500);
 
       } catch (error) {
-        console.error(error);
-        if (error.response?.data?.message) {
-          toast.error(`Error: ${error.response.data.message}`);
-        } else {
-          toast.error("Ocurrió un error al intentar registrarse.");
+        console.error("Error al registrar paciente:", error);
+
+        let errorMessage = "Ocurrió un error al intentar registrarse.";
+
+        if (error.detail) {
+          errorMessage = `Error: ${error.detail}`;
         }
+        else if (error.message) {
+          errorMessage = `Error: ${error.message}`;
+        }
+
+        toast.error(errorMessage);
 
       } finally {
         setLoading(false);
@@ -126,7 +134,6 @@ const RegisterPage = () => {
 
     } else {
       toast.warning("Por favor, corrige los errores en el formulario.");
-      console.log(errors);
     }
   };
 

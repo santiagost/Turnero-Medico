@@ -24,6 +24,15 @@ class ObraSocialService:
             telefono= obra_social_dict['telefono'],
             mail= obra_social_dict['mail']
         )
+
+    def get_particular_os_id(self):
+        """Busca y retorna el id_obra_social cuyo nombre es 'Particular'."""
+        self.cursor.execute("SELECT id_obra_social FROM ObraSocial WHERE nombre = 'Particular'")
+        row = self.cursor.fetchone()
+        if not row:
+            raise ValueError("Error de configuración: No se encuentra la Obra Social 'Particular' en la base de datos.")
+        
+        return dict(row)['id_obra_social']
     
     def get_all(self,
                 id_obra_social: Optional[int] = None,

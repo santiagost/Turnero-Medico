@@ -8,8 +8,13 @@ import Button from '../../ui/Button';
 import ToggleSwitch from '../../ui/ToggleSwitch';
 
 import { securityValidationSchema } from '../../../validations/authSchemas';
+import { changePassword } from '../../../../services/auth.service';
+import { useAuth } from '../../../hooks/useAuth';
 
 const SecuritySettings = () => {
+    const { user } = useAuth();
+    const CURRENT_USER_ID = user.userId;
+    
     const [formData, setFormData] = useState({
         currentPassword: "",
         newPassword: "",
@@ -67,31 +72,33 @@ const SecuritySettings = () => {
 
     const handleOnSubmit = async (e) => {
         e.preventDefault();
+        if (!enablePasswordChange) {
+            toast.warning("La opción de cambio de contraseña no está activada.");
+            return;
+        }
         const isValid = validateForm();
-
         if (!isValid) {
             toast.warning("Por favor, verifica que todos los campos de contraseña sean válidos.");
             return;
         }
-
+        if (!CURRENT_USER_ID) {
+            toast.error("No se pudo obtener el ID del usuario para cambiar la contraseña.");
+            return;
+        }
         setIsLoading(true);
-
+        const { currentPassword, newPassword } = formData;
         try {
-            // AQUI VA LA LLAMADA AL BACKEND
-            await new Promise(resolve => setTimeout(resolve, 2000));
-
-            // Simulación de error de contraseña actual incorrecta
-            if (formData.currentPassword === "error") {
-                throw { response: { data: { message: "La contraseña actual es incorrecta." } } };
-            }
-
+            const payload = {
+                id_usuario: CURRENT_USER_ID,
+                current_password: currentPassword,
+                new_password: newPassword,
+            };
+            await changePassword(payload);
             toast.success("Contraseña actualizada exitosamente.");
-
             setFormData({ currentPassword: "", newPassword: "", confirmPassword: "" });
             setErrors({});
             setIsDirty(false);
-
-
+            // Desactivar el formulario después de un breve éxito
             setTimeout(() => {
                 setEnablePasswordChange(false);
             }, 500);
@@ -99,11 +106,14 @@ const SecuritySettings = () => {
         } catch (error) {
             console.error("Error al actualizar contraseña:", error);
 
-            const errorMessage = error.response?.data?.message || "Ocurrió un error inesperado al actualizar.";
-            toast.error(errorMessage);
+            // Adaptar el manejo de errores del backend (que devuelve { detail: "mensaje" } o similar)
+            const errorData = error.response?.data || error;
+            const errorMessage = errorData.detail
+            
+            toast.error("Ocurrió un error inesperado al actualizar.");
 
-            // Si el error es específico de la contraseña actual (mock), limpiamos solo ese campo
-            if (errorMessage.includes("incorrecta")) {
+            // Si el error es específico (ej: contraseña actual incorrecta), lo mostramos bajo el campo
+            if (errorMessage.includes("Contraseña incorrecta") || errorMessage.includes("current password")) {
                 setErrors(prev => ({ ...prev, currentPassword: errorMessage }));
             }
 

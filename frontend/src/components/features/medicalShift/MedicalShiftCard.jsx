@@ -22,7 +22,7 @@ const MedicalShiftCard = ({ type, medicalShift, onCancel, onAttend }) => {
         return (
             <div className="w-full max-w-sm bg-white rounded-xl p-4 flex flex-col gap-3 h-full">
                 <div className="flex justify-between items-start">
-                    <h3 className="text-xl font-bold text-custom-dark-blue">{patient.lastName}, {patient.firstName}</h3>
+                    <h3 className="text-xl font-bold text-custom-dark-blue">{patient?.lastName}, {patient?.firstName}</h3>
                     <button onClick={() => onCancel(shiftId)} className="text-gray-400 hover:text-custom-dark-blue">
                         <IoClose size={24} />
                     </button>

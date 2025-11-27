@@ -20,6 +20,7 @@ export const getAllPatientsWithFilters = async ({
   firstName,
   lastName,
   socialWorkId,
+  userId,
 } = {}) => {
   try {
     const response = await axiosClient.get("/pacientes/", {
@@ -29,6 +30,7 @@ export const getAllPatientsWithFilters = async ({
         nombre: firstName || null,
         apellido: lastName || null,
         id_obra_social: socialWorkId || null,
+        id_usuario: userId || null
       },
     });
 
@@ -118,6 +120,11 @@ export const editPatient = async (patientId, body) => {
     membershipNumber,
   } = body;
 
+  const finalMembershipNumber = 
+        (membershipNumber === "" || membershipNumber === undefined || membershipNumber === null)
+        ? null
+        : membershipNumber;
+
   // Mapeamos a español (Backend)
   const patientBody = {
     nombre: firstName,
@@ -125,10 +132,7 @@ export const editPatient = async (patientId, body) => {
     fecha_nacimiento: birthDate,
     telefono: telephone,
     id_obra_social: socialWorkId || null,
-    nro_afiliado:
-      membershipNumber === undefined || membershipNumber === null
-        ? null
-        : membershipNumber,
+    nro_afiliado: finalMembershipNumber
   };
 
   try {

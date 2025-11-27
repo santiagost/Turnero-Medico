@@ -7,6 +7,7 @@ import PrincipalCard from '../../components/ui/PrincipalCard';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
 import { forgotPasswordValidationSchema } from '../../validations/authSchemas';
+import { recoverPassword } from '../../../services/auth.service';
 
 const ForgotPasswordPage = () => {
     const navigate = useNavigate();
@@ -49,7 +50,6 @@ const ForgotPasswordPage = () => {
 
     const validateForm = () => {
         const newErrors = {};
-        // Itera sobre el nuevo esquema
         for (const name in forgotPasswordValidationSchema) {
             const value = formData[name];
             const rule = forgotPasswordValidationSchema[name];
@@ -68,34 +68,28 @@ const ForgotPasswordPage = () => {
 
         if (isValid) {
             setLoading(true);
-            console.log("Email para recuperar:", formData.email);
+            const { email } = formData;
 
             try {
-                // AQUI VA LA LLAMADA AL BACKEND                
-                await new Promise(resolve => setTimeout(resolve, 2000));
-
-                // Para probar error descomenta esta línea:
-                // await new Promise((_, reject) => setTimeout(() => reject({ response: { data: { message: "El correo no existe" } } }), 2000));
-
-                toast.success("¡Correo enviado! Revisa tu bandeja de entrada.");
+                const result = await recoverPassword(email);
+                toast.success("¡Correo enviado! Revisa tu bandeja de entrada para la nueva contraseña temporal.");
                 setTimeout(() => {
                     handleToLogin();
-                }, 2000);
-
+                }, 1500);
             } catch (error) {
-                console.error(error);
-                if (error.response?.data?.message) {
-                    toast.error(error.response.data.message);
-                } else {
-                    toast.error("Hubo un error al enviar la solicitud.");
+                console.error("Error al recuperar contraseña:", error);
+                let errorMessage = "Hubo un error al enviar la solicitud.";
+                if (error.detail) {
+                    errorMessage = error.detail;
+                } else if (error.message) {
+                    errorMessage = error.message;
                 }
+                toast.error(errorMessage);
             } finally {
                 setLoading(false);
             }
-
         } else {
             toast.warning("Por favor, ingresa un correo válido.");
-            console.log("Formulario inválido:", errors);
         }
     };
 

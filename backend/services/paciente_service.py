@@ -52,7 +52,7 @@ class PacienteService:
             noti_reserva_email_act=bool(paciente_dict.get('noti_reserva_email_act'))
         )
     
-    def get_all(self, id_paciente: Optional[int] = None, dni: Optional[str] = None, nombre: Optional[str] = None, apellido: Optional[str] = None, id_obra_social: Optional[int] = None) -> List[PacienteResponse]:
+    def get_all(self, id_paciente: Optional[int] = None, dni: Optional[str] = None, nombre: Optional[str] = None, apellido: Optional[str] = None, id_obra_social: Optional[int] = None, id_usuario: Optional[int] = None) -> List[PacienteResponse]:
         """Obtiene todos los pacientes"""
         
         sql = "SELECT * FROM Paciente"
@@ -74,6 +74,9 @@ class PacienteService:
         if id_obra_social is not None:
             conditions.append("id_obra_social = ?")
             params.append(id_obra_social)
+        if id_usuario is not None:
+            conditions.append("id_usuario = ?")
+            params.append(id_usuario)
         if conditions:
             sql += " WHERE " + " AND ".join(conditions)
         self.cursor.execute(sql, params)
@@ -94,18 +97,29 @@ class PacienteService:
         """Obtiene un paciente por su ID"""
         return self._get_paciente_completo(paciente_id)
     
-    def update(self, paciente_id: int, paciente_data) -> Optional[PacienteResponse]:
-        """Actualiza los datos de un paciente existente"""
+    def update(self, paciente_id: int, paciente_data: PacienteUpdate) -> Optional[PacienteResponse]:
+        """
+        Actualiza los datos de un paciente existente. 
+        Si la Obra Social es 'Particular' (la ID obtenida por consulta), el nro_afiliado se fuerza a NULL.
+        """
         existing = self.get_by_id(paciente_id)
         if not existing:
             return None
+        try:
+            obra_social_service = ObraSocialService(self.db)
+            obra_social_particular_id = obra_social_service.get_particular_os_id()
+        except ValueError as e:
+            raise ValueError("Error de configuración: No se encontró la Obra Social 'Particular'.")
         
-        
+        id_os_a_verificar = paciente_data.id_obra_social
+        if id_os_a_verificar is None:
+            id_os_a_verificar = existing.id_obra_social 
+        if id_os_a_verificar == obra_social_particular_id:
+            paciente_data.nro_afiliado = None
         
         try:
             update_fields = []
             update_values = []
-            
             if paciente_data.nombre is not None:
                 update_fields.append("nombre = ?")
                 update_values.append(paciente_data.nombre)
@@ -119,19 +133,24 @@ class PacienteService:
                 update_fields.append("telefono = ?")
                 update_values.append(paciente_data.telefono)
             if paciente_data.id_obra_social is not None:
-                if paciente_data.nro_afiliado:
+                if paciente_data.nro_afiliado: 
                     self.cursor.execute(
-                        "SELECT id_paciente FROM Paciente WHERE id_obra_social = ? AND nro_afiliado = ?",
-                        (paciente_data.id_obra_social, paciente_data.nro_afiliado)
+                        """
+                        SELECT id_paciente FROM Paciente 
+                        WHERE id_obra_social = ? AND nro_afiliado = ? AND id_paciente != ?
+                        """,
+                        (paciente_data.id_obra_social, paciente_data.nro_afiliado, paciente_id) # Excluir el paciente actual
                     )
                     if self.cursor.fetchone():
-                        raise ValueError(f"Ya existe un paciente con nro_afiliado {paciente_data.nro_afiliado} en la obra social")
-                    
+                        raise ValueError(f"Ya existe otro paciente con nro_afiliado {paciente_data.nro_afiliado} en la obra social")
+                        
                 update_fields.append("id_obra_social = ?")
                 update_values.append(paciente_data.id_obra_social)
-            if paciente_data.nro_afiliado is not None:
+                
+            if hasattr(paciente_data, 'nro_afiliado') or paciente_data.nro_afiliado is None:
                 update_fields.append("nro_afiliado = ?")
                 update_values.append(paciente_data.nro_afiliado)
+                
             if paciente_data.noti_reserva_email_act is not None:
                 update_fields.append("noti_reserva_email_act = ?")
                 update_values.append(bool(paciente_data.noti_reserva_email_act))
@@ -141,9 +160,9 @@ class PacienteService:
             
             if not update_fields:
                 raise ValueError("No se proporcionaron campos para actualizar")
-            
+
+            # Ejecutar la consulta
             update_values.append(paciente_id)
-            
             query = f"UPDATE Paciente SET {', '.join(update_fields)} WHERE id_paciente = ?"
             self.cursor.execute(query, update_values)
             self.db.commit()
