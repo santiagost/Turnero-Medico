@@ -4,6 +4,7 @@ from models.paciente import PacienteResponse, PacienteCreate, PacienteUpdate
 from models.usuarioRol import UsuarioRolCreate, UsuarioRolResponse
 from services.usuario_service import UsuarioService
 from services.obra_social_service import ObraSocialService
+from datetime import date
 
 
 class PacienteService:
@@ -127,9 +128,11 @@ class PacienteService:
                 update_fields.append("apellido = ?")
                 update_values.append(paciente_data.apellido)
             if paciente_data.fecha_nacimiento is not None:
+                self.validar_fecha_nacimiento(paciente_data.fecha_nacimiento)
                 update_fields.append("fecha_nacimiento = ?")
                 update_values.append(paciente_data.fecha_nacimiento)
             if paciente_data.telefono is not None:
+                self.validar_telefono(paciente_data.telefono)
                 update_fields.append("telefono = ?")
                 update_values.append(paciente_data.telefono)
             if paciente_data.id_obra_social is not None:
@@ -265,8 +268,22 @@ class PacienteService:
             if paciente:
                 raise ValueError("Ya existe un paciente con el DNI proporcionado")
 
+            # Validar fecha de nacimiento debe ser anterior a hoy
+            fecha_nacimiento = usuario_data.get("fecha_nacimiento")
+            if fecha_nacimiento:
+                self.validar_fecha_nacimiento(fecha_nacimiento)
             
-                              
+            # Validar numero de telefono debe ser de 10 a 15 digitos
+            telefono = usuario_data.get("telefono")
+            if telefono:
+                self.validar_telefono(telefono)
+
+            # Validar dni de 7 u 8 dígitos
+            dni_str = str(usuario_data["dni"])
+            if dni_str:
+                self.validar_dni(dni_str)
+
+            # 3) Crear paciente                              
             self.cursor.execute("""
                 INSERT INTO Paciente (dni, nombre, apellido, telefono, fecha_nacimiento, id_obra_social, nro_afiliado, noti_reserva_email_act)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -314,3 +331,24 @@ class PacienteService:
         except sqlite3.IntegrityError as e:
             self.db.rollback()
             raise ValueError("Error al crear el usuario: " + str(e))
+    
+    # Validaciones
+    def validar_fecha_nacimiento(self, fecha_nacimiento: str):
+        try:
+            fecha_nac = date.fromisoformat(fecha_nacimiento)
+        except ValueError:
+            raise ValueError("La fecha de nacimiento debe tener el formato AAAA-MM-DD")
+        
+        if fecha_nac >= date.today():
+            raise ValueError("La fecha de nacimiento debe ser anterior a la fecha actual")
+    
+    def validar_telefono(self, telefono: str):
+        if telefono:
+            telefono_str = str(telefono)
+            if not (telefono_str.isdigit() and 10 <= len(telefono_str) <= 15):
+                raise ValueError("El número de teléfono debe contener solo dígitos y tener una longitud entre 10 y 15 caracteres")
+    
+    def validar_dni(self, dni: str):
+        dni_str = str(dni)
+        if not (dni_str.isdigit() and len(dni_str) in [7, 8]):
+            raise ValueError("El DNI debe contener solo dígitos y tener una longitud de 7 u 8 caracteres")

@@ -145,10 +145,7 @@ class MedicoService:
         rol_service = RolService(self.db)
         usuario_rol_service = UsuarioRolService(self.db)
 
-        # from services.especialidad_service import EspecialidadService
-
         try:
-
             usuario = usuario_service.get_by_email(medico_data['email'])
             
             if not usuario:
@@ -156,13 +153,13 @@ class MedicoService:
                     email=medico_data['email'],
                     password=medico_data.get('password', 'defaultpassword123')
                 )
-            
 
             roles = usuario_rol_service.get_by_usuario_id(usuario.id_usuario) if usuario else []
             if usuario and any(rol.rol.nombre == 'Medico' for rol in roles):
                 raise ValueError(f"Ya existe un médico con el email {medico_data['email']}")
             
-            # Validar DNI único
+            # Validar DNI único y formato
+            self.validar_dni(medico_data.get("dni"))
             self.cursor.execute("SELECT id_medico FROM medico WHERE dni = ?", (medico_data.get("dni"),))
             if self.cursor.fetchone():
                 raise ValueError(f"Ya existe un médico con DNI { medico_data.get('dni') }")
@@ -172,7 +169,11 @@ class MedicoService:
             if self.cursor.fetchone():
                 raise ValueError(f"Ya existe un médico con matrícula { medico_data.get('matricula') }")
             
+            # Validar teléfono
+            telefono = medico_data.get('telefono')
+            self.validar_telefono(telefono)
 
+            # Crear médico
             self.cursor.execute("""
                 INSERT INTO Medico (dni, nombre, apellido, matricula, telefono, id_especialidad, id_usuario, noti_cancel_email_act)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -198,6 +199,7 @@ class MedicoService:
             self.db.rollback()
             raise ValueError(f"Error al crear el médico: {str(e)}")
     
+
     def update(self, medico_id: int, medico_data: MedicoUpdate) -> Optional[MedicoResponse]:
         """Actualiza los datos de un médico existente"""
         existing = self.get_by_id(medico_id)
@@ -215,6 +217,7 @@ class MedicoService:
                 update_fields.append("apellido = ?")
                 update_values.append(medico_data.apellido)
             if medico_data.telefono is not None:
+                self.validar_telefono(medico_data.telefono)
                 update_fields.append("telefono = ?")
                 update_values.append(medico_data.telefono)
             if medico_data.id_especialidad is not None:
@@ -236,6 +239,7 @@ class MedicoService:
             self.db.rollback()
             raise ValueError(f"Error al actualizar el médico: {str(e)}")
     
+
     def delete(self, medico_id: int) -> bool:
         """Elimina un médico por su ID y su usario asociado si no tiene otro rol"""
         from services.usuario_rol_service import UsuarioRolService
@@ -295,4 +299,15 @@ class MedicoService:
         medico_id = dict(row)['id_medico']
         return self._get_medico_completo(medico_id)
 
-        
+
+    # Validaciones    
+    def validar_telefono(self, telefono: str):
+        if telefono:
+            telefono_str = str(telefono)
+            if not (telefono_str.isdigit() and 10 <= len(telefono_str) <= 15):
+                raise ValueError("El número de teléfono debe contener solo dígitos y tener una longitud entre 10 y 15 caracteres")
+            
+    def validar_dni(self, dni: str):
+        dni_str = str(dni)
+        if not (dni_str.isdigit() and len(dni_str) in [7, 8]):
+            raise ValueError("El DNI debe contener solo dígitos y tener una longitud de 7 u 8 caracteres")
