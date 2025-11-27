@@ -13,7 +13,12 @@ import Spinner from '../../components/ui/Spinner';
 import { IoMdInformationCircleOutline, IoMdArrowBack } from "react-icons/io";
 
 import { startOfMonth, endOfMonth, parseISO, isWithinInterval, startOfDay, endOfDay, format } from 'date-fns';
-import { doctorScheduleMock, patientScheduleMock, doctorOptions, mockDoctorAvailability, } from '../../utils/mockData';
+
+import { getDoctorAgenda, cancelShiftById } from '../../../services/shift.service';
+import { getAvailabilitiesByDoctor } from '../../../services/availability.service';
+import { getDoctorOptions } from '../../../services/doctor.service';
+
+
 import { useToast } from '../../hooks/useToast';
 import WeekCalendar from '../../components/ui/WeekCalendar';
 
@@ -39,6 +44,7 @@ const AdminSchedule = () => {
   const [loadingCancel, setLoadingCancel] = useState(false);
 
   const [doctorScheduleConfig, setDoctorScheduleConfig] = useState([]);
+  const [doctorOptions, setDoctorOptions] = useState([]);
 
   const handleFilterChange = (name, value) => {
     setFilters((prev) => ({
@@ -49,10 +55,25 @@ const AdminSchedule = () => {
 
 
   useEffect(() => {
-    if (user.role === 'Admin' && filters.doctor === "" && doctorOptions.length > 0) {
-      setFilters(prev => ({ ...prev, doctor: doctorOptions[0].value }));
+    const fetchOptions = async () => {
+      try {
+        const options = await getDoctorOptions();
+        setDoctorOptions(options);
+
+        // Si no hay doctor seleccionado, seleccionar el primero por defecto
+        if (options.length > 0 && !filters.doctor) {
+          setFilters(prev => ({ ...prev, doctor: options[0].value }));
+        }
+      } catch (error) {
+        console.error("Error cargando opciones de médicos:", error);
+        toast.error("No se pudo cargar la lista de médicos.");
+      }
+    };
+
+    if (user.role === 'Admin') {
+      fetchOptions();
     }
-  }, [user.role, filters.doctor]);
+  }, [user.role, toast]);
 
   // -----------------------------------------------------------------------
   // 1. FETCH DISPONIBILIDAD DEL MÉDICO (Configuración Horaria)
@@ -64,27 +85,22 @@ const AdminSchedule = () => {
     }
 
     try {
-      // AQUI VA LA LLAMADA AL BACKEND
-      // const response = await axios.get(`/api/doctors/${doctorId}/availability`);
-      // setDoctorScheduleConfig(response.data);
-
-      // SIMULACIÓN
-      await new Promise(resolve => setTimeout(resolve, 300)); // Pequeño delay
-      setDoctorScheduleConfig(mockDoctorAvailability);
-
+      const availability = await getAvailabilitiesByDoctor(doctorId);
+      setDoctorScheduleConfig(availability);
     } catch (error) {
       console.error("Error al cargar disponibilidad:", error);
-      toast.error("No se pudo cargar la disponibilidad horaria del médico.");
+      setDoctorScheduleConfig([]);
     }
-  }, [toast]);
+  }, []);
 
 
   // -----------------------------------------------------------------------
   // 2. FETCH AGENDA DE TURNOS (Eventos del Calendario)
   // -----------------------------------------------------------------------
   const fetchSchedule = useCallback(async () => {
-    // Si es admin y no hay doctor seleccionado, no cargamos nada
-    if (user.role === 'Admin' && !filters.doctor) {
+    const doctorId = filters.doctor;
+
+    if (!doctorId) {
       setCalendarEvents([]);
       return;
     }
@@ -94,48 +110,26 @@ const AdminSchedule = () => {
     try {
       const start = startOfMonth(currentDate);
       const end = endOfMonth(currentDate);
-      const currentDoctorId = user.role === 'Admin' ? filters.doctor : user.userId;
 
-      // A) Cargar Disponibilidad primero (o en paralelo)
-      await fetchDoctorAvailability(currentDoctorId);
+      // Formato esperado por el backend (YYYY-MM-DD)
+      const startDateString = format(start, 'yyyy-MM-dd');
+      const endDateString = format(end, 'yyyy-MM-dd');
 
-      // B) Cargar Turnos
-     // AQUI VA LA LLAMADA AL BACKEND
-      /* const params = {
-          doctorId: currentDoctorId,
-          startDate: start.toISOString(),
-          endDate: end.toISOString()
-      };
-      const response = await axios.get('/api/shifts/schedule', { params });
-      let rawData = response.data;
-      */
+      // Carga en paralelo la Disponibilidad (configuración) y los Turnos
+      const [availability, shifts] = await Promise.all([
+        fetchDoctorAvailability(doctorId),
+        getDoctorAgenda(doctorId, startDateString, endDateString)
+      ]);
 
-      // SIMULACIÓN
-      await new Promise(resolve => setTimeout(resolve, 800));
+      // Actualizar disponibilidad (aunque ya se hace en fetchDoctorAvailability, lo aseguramos)
+      if (availability) setDoctorScheduleConfig(availability);
 
-      let rawData = [];
-      if (user.role === 'Admin') {
-        rawData = doctorScheduleMock.filter(shift =>
-          String(shift.doctor.doctorId) === String(filters.doctor)
-        );
-      } else {
-        rawData = patientScheduleMock;
-      }
 
-      // --- PROCESAMIENTO DE DATOS (Igual para Mock o API) ---
-      const filteredShifts = rawData.filter((shift) => {
+      // --- PROCESAMIENTO DE DATOS (Agrupamiento) ---
+      const groupedByDate = shifts.reduce((acc, shift) => {
         const shiftDate = parseISO(shift.startTime);
-        return isWithinInterval(shiftDate, {
-          start: startOfDay(start),
-          end: endOfDay(end)
-        });
-      });
-
-      const groupedByDate = filteredShifts.reduce((acc, shift) => {
-        const dateKey = format(parseISO(shift.startTime), 'yyyy-MM-dd');
-        if (!acc[dateKey]) {
-          acc[dateKey] = [];
-        }
+        const dateKey = format(shiftDate, 'yyyy-MM-dd');
+        if (!acc[dateKey]) acc[dateKey] = [];
         acc[dateKey].push(shift);
         return acc;
       }, {});
@@ -164,10 +158,10 @@ const AdminSchedule = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [currentDate, filters.doctor, user.role, user.userId, toast, fetchDoctorAvailability]);
+  }, [currentDate, filters.doctor, fetchDoctorAvailability, toast]);
 
 
-  // 🟢 Efecto único para recargar datos
+  // 🟢 Efecto para recargar datos cuando cambia la fecha o el médico
   useEffect(() => {
     fetchSchedule();
   }, [fetchSchedule]);
@@ -178,6 +172,18 @@ const AdminSchedule = () => {
     setSidebarView('list');
     setIsSidebarOpen(true);
   };
+
+  const processShiftForDetail = useCallback((shift) => ({
+    id: shift.shiftId,
+    patient: `${shift.patient.firstName} ${shift.patient.lastName}`,
+    reason: shift.reason,
+    fullDate: parseISO(shift.startTime),
+    time: format(parseISO(shift.startTime), 'HH:mm'),
+    specialty: shift.doctor.specialty.name,
+    status: shift.status.name,
+    doctor: `${shift.doctor.firstName} ${shift.doctor.lastName}`,
+    rawShift: shift,
+  }), []);
 
   const handleSelectShiftFromList = (shift) => {
     const processedShift = {
@@ -227,55 +233,35 @@ const AdminSchedule = () => {
     setLoadingCancel(true);
 
     try {
-      // AQUI VA LA LLAMADA AL BACKEND
-      // await axios.put(`/api/shifts/${shiftToCancel}/cancel`);
 
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      const updatedShift = await cancelShiftById(shiftToCancel);
+      const newDayShifts = dayShifts.map(shift =>
+        shift.shiftId === updatedShift.shiftId ? updatedShift : shift
+      );
+      setDayShifts(newDayShifts);
 
-      // Simulación de error (descomentar para probar)
-      // throw new Error("Error de red simulado");
-
-      console.log(`Cancelando turno ${shiftToCancel}`);
-
-      // 1. Actualizar la vista de detalle actual
-      if (selectedShift && selectedShift.id === shiftToCancel) {
-        setSelectedShift(prev => ({ ...prev, status: 'Cancelado' }));
+      if (selectedShift && selectedShift.id === updatedShift.shiftId) {
+        setSelectedShift(processShiftForDetail(updatedShift));
       }
 
-      // 2. Actualizar la lista de turnos del día
-      setDayShifts(prevShifts =>
-        prevShifts.map(shift =>
-          shift.shiftId === shiftToCancel
-            ? { ...shift, status: { ...shift.status, name: 'Cancelado' } }
-            : shift
-        )
-      );
+      await fetchSchedule();
 
-      // 3. (Opcional) Actualizar calendarEvents si es necesario para refrescar contadores
       toast.success("Turno cancelado exitosamente.");
-
-      setIsCancelModalOpen(false);
-      setShiftToCancel(null);
 
     } catch (error) {
       console.error("Error al cancelar turno:", error);
-      toast.error("Ocurrió un error al intentar cancelar el turno.");
+      const errorMessage = error.response?.data?.detail || "Ocurrió un error al intentar cancelar el turno.";
+      toast.error(errorMessage);
     } finally {
-      setLoadingCancel(false); // Desactivar spinner
+      setLoadingCancel(false);
+      closeCancelModal();
     }
   };
 
+  // --- VISTA SEMANAL ---
   const rawDoctorEvents = useMemo(() => {
-    if (!filters.doctor) return [];
-    return doctorScheduleMock.filter(shift =>
-      String(shift.doctor.doctorId) === String(filters.doctor)
-    ).map(t => ({
-      ...t,
-      date: t.startTime,
-      // El admin necesita ver info del paciente o un "Ocupado"
-      title: `${t.patient.firstName} ${t.patient.lastName}`
-    }));
-  }, [filters.doctor]);
+    return calendarEvents.flatMap(event => event.resource);
+  }, [calendarEvents]);
 
   return (
     <AnimatedPage>
@@ -286,6 +272,7 @@ const AdminSchedule = () => {
         <SectionCard
           complexHeader={
             <ScheduleHeader
+              options={doctorOptions}
               selectedDoctor={filters.doctor}
               selectedView={filters.view}
               onFilterChange={handleFilterChange}

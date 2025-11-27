@@ -2,8 +2,8 @@ import React, { useMemo } from "react";
 import { startOfWeek, addDays, format, setHours, setMinutes, isSameDay, parseISO, getDay } from 'date-fns';
 import { es } from "date-fns/locale";
 
-const DEFAULT_START = 8;
-const DEFAULT_END = 20;
+const DEFAULT_START = 7;
+const DEFAULT_END = 24;
 const INTERVAL = 30;
 
 const WeekCalendar = ({ currentDate, events = [], userRole, onEventClick, doctorAvailability = [] }) => {

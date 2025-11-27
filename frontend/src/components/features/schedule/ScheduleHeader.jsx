@@ -25,10 +25,9 @@ const viewOptions = [
 
 const capitalize = (str) => str.charAt(0).toUpperCase() + str.slice(1);
 
-const ScheduleHeader = ({ selectedDoctor, selectedView, onFilterChange, currentDate, onDateChange }) => {
+const ScheduleHeader = ({ selectedDoctor, selectedView, onFilterChange, currentDate, onDateChange, options }) => {
     const { user } = useAuth();
 
-    const [filteredDoctorOptions, setFilteredDoctorOptions] = useState(doctorOptions);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -103,7 +102,7 @@ const ScheduleHeader = ({ selectedDoctor, selectedView, onFilterChange, currentD
                                 name="doctor"
                                 value={selectedDoctor}
                                 onChange={handleChange}
-                                options={filteredDoctorOptions}
+                                options={options}
                                 size={"small"}
                             />
                         </div>
