@@ -11,14 +11,18 @@ import Button from "../../ui/Button";
 
 import { getFormattedDate, getFormattedTime } from "../../../utils/dateUtils";
 
-import { mockDoctorAvailability, getMockDoctorSchedule } from "../../../utils/mockData";
+import { getAvailabilitiesByDoctor } from "../../../../services/availability.service";
+import { getDoctorAgenda } from "../../../../services/shift.service";
+import { useToast } from "../../../hooks/useToast";
 
 import { useNavigate } from "react-router-dom";
 
 const DoctorShifts = () => {
     const { user, profile } = useAuth();
+    const toast = useToast();
     const navigate = useNavigate();
     const [doctorScheduleConfig, setDoctorScheduleConfig] = useState([]);
+    const [isLoadingShifts, setIsLoadingShifts] = useState(false);
 
     // Inicializamos la semana seleccionada con la FECHA ACTUAL
     const [selectedWeek, setSelectedWeek] = useState({
@@ -31,24 +35,56 @@ const DoctorShifts = () => {
     const [selectedShift, setSelectedShift] = useState(null);
     const [currentWeekShifts, setCurrentWeekShifts] = useState([]);
 
-    useEffect(() => {
-        if (user) {
-            // TODO: Aquí harías un fetch al backend: api.get(`/doctors/${user.id}/availability`)
-            setDoctorScheduleConfig(mockDoctorAvailability);
+    const fetchDoctorAvailability = async () => {
+        const doctorId = profile?.doctorId;
+        if (!doctorId) return;
+
+        try {
+            const availability = await getAvailabilitiesByDoctor(doctorId);
+            setDoctorScheduleConfig(availability);
+        } catch (error) {
+            console.error("Error al cargar horarios de disponibilidad:", error);
+            toast.error("Ha ocurrido un error cargando la agenda...")
         }
-    }, [user]);
+    };
+
+    const fetchDoctorShifts = async () => {
+        const doctorId = profile?.doctorId;
+        if (!doctorId || !selectedWeek?.from) {
+            setCurrentWeekShifts([]);
+            return;
+        }
+
+        setIsLoadingShifts(true);
+        const startDateString = format(selectedWeek.from, 'yyyy-MM-dd');
+        const endDateString = format(selectedWeek.to, 'yyyy-MM-dd');
+
+        try {
+            const shifts = await getDoctorAgenda(doctorId, startDateString, endDateString);
+            setCurrentWeekShifts(shifts);
+        } catch (error) {
+            console.error("Error al cargar turnos del médico:", error);
+            toast.error("Ha ocurrido un error cargando la agenda...")
+            setCurrentWeekShifts([]);
+        } finally {
+            setIsLoadingShifts(false);
+        }
+    };
 
     useEffect(() => {
-        if (user && selectedWeek?.from) {
-            const mondayDate = addDays(new Date(selectedWeek.from), 1);
-            const shifts = getMockDoctorSchedule(mondayDate);
-            setCurrentWeekShifts(shifts);
+        if (profile?.doctorId) {
+            fetchDoctorAvailability();
         }
-    }, [user, selectedWeek]);
+    }, [profile?.doctorId]);
+
+    useEffect(() => {
+        if (profile?.doctorId && selectedWeek?.from) {
+            fetchDoctorShifts();
+        }
+    }, [profile?.doctorId, selectedWeek]);
 
     // Este método se pasa al hijo (WeeklySlots)
     const handleSlotClickFromChild = (slotInfo) => {
-        console.log("Click recibido en el padre:", slotInfo);
         setSelectedSlotData(slotInfo);
         setIsSidebarOpen(true);
     };
@@ -62,9 +98,9 @@ const DoctorShifts = () => {
         console.log("Redirigiendo a atender turno:", selectedSlotData.data.shiftId);
         navigate(`/doctor/home/${selectedSlotData.data.shiftId}`)
     };
-    
+
     const handleGoToPatientHistory = () => {
-        console.log("Redirigiendo a consulta del turno del paciente:", selectedSlotData.data.shiftId);        
+        console.log("Redirigiendo a consulta del turno del paciente:", selectedSlotData.data.shiftId);
         navigate(`/doctor/patients/${selectedSlotData.data.patient.patientId}`)
     };
 
@@ -112,7 +148,7 @@ const DoctorShifts = () => {
                             <h3 className="text-lg font-bold text-custom-dark-blue">Datos del Paciente</h3>
                             <div className="text-custom-dark-blue">
                                 <span className="font-medium">Nombre: </span>
-                                {selectedSlotData.data.patient.firstName}, {selectedSlotData.data.patient.lastName}
+                                {selectedSlotData?.data?.patient?.firstName}, {selectedSlotData?.data?.patient?.lastName}
                             </div>
                         </div>
 
@@ -121,7 +157,7 @@ const DoctorShifts = () => {
                             <h3 className="text-lg font-bold text-custom-dark-blue">Motivo de Consulta</h3>
                             <div className="text-custom-dark-blue">
                                 <span className="font-medium text-custom-dark-blue">Motivo: </span>
-                                {selectedSlotData.data.reason}
+                                {selectedSlotData?.data?.reason}
                             </div>
                         </div>
 
@@ -136,7 +172,7 @@ const DoctorShifts = () => {
                             <div className="flex flex-col gap-y-1 text-md mx-4">
                                 <div className="flex flex-row gap-2 items-start text-custom-dark-blue">
                                     <li className="font-bold">Fecha: </li>
-                                    <span className="font-regular">{getFormattedDate(selectedSlotData.data.startTime)}</span>
+                                    <span className="font-regular">{getFormattedDate(selectedSlotData?.data?.startTime)}</span>
                                 </div>
                                 <div className="flex flex-row gap-2 items-start text-custom-dark-blue">
                                     <li className="font-bold">Especialidad: </li>
@@ -162,7 +198,7 @@ const DoctorShifts = () => {
                         </div>
 
                         {/* SECCIÓN 5: ACCIONES */}
-                        {selectedSlotData.label !== "Cancelado" && (
+                        {selectedSlotData.label !== "Cancelado" && selectedSlotData.label !== "Ausente" && (
                             <>
                                 <div className="flex flex-col items-center">
                                     <hr className='border text-custom-gray/25 w-[90%]' />

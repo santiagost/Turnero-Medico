@@ -67,6 +67,14 @@ async def get_consultas_by_paciente(id_paciente: int, service: ConsultaService =
     consultas_paciente = service.get_by_paciente_id(id_paciente)
     return jsonable_encoder(consultas_paciente)
 
+@router.get("/turno/{shift_id}", response_model=dict)
+async def get_consulta_by_shift_id(shift_id: int, service: ConsultaService = Depends(get_consulta_service)):
+    """Obtiene la consulta asociada a un ID de Turno específico."""
+    consulta = service.get_by_shift_id(shift_id)
+    if not consulta:
+        raise HTTPException(status_code=404, detail="Consulta no encontrada para el Turno especificado")
+    return jsonable_encoder(consulta)
+
 @router.post("/", response_model=dict, status_code=status.HTTP_201_CREATED)
 async def create_consulta(consulta_data: dict, service: ConsultaService = Depends(get_consulta_service)):
     """Crea una nueva consulta"""

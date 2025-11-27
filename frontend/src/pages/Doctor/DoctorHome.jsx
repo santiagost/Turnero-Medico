@@ -11,6 +11,8 @@ import SectionCard from '../../components/ui/SectionCard'
 import PrincipalCard from '../../components/ui/PrincipalCard'
 import Modal from '../../components/ui/Modal';
 import Button from '../../components/ui/Button';
+import { createConsultation, deleteConsultation } from '../../../services/consultation.service'
+import { createReceta } from '../../../services/medication.service';
 
 import { useNavigate, useParams } from 'react-router-dom';
 
@@ -21,7 +23,7 @@ const DoctorHome = () => {
   const { shiftId } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
-  const CURRENT_DOCTOR_ID = 1
+  const CURRENT_DOCTOR_ID = profile.doctorId;
   const [doctorSchedule, setDoctorSchedule] = useState([]);
   const [isLoadingShifts, setIsLoadingShifts] = useState(true);
 
@@ -44,7 +46,6 @@ const DoctorHome = () => {
 
 
   const fetchDoctorShifts = useCallback(async () => {
-    // Usamos CURRENT_DOCTOR_ID
     if (!CURRENT_DOCTOR_ID) {
       setIsLoadingShifts(false);
       return;
@@ -109,8 +110,6 @@ const DoctorHome = () => {
     setLoadingCancel(true); // Activar spinner
 
     try {
-      // 🚀 LLAMADA AL ENDPOINT: POST /turnos/cancelar
-      // Usamos el servicio cancelShiftById que envía {"id_turno": shiftId}
       await cancelShiftById(shiftToCancel);
 
       toast.success("Turno cancelado exitosamente.");
@@ -119,7 +118,6 @@ const DoctorHome = () => {
       setIsCancelModalOpen(false);
       setShiftToCancel(null);
 
-      // ✅ Forzar la recarga de la agenda
       await fetchDoctorShifts();
 
     } catch (error) {
@@ -140,30 +138,56 @@ const DoctorHome = () => {
 
   //  ----------------- Registrar Consulta ---------------
   const handleSaveAttention = (attentionData) => {
-    // Este payload 'attentionData' debería contener el diagnóstico, etc.
-    // Pero para la acción de "guardar", solo necesitamos el ID para marcar como atendido
     setDataToSave(attentionData);
     setIsSaveModalOpen(true);
   };
 
   const confirmSave = async () => {
-    setLoadingSave(true); // Activar spinner
+    setLoadingSave(true);
+
+    const shiftIdToAttend = selectedShift.shiftId;
+    const { diagnosis, treatment, personalNotes, medications } = dataToSave;
+
+    let newConsultationId = null;
 
     try {
       if (!selectedShift || !dataToSave) {
         throw new Error("No hay turno seleccionado o datos para guardar.");
       }
 
-      // 🚀 LLAMADA AL SERVICIO: Marcar como atendido (PUT /turnos/{id})
-      // Asumiendo que el backend maneja el cambio de estado y la inserción del diagnóstico/historial
-      await markShiftAsAttended(selectedShift.shiftId, dataToSave);
+      const consultationPayload = {
+        shiftId: shiftIdToAttend,
+        diagnosis: diagnosis,
+        treatment: treatment,
+        medicalNotes: personalNotes,
+      };
 
-      toast.success("Consulta registrada con éxito.");
+      const newConsultation = await createConsultation(consultationPayload);
+      newConsultationId = newConsultation.consultationId;
 
-      // ✅ Actualizar la lista después de guardar
+      let recipesCreated = 0;
+
+      // 2. CREAR RECETAS
+      if (medications.length > 0) {
+        const recipesPromises = medications.map(med => {
+          const recetaPayload = {
+            consultationId: newConsultationId,
+            medication: med.name,
+            dosage: med.dosage,
+            instructions: med.instructions,
+          };
+          return createReceta(recetaPayload);
+        });
+
+        // Si falla UNA receta, Promise.all detiene la ejecución y va al catch.
+        await Promise.all(recipesPromises);
+        recipesCreated = medications.length;
+      }
+
+      // --- ÉXITO TOTAL ---
+      toast.success(`Consulta y ${recipesCreated} recetas registradas con éxito. 🎉`);
+
       await fetchDoctorShifts();
-
-      // Limpieza y redirección
       setAttendingShift(false);
       setSelectedShift(null);
       setIsSaveModalOpen(false);
@@ -171,11 +195,26 @@ const DoctorHome = () => {
       navigate("/doctor/home");
 
     } catch (error) {
-      console.error(error);
-      const errorMessage = error.response?.data?.detail || "Error al guardar la consulta médica.";
-      toast.error(errorMessage);
+      console.error("Error en la transacción:", error);
+
+      // ROLLBACK: Solo si newConsultationId fue asignado (es decir, la consulta se creó)
+      if (newConsultationId) {
+        try {
+          await deleteConsultation(newConsultationId);
+          toast.error("Error al registrar recetas. La consulta ha sido ANULADA");
+        } catch (rollbackError) {
+          console.error("ERROR CRÍTICO EN ROLLBACK:", rollbackError);
+          toast.error("¡ERROR CRÍTICO! Fallo en la anulación. Contacte a soporte.");
+        }
+      } else {
+        const errorMessage = error.response?.data?.detail
+          || error.message
+          || "Error al guardar la consulta médica.";
+        toast.error(errorMessage);
+      }
+
     } finally {
-      setLoadingSave(false); // Desactivar spinner
+      setLoadingSave(false);
     }
   };
 

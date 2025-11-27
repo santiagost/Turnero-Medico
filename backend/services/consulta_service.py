@@ -3,7 +3,6 @@ from typing import List, Optional
 from models.consulta import ConsultaResponse, ConsultaCreate, ConsultaUpdate
 from services.turno_service import TurnoService
 
-
 class ConsultaService:
     
     def __init__(self, db: sqlite3.Connection):
@@ -91,6 +90,17 @@ class ConsultaService:
         lista_ids = [row[0] for row in rows]
         
         return lista_ids
+    
+    def get_by_shift_id(self, id_turno: int) -> Optional[ConsultaResponse]:
+        """Obtiene una consulta por el ID de Turno asociado (id_turno)."""
+        self.cursor.execute("""
+            SELECT id_consulta FROM Consulta WHERE id_turno = ?
+        """, (id_turno,))
+        row = self.cursor.fetchone()
+        if not row:
+            return None
+        consulta_id = dict(row)['id_consulta']
+        return self._get_consulta_completa(consulta_id)
 
     def create(self, consulta_data: ConsultaCreate) -> ConsultaResponse:
         """Crea una nueva consulta"""
@@ -163,19 +173,39 @@ class ConsultaService:
             raise ValueError("Error al actualizar la consulta: " + str(e))
     
     def delete(self, consulta_id: int) -> bool:
-        """Elimina una consulta por su ID"""
+        """
+        Elimina una consulta por su ID, incluyendo todas las recetas asociadas
+        y revirtiendo el estado del turno a 'Pendiente' (si aplica).
+        """
         existing = self.get_by_id(consulta_id)
         if not existing:
             return False
         
         try:
+            
+            from services.receta_service import RecetaService 
+            receta_service = RecetaService(self.db)
+            recetas = receta_service.get_by_consulta_id(consulta_id)
+            for receta in recetas:
+                receta_service.delete(receta.id_receta)
+
             self.cursor.execute("DELETE FROM Consulta WHERE id_consulta = ?", (consulta_id,))
+            
+            if existing.id_turno:
+                self.cursor.execute(
+                    "UPDATE Turno SET id_estado_turno = 1 WHERE id_turno = ?", 
+                    (existing.id_turno,)
+                )
+                
             self.db.commit()
             return True
             
         except sqlite3.IntegrityError as e:
             self.db.rollback()
             raise ValueError("Error al eliminar la consulta: " + str(e))
+        except Exception as e:
+            self.db.rollback()
+            raise ValueError(f"Error inesperado al realizar el rollback: {str(e)}")
         
     def get_by_paciente_id(self, paciente_id: int) -> List[ConsultaResponse]:
         """Obtiene todas las consultas asociadas a un paciente específico"""

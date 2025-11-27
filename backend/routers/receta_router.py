@@ -6,7 +6,7 @@ import sqlite3
 from database import get_db
 from models.receta import RecetaResponse, RecetaCreate, RecetaUpdate
 from services.receta_service import RecetaService
-
+import datetime
 
 router = APIRouter(
     prefix="/recetas",
@@ -71,15 +71,18 @@ async def get_recetas_by_consulta(consulta_id: int, service: RecetaService = Dep
 
 @router.post("/", response_model=dict, status_code=status.HTTP_201_CREATED)
 async def create_receta(receta_data: dict, service: RecetaService = Depends(get_receta_service)):
-    """Crea una nueva receta"""
+    """Crea una nueva receta, inyectando la fecha de emisión del servidor."""
+    
     try:
+        fecha_emision_servidor = datetime.datetime.now().isoformat()
         receta = RecetaCreate(
             id_consulta=receta_data['id_consulta'],
             medicamento=receta_data['medicamento'],
-            fecha_emision=receta_data['fecha_emision'],
+            fecha_emision=fecha_emision_servidor, 
             dosis=receta_data.get('dosis'),
             instrucciones=receta_data.get('instrucciones')
         )
+        
         resultado = service.create(receta)
         return jsonable_encoder(resultado)
     
@@ -87,6 +90,8 @@ async def create_receta(receta_data: dict, service: RecetaService = Depends(get_
         raise HTTPException(status_code=400, detail=f"Falta el campo obligatorio: {str(e)}")
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    except TypeError as e:
+        raise HTTPException(status_code=500, detail=f"Error interno de modelo: {str(e)}")
 
 
 @router.put("/{receta_id}", response_model=dict)
