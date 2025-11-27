@@ -263,4 +263,18 @@ export const mapAvailabilityFromBackend = (item) => {
   };
 };
 
+// RECETAS
 
+// { "id_receta": 1, "id_consulta": 1, "medicamento": "Amoxicilina", "dosis": "500 mg", "instrucciones": "Tomar cada 8hs", "fecha_emision": "2024-05-15" }
+export const mapRecetaFromBackend = (item) => {
+    if (!item) return {};
+
+    return {
+        recetaId: item.id_receta,
+        consultationId: item.id_consulta,
+        medication: item.medicamento,
+        dosage: item.dosis,
+        instructions: item.instrucciones,
+        emissionDate: item.fecha_emision,
+    };
+};

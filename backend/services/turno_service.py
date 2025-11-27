@@ -16,12 +16,16 @@ class TurnoService:
         self.cursor = db.cursor()
 
     def _hay_solapamiento_turnos(self, id_persona: int, fecha_hora_inicio: str, fecha_hora_fin: str, es_medico: bool) -> bool:
-        """Verifica si hay solapamiento de turnos para un médico o paciente"""
+        """Verifica si hay solapamiento de turnos para un médico o paciente, excluyendo turnos cancelados."""
         campo_id = 'id_medico' if es_medico else 'id_paciente'
+        
+        self.cursor.execute("SELECT id_estado_turno FROM EstadoTurno WHERE nombre = 'Cancelado'")
+        ID_ESTADO_CANCELADO = self.cursor.fetchone()['id_estado_turno']
         
         self.cursor.execute(f"""
             SELECT COUNT(*) as count FROM turno
             WHERE {campo_id} = ?
+            AND id_estado_turno != {ID_ESTADO_CANCELADO} -- 🔑 EXCLUYE TURNOS CANCELADOS
             AND (
                 (datetime(fecha_hora_inicio) < datetime(?) AND datetime(fecha_hora_fin) > datetime(?))
                 OR
@@ -212,37 +216,61 @@ class TurnoService:
         return turnos
 
     def create(self, turno_data: TurnoCreate) -> TurnoResponse:
-        """Crea un nuevo turno"""
+        """
+        Crea un nuevo turno, reutilizando un slot cancelado si está disponible.
+        """
+        ID_ESTADO_PENDIENTE = 1 
+        ID_ESTADO_CANCELADO = 3 
 
-        self._es_turno_valido(turno_data)
-       
+        self._es_turno_valido(turno_data) 
+        
         try:
-
-            if not self._es_turno_valido(turno_data):
-                raise ValueError("El turno no cumple con las reglas de negocio")
-
-            # Insertar nuevo turno
             self.cursor.execute("""
-                INSERT INTO turno (fecha_hora_inicio, fecha_hora_fin, id_estado_turno, id_paciente, id_medico, motivo_consulta)
-                VALUES (?, ?, ?, ?, ?, ?)
-            """, (
-                turno_data.fecha_hora_inicio,
-                turno_data.fecha_hora_fin,
-                turno_data.id_estado_turno,
-                turno_data.id_paciente,
-                turno_data.id_medico,
-                turno_data.motivo_consulta
-            ))
-            
-            self.db.commit()
-            
-            # Obtener el turno recién creado
-            turno_id = self.cursor.lastrowid
-            return self._get_turno_completo(turno_id)
+                SELECT id_turno FROM turno
+                WHERE id_medico = ?
+                AND id_estado_turno = ?
+                AND (
+                    (datetime(fecha_hora_inicio) <= datetime(?) AND datetime(fecha_hora_fin) >= datetime(?))
+                )
+                LIMIT 1
+            """, (turno_data.id_medico, ID_ESTADO_CANCELADO, turno_data.fecha_hora_inicio, turno_data.fecha_hora_fin))
+
+            row_cancelado = self.cursor.fetchone()
+
+            if row_cancelado:
+                turno_cancelado_id = dict(row_cancelado)['id_turno']
+                
+                datos_actualizar = {
+                    'id_estado_turno': ID_ESTADO_PENDIENTE,
+                    'id_paciente': turno_data.id_paciente,
+                    'motivo_consulta': turno_data.motivo_consulta,
+                    'recordatorio_notificado': 0,
+                    'reserva_notificada': 0,
+                }
+                
+                self.update(turno_cancelado_id, datos_actualizar)
+                return self._get_turno_completo(turno_cancelado_id)
+
+            else:
+                self.cursor.execute("""
+                    INSERT INTO turno (fecha_hora_inicio, fecha_hora_fin, id_estado_turno, id_paciente, id_medico, motivo_consulta)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                """, (
+                    turno_data.fecha_hora_inicio,
+                    turno_data.fecha_hora_fin,
+                    turno_data.id_estado_turno, # Se asume que viene como Pendiente (ID 1)
+                    turno_data.id_paciente,
+                    turno_data.id_medico,
+                    turno_data.motivo_consulta
+                ))
+                
+                self.db.commit()
+                turno_id = self.cursor.lastrowid
+                return self._get_turno_completo(turno_id)
             
         except sqlite3.IntegrityError as e:
             self.db.rollback()
-            raise ValueError("Error al crear el turno: " + str(e))
+            raise ValueError("Error al crear/reutilizar el turno: " + str(e))
         
     def update(self, turno_id: int, turno_data: dict) -> Optional[TurnoResponse]:
         """Actualiza los datos de un turno existente"""

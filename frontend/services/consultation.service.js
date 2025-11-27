@@ -29,12 +29,29 @@ export const getConsultationById = async (consultationId) => {
 export const getConsultationsByPatient = async (patientId) => {
   try {
     const response = await axiosClient.get(`/consultas/paciente/${patientId}`);
-    console.log(response.data)
     const data = response.data.map(mapConsultationFromBackend);
-    
+
     return data;
   } catch (error) {
-    console.error(`Error al obtener las consultas del paciente ${patientId}:`, error);
+    console.error(
+      `Error al obtener las consultas del paciente ${patientId}:`,
+      error
+    );
+    throw error;
+  }
+};
+
+// Endpoint: GET /consultas/turno/{id_turno}
+export const getConsultationByShiftId = async (shiftId) => {
+  try {
+    const response = await axiosClient.get(`/consultas/turno/${shiftId}`);
+    const data = mapConsultationFromBackend(response.data);
+    return data;
+  } catch (error) {
+    console.error(
+      `Error al obtener la consulta para el turno ${shiftId}:`,
+      error
+    ); // Si la consulta no existe (404), lanzamos el error para que el componente lo maneje
     throw error;
   }
 };
@@ -97,16 +114,15 @@ export const deleteConsultation = async (consultationId) => {
 // GET /consultas/pacientes_por_fecha?fecha_consulta=YYYY-MM-DD
 export const getPatientIdsByDate = async (dateString) => {
   try {
-    console.log(dateString)
     const response = await axiosClient.get("/consultas/pacientes_por_fecha", {
       params: {
         fecha_consulta: dateString, // Asegúrate que el formato coincida con el backend (ej: "2023-10-25")
       },
     });
-    return response.data; 
-  } catch (error) {    
+    return response.data;
+  } catch (error) {
     if (error.response && error.response.status === 404) {
-        return []; 
+      return [];
     }
     console.error(`Error al obtener pacientes por fecha ${dateString}:`, error);
     throw error;
@@ -121,10 +137,10 @@ export const getConsultationsIdsByDate = async (dateString) => {
         fecha_consulta: dateString, // Asegúrate que el formato coincida con el backend (ej: "2023-10-25")
       },
     });
-    return response.data; 
-  } catch (error) {    
+    return response.data;
+  } catch (error) {
     if (error.response && error.response.status === 404) {
-        return []; 
+      return [];
     }
     console.error(`Error al obtener consulta por fecha ${dateString}:`, error);
     throw error;

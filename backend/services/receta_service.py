@@ -1,4 +1,3 @@
-import datetime
 import sqlite3
 from typing import List, Optional
 from models.receta import RecetaResponse, RecetaCreate, RecetaUpdate
@@ -79,15 +78,13 @@ class RecetaService:
             self.cursor.execute("SELECT id_consulta FROM Consulta WHERE id_consulta = ?", (receta_data.id_consulta,))
             if not self.cursor.fetchone():
                 raise ValueError(f"No existe una consulta con ID {receta_data.id_consulta}")
-            
-            # Insertar nueva receta
             self.cursor.execute("""
                 INSERT INTO Receta (id_consulta, medicamento, fecha_emision, dosis, instrucciones)
                 VALUES (?, ?, ?, ?, ?)
             """, (
                 receta_data.id_consulta,
                 receta_data.medicamento,
-                datetime.datetime.now().isoformat(),
+                receta_data.fecha_emision,
                 receta_data.dosis,
                 receta_data.instrucciones
             ))

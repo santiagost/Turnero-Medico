@@ -28,7 +28,7 @@ const WeeklySlots = ({ selectedWeek, selectedShift, setSelectedShift, existingSh
         () => generateMasterGrid(doctorAvailability),
         [doctorAvailability]
     );
-    
+
     // 3. Lógica Auxiliar (Helpers)
     // Verifica si un horario específico está dentro del rango de trabajo de un día
     const isWorkingHour = (dayConfig, time) => {
@@ -100,21 +100,25 @@ const WeeklySlots = ({ selectedWeek, selectedShift, setSelectedShift, existingSh
         if (isExpired) {
             return {
                 status: "expired",
-                label: "No Disponible",
+                label: "Expirado",
                 color: "bg-custom-gray/30 text-custom-gray border-custom-gray/70 cursor-not-allowed",
             };
         }
 
-        // C. Slot Ocupado
-        if (foundShift && foundShift.status.name !== "Cancelado") {
-            return {
-                status: "occupied",
-                label: "Ocupado",
-                color: "bg-custom-red/30 text-custom-red border-custom-red/50 cursor-not-allowed opacity-50",
-            };
+        // 2. Slot con Turno Existente:
+        if (foundShift) {
+            const statusName = foundShift.status.name;
+
+            if (statusName === "Cancelado" || statusName === "Ausente") {
+            } else {
+                return {
+                    status: "occupied",
+                    label: "Ocupado",
+                    color: "bg-custom-red/30 text-custom-red border-custom-red/50 cursor-not-allowed opacity-80",
+                };
+            }
         }
 
-        // D. Slot Seleccionado
         if (
             selectedShift &&
             selectedShift.date &&
@@ -128,7 +132,7 @@ const WeeklySlots = ({ selectedWeek, selectedShift, setSelectedShift, existingSh
             };
         }
 
-        // E. Slot Disponible
+        // 4. Slot Disponible (Libre para reservar)
         return {
             status: "available",
             label: "Disponible",

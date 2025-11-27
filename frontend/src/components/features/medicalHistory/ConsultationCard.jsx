@@ -2,14 +2,46 @@ import React, { useState, useEffect } from 'react';
 import { IoIosArrowDown, IoIosArrowUp } from 'react-icons/io';
 import Button from '../../ui/Button';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useToast } from '../../../hooks/useToast';
+
+import { getRecetasByConsultaId } from '../../../../services/medication.service';
 
 const ConsultationCard = ({ consultation, type, forceOpen = false }) => {
     const [isExpanded, setIsExpanded] = useState(forceOpen);
+    const [recetas, setRecetas] = useState([]);
+    const [isLoadingRecetas, setIsLoadingRecetas] = useState(false);
+    const toast = useToast();
+
+    const consultationId = consultation?.consultationId;
 
     useEffect(() => {
         setIsExpanded(forceOpen);
     }, [forceOpen]);
-    
+
+    useEffect(() => {
+        if (!consultationId || !isExpanded) {
+            setRecetas([]);
+            return;
+        }
+
+        const fetchRecetas = async () => {
+            setIsLoadingRecetas(true);
+            try {
+                const data = await getRecetasByConsultaId(consultationId);
+                setRecetas(data);
+            } catch (error) {
+                console.error(`Fallo al cargar recetas para consulta ${consultationId}`, error);
+                setRecetas([]);
+                toast.error("Error al cargar las recetas de la consulta.")
+            } finally {
+                setIsLoadingRecetas(false);
+            }
+        };
+
+        fetchRecetas();
+
+    }, [consultationId, isExpanded]);
+
     const toggleExpand = () => {
         setIsExpanded(prev => !prev);
     };
@@ -42,13 +74,15 @@ const ConsultationCard = ({ consultation, type, forceOpen = false }) => {
     );
 
     const renderPatientExpandedView = () => {
-        const handleDownloadReceta = (e) => {
-            e.stopPropagation();
+        const handleDownloadReceta = () => {
+            if (isLoadingRecetas) {
+                toast.warning("Las recetas se están cargando, por favor espera.");
+                return;
+            }
 
-            // 3. Aquí va tu lógica de descarga
+            // ... (Lógica de descarga) ...
             console.log("Iniciando descarga de receta...");
-            alert("Iniciando descarga de receta...");
-            // ... (lógica para generar el PDF o llamar a la API)
+            toast.success("Iniciando descarga de receta...");
         };
 
         return (
@@ -78,14 +112,26 @@ const ConsultationCard = ({ consultation, type, forceOpen = false }) => {
                         <p><span className="font-semibold">Tratamiento:</span> {consultation?.treatment}</p>
                     </div>
                     <div>
-                        <div className='flex flex-row items-center justify-between'>
-                            <h3 className="font-bold text-lg mb-2">Recetas:</h3>
-                            <Button text={"Descargar Receta Digital"} size={"small"} onClick={handleDownloadReceta} /> { /* BOTON PARA DESCARGAR, ACA FALTA LA LOGICA DEL DOCUMENTO GENERADO */}
-                        </div>
-                        {consultation.medications && consultation.medications.length > 0 ? (
-                            consultation.medications.map((med, index) => (
-                                <div key={med.prescriptionId || index} className="mb-2">
-                                    <p><span className="font-semibold">Medicamento:</span> {med.name}</p>
+
+                        {recetas.length > 0 && (
+                            <div className='flex flex-row items-center justify-between'>
+                                <h3 className="font-bold text-lg mb-2">Recetas:</h3>
+                                <Button
+                                    text={"Descargar Receta Digital"}
+                                    size={"small"}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleDownloadReceta();
+                                    }}
+                                    type={"button"} /> { /* BOTON PARA DESCARGAR, ACA FALTA LA LOGICA DEL DOCUMENTO GENERADO */}
+                            </div>
+                        )}
+                        {isLoadingRecetas ? (
+                            <p className="text-sm text-custom-gray animate-pulse">Cargando recetas...</p>
+                        ) : recetas.length > 0 ? (
+                            recetas.map((med, index) => (
+                                <div key={med.recetaId || index} className="mb-2">
+                                    <p><span className="font-semibold">Medicamento:</span> {med.medication}</p>
                                     <p><span className="font-semibold">Dosis:</span> {med.dosage}</p>
                                     <p><span className="font-semibold">Instrucciones:</span> {med.instructions}</p>
                                 </div>
@@ -129,10 +175,12 @@ const ConsultationCard = ({ consultation, type, forceOpen = false }) => {
                 </div>
                 <div>
                     <h3 className="font-bold text-lg mb-2">Recetas:</h3>
-                    {consultation.medications && consultation?.medications.length > 0 ? (
-                        consultation.medications.map((med, index) => (
-                            <div key={med.prescriptionId || index} className="mb-2">
-                                <p><span className="font-semibold">Medicamento:</span> {med.name}</p>
+                    {isLoadingRecetas ? (
+                        <p className="text-sm text-custom-gray animate-pulse">Cargando recetas...</p>
+                    ) : recetas.length > 0 ? (
+                        recetas.map((med, index) => (
+                            <div key={med.recetaId || index} className="mb-2">
+                                <p><span className="font-semibold">Medicamento:</span> {med.medication}</p>
                                 <p><span className="font-semibold">Dosis:</span> {med.dosage}</p>
                                 <p><span className="font-semibold">Instrucciones:</span> {med.instructions}</p>
                             </div>

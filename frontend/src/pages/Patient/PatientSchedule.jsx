@@ -4,7 +4,10 @@ import { startOfMonth, endOfMonth, parseISO, isWithinInterval, startOfDay, endOf
 import { IoMdArrowBack } from "react-icons/io";
 import { useToast } from '../../hooks/useToast';
 import { useAuth } from '../../hooks/useAuth';
-import { patientScheduleMock, getConsultationByShiftId } from '../../utils/mockData';
+
+import { getConsultationByShiftId } from '../../../services/consultation.service';
+import { getPatientHistory } from '../../../services/shift.service';
+import { cancelShiftById } from '../../../services/shift.service';
 
 import AnimatedPage from '../../components/layout/AnimatedPage';
 import SectionCard from '../../components/ui/SectionCard';
@@ -19,7 +22,7 @@ import WeekCalendar from '../../components/ui/WeekCalendar';
 
 
 const PatientSchedule = () => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const navigate = useNavigate();
   const toast = useToast();
 
@@ -42,28 +45,23 @@ const PatientSchedule = () => {
     setFilters((prev) => ({ ...prev, [name]: value }));
   };
 
-  useEffect(() => {
+  const fetchPatientShifts = async () => {
+    if (!user || !profile || !profile.patientId) {
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
+    const patientId = profile.patientId;
     const start = startOfMonth(currentDate);
     const end = endOfMonth(currentDate);
+    const startDateString = format(start, 'yyyy-MM-dd');
+    const endDateString = format(end, 'yyyy-MM-dd');
 
-    const timer = setTimeout(() => {
-      let myPersonalTurns = patientScheduleMock;
-      if (user && user.userId) {
-        myPersonalTurns = patientScheduleMock.filter(
-          shift => shift.patient.user.userId === user.userId
-        );
-      }
+    try {
+      const shifts = await getPatientHistory(patientId, startDateString, endDateString);
 
-      const filteredShifts = myPersonalTurns.filter((shift) => {
-        const shiftDate = parseISO(shift.startTime);
-        return isWithinInterval(shiftDate, {
-          start: startOfDay(start),
-          end: endOfDay(end)
-        });
-      });
-
-      const groupedByDate = filteredShifts.reduce((acc, shift) => {
+      const groupedByDate = shifts.reduce((acc, shift) => {
         const dateKey = format(parseISO(shift.startTime), 'yyyy-MM-dd');
         if (!acc[dateKey]) acc[dateKey] = [];
         acc[dateKey].push(shift);
@@ -103,11 +101,20 @@ const PatientSchedule = () => {
       });
 
       setCalendarEvents(finalEvents);
-      setIsLoading(false);
-    }, 400);
 
-    return () => clearTimeout(timer);
-  }, [currentDate, user]);
+    } catch (error) {
+      console.error("Error al cargar agenda:", error);
+      toast.error("Error al cargar la agenda de turnos.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+
+  useEffect(() => {
+    fetchPatientShifts();
+
+  }, [currentDate, user, profile]);
 
   const processShiftForDetail = (shift) => ({
     id: shift.shiftId,
@@ -120,29 +127,46 @@ const PatientSchedule = () => {
     reason: shift.reason
   });
 
-  const handleEventClick = (eventData) => {
+  const handleEventClick = async (eventData) => {
     const { type, shifts, shift } = eventData.resource;
+    setRelatedConsultation(null);
 
     if (type === 'cluster') {
       setDayShifts(shifts);
       setSidebarView('list');
+      setSelectedShift(null);
     } else {
       const processed = processShiftForDetail(shift);
       setSelectedShift(processed);
-      const consultation = getConsultationByShiftId(processed.id);
-      setRelatedConsultation(consultation);
       setDayShifts([]);
       setSidebarView('detail');
+
+      if (processed.status === 'Atendido') {
+        try {
+          const consultation = await getConsultationByShiftId(processed.id);
+          setRelatedConsultation(consultation);
+        } catch (error) {
+          console.error("No se encontró consulta para el turno atendido:", error);
+        }
+      }
     }
     setIsSidebarOpen(true);
   };
 
-  const handleSelectShiftFromList = (rawShift) => {
+  const handleSelectShiftFromList = async (rawShift) => {
     const processed = processShiftForDetail(rawShift);
     setSelectedShift(processed);
-    const consultation = getConsultationByShiftId(processed.id);
-    setRelatedConsultation(consultation);
     setSidebarView('detail');
+    setRelatedConsultation(null);
+
+    if (processed.status === 'Atendido') {
+      try {
+        const consultation = await getConsultationByShiftId(processed.id);
+        setRelatedConsultation(consultation);
+      } catch (error) {
+        console.error("No se encontró consulta para el turno atendido:", error);
+      }
+    }
   };
 
   const handleBackToList = () => {
@@ -176,70 +200,77 @@ const PatientSchedule = () => {
 
   const confirmCancel = async () => {
     setLoadingCancel(true);
+
+    // Aseguramos que tenemos el ID del turno a cancelar
+    if (!shiftToCancel) {
+      setLoadingCancel(false);
+      closeCancelModal();
+      toast.error("No se encontró el ID del turno para cancelar.");
+      return;
+    }
+
     try {
-        // AQUI VA LA LLAMADA AL BACKEND
-        await new Promise(resolve => setTimeout(resolve, 2000)); 
+      const updatedShift = await cancelShiftById(shiftToCancel);
+      const newStatusName = updatedShift.status.name;
 
-        // Simulación de error: Descomentar para probar el Toast de error
-        // throw { response: { data: { message: "El turno ya fue procesado." } } }; 
-
-        // --- Mockeo de la Actualización de la UI ---
-        setCalendarEvents(prev => prev.map(ev => {
-            if (ev.resource.type === 'single' && ev.resource.shift.shiftId === shiftToCancel) {
-                // Actualiza el estado dentro del evento para vista de calendario
-                return { ...ev, resource: { ...ev.resource, shift: { ...ev.resource.shift, status: { name: 'Cancelado' } } } };
-            }
-            if (ev.resource.type === 'cluster') {
-                // Actualiza el estado dentro del cluster para vista de calendario
-                const updatedShifts = ev.resource.shifts.map(s =>
-                    s.shiftId === shiftToCancel ? { ...s, status: { name: 'Cancelado' } } : s
-                );
-                return { ...ev, resource: { ...ev.resource, shifts: updatedShifts } };
-            }
-            return ev;
-        }));
-
-        if (selectedShift && selectedShift.id === shiftToCancel) {
-            // Actualiza el estado en la sidebar
-            setSelectedShift(prev => ({ ...prev, status: 'Cancelado' }));
+      setCalendarEvents(prev => prev.map(ev => {
+        if (ev.resource.type === 'single' && ev.resource.shift.shiftId === shiftToCancel) {
+          return { ...ev, resource: { ...ev.resource, shift: updatedShift } };
         }
-
-        if (dayShifts.length > 0) {
-            // Actualiza el estado en la lista del día
-            setDayShifts(prev => prev.map(s =>
-                s.shiftId === shiftToCancel ? { ...s, status: { name: 'Cancelado' } } : s
-            ));
+        if (ev.resource.type === 'cluster') {
+          const updatedShifts = ev.resource.shifts.map(s =>
+            s.shiftId === shiftToCancel ? updatedShift : s
+          );
+          return { ...ev, resource: { ...ev.resource, shifts: updatedShifts } };
         }
-        // --- FIN Mockeo ---
+        return ev;
+      }));
 
-        toast.success("Turno cancelado con éxito.");
+      if (selectedShift && selectedShift.id === shiftToCancel) {
+        setSelectedShift(processShiftForDetail(updatedShift));
+      }
+
+      if (dayShifts.length > 0) {
+        setDayShifts(prev => prev.map(s =>
+          s.shiftId === shiftToCancel ? updatedShift : s
+        ));
+      }
+
+      toast.success(`Turno (${shiftToCancel}) cancelado con éxito.`);
 
     } catch (error) {
-        console.error("Error al cancelar turno:", error);
-        const errorMessage = error.response?.data?.message || "Ocurrió un error en el servidor. No se pudo cancelar el turno.";
-        toast.error(errorMessage);
-        
+      console.error("Error al cancelar turno:", error);
+      toast.error("Ocurrió un error en el servidor. No se pudo cancelar el turno.");
+
     } finally {
-        setLoadingCancel(false);
-        closeCancelModal();
+      setLoadingCancel(false);
+      closeCancelModal();
     }
-  };
+  };
 
   const handleGoToPatientHistory = () => {
     navigate(`/patient/history/${relatedConsultation.consultationId}`)
   };
 
   const filteredEventsForWeek = useMemo(() => {
-    let myTurns = user && user.userId
-      ? patientScheduleMock.filter(s => s.patient.user.userId === user.userId)
-      : patientScheduleMock;
-
-    return myTurns.map(t => ({
-      ...t,
-      date: t.startTime,
-      title: t.doctor.specialty.name
-    }));
-  }, [user]);
+    return calendarEvents.flatMap(event => {
+      if (event.resource.type === 'single') {
+        const shift = event.resource.shift;
+        return [{
+          ...shift,
+          date: shift.startTime,
+          title: shift.doctor.specialty.name
+        }];
+      }
+      return event.resource.type === 'cluster'
+        ? event.resource.shifts.map(shift => ({
+          ...shift,
+          date: shift.startTime,
+          title: shift.doctor.specialty.name
+        }))
+        : [];
+    });
+  }, [calendarEvents]);
 
   return (
     <AnimatedPage>
@@ -424,8 +455,8 @@ const PatientSchedule = () => {
                 ¿Estás seguro de que deseas cancelar este turno?
               </p>
               <div className="flex flex-row gap-10">
-                <Button text="Volver" variant="secondary" onClick={closeCancelModal} disable={loadingCancel}/>
-                <Button text="Confirmar" variant="primary" onClick={confirmCancel} isLoading={loadingCancel}/>
+                <Button text="Volver" variant="secondary" onClick={closeCancelModal} disable={loadingCancel} />
+                <Button text="Confirmar" variant="primary" onClick={confirmCancel} isLoading={loadingCancel} />
               </div>
             </div>
           }

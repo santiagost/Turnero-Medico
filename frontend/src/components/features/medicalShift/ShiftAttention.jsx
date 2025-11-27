@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import { IoIosAdd, IoIosClose, IoIosCheckmark } from "react-icons/io";
 
 import { useToast } from "../../../hooks/useToast";
@@ -6,7 +6,9 @@ import { useToast } from "../../../hooks/useToast";
 // Utilities
 import { medicationValidationSchema } from "../../../validations/adminSchemas";
 import { calculateAge, estimateDate, getFormattedDate, getFormattedTime } from "../../../utils/dateUtils";
-import { completedConsultationsMock } from "../../../utils/mockData";
+
+import { getConsultationsByPatient } from "../../../../services/consultation.service";
+
 // Features
 import MedicationList from "../medication/MedicationList";
 import ConsultationCard from "../medicalHistory/ConsultationCard";
@@ -30,6 +32,9 @@ const ShiftAttention = ({ shift, onSave, onDiscard }) => {
 
     const [allComplete, setAllComplete] = useState(false);
 
+    const [patientHistory, setPatientHistory] = useState([]);
+    const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+
     // ----- Subformulario de Medicamentos ----
     const [medicationForm, setMedicationForm] = useState(null);
     const [medicationErrors, setMedicationErrors] = useState({});
@@ -38,15 +43,37 @@ const ShiftAttention = ({ shift, onSave, onDiscard }) => {
     // -----------------------------------------------------------------------
     // 2. FILTRAR CONSULTAS DEL PACIENTE
     // -----------------------------------------------------------------------
-    const patientHistory = useMemo(() => {
-        if (!shift?.patient?.patientId) return [];
-        const allHistory = completedConsultationsMock.filter(consultation =>
-            consultation.shift?.patient?.patientId === shift.patient.patientId
-        );
-        allHistory.sort((a, b) => new Date(b.consultationDate) - new Date(a.consultationDate));
-        return allHistory.slice(0, 3);
+    useEffect(() => {
+        const fetchHistory = async () => {
+            const patientId = shift?.patient?.patientId;
+            if (!patientId) {
+                setPatientHistory([]);
+                return;
+            }
 
-    }, [shift]);
+            setIsLoadingHistory(true);
+            try {
+                // Llamada al servicio real
+                const allHistory = await getConsultationsByPatient(patientId);
+
+                // Ordenar por fecha de consulta descendente
+                allHistory.sort((a, b) => new Date(b.consultationDate) - new Date(a.consultationDate));
+
+                // Limitar a las últimas 3 consultas
+                setPatientHistory(allHistory.slice(0, 3));
+            } catch (error) {
+                console.error("Error cargando historial de consultas:", error);
+                setPatientHistory([]);
+                // No mostramos toast aquí para no ser intrusivos
+            } finally {
+                setIsLoadingHistory(false);
+            }
+        };
+
+        fetchHistory();
+
+        // Dependencia del shift.patient.patientId para recargar si el turno cambia
+    }, [shift?.patient?.patientId]);
 
 
     // --- Lógica del Formulario Principal (Consulta) ---
@@ -153,6 +180,7 @@ const ShiftAttention = ({ shift, onSave, onDiscard }) => {
             toast.error("Por favor, complete el diagnóstico, tratamiento y las notas personales.");
             return;
         }
+
         onSave(formData);
     };
 
