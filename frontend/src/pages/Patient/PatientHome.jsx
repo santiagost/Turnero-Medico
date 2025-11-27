@@ -7,7 +7,7 @@ import SectionCard from '../../components/ui/SectionCard'
 import ShiftList from '../../components/features/medicalShift/ShiftList';
 import Spinner from '../../components/ui/Spinner';
 
-import NewMedicalShift from '../../components/features/schedule/newMedicalShift';
+import NewMedicalShift from '../../components/features/schedule/NewMedicalShift';
 
 import Modal from '../../components/ui/Modal';
 import PrincipalCard from '../../components/ui/PrincipalCard';
@@ -22,7 +22,7 @@ const PatientHome = () => {
     const { user, profile } = useAuth();
     const toast = useToast();
 
-    const CURRENT_PATIENT = profile.patientId;
+    const CURRENT_PATIENT_ID = profile.patientId;
 
     const [patientSchedule, setPatientSchedule] = useState([]); 
     const [isLoadingShifts, setIsLoadingShifts] = useState(true); 
@@ -41,7 +41,7 @@ const PatientHome = () => {
         setIsLoadingShifts(true);
 
         try {
-            const data = await getNextShiftsForPatient(3) //CURRENT_PATIENT
+            const data = await getNextShiftsForPatient(CURRENT_PATIENT_ID)
             setPatientSchedule(data);
 
         } catch (error) {
@@ -51,7 +51,7 @@ const PatientHome = () => {
         } finally {
             setIsLoadingShifts(false);
         }
-    }, [CURRENT_PATIENT]);
+    }, [CURRENT_PATIENT_ID]);
 
 
     useEffect(() => {

@@ -39,6 +39,22 @@ export const getNextShiftsForPatient = async (patientId) => {
   }
 };
 
+// Endpoint: GET /turnos/medico/proximos/{id}
+export const getNextShiftsForDoctor = async (doctorId) => {
+  try {
+    const response = await axiosClient.get(
+      `/turnos/medico/proximos/${doctorId}`
+    );
+    return response.data.map(mapShiftFromBackend);
+  } catch (error) {
+    console.error(
+      `Error al obtener próximos turnos del médico ${doctorId}:`,
+      error
+    );
+    throw error;
+  }
+};
+
 // Endpoint: GET /turnos/paciente/historial
 export const getPatientHistory = async (patientId, startDate, endDate) => {
   try {

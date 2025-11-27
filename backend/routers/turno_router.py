@@ -44,6 +44,12 @@ async def get_proximos_turnos_paciente(paciente_id: int, service: TurnoService =
     turnos = service.get_proximos_turnos_paciente(paciente_id)
     return jsonable_encoder(turnos)
 
+@router.get("/medico/proximos/{medico_id}", response_model=List[dict])
+async def get_proximos_turnos_medico(medico_id: int, service: TurnoService = Depends(get_turno_service)):
+    """Obtiene los próximos turnos de un paciente"""
+    turnos = service.get_proximos_turnos_medico(medico_id)
+    return jsonable_encoder(turnos)
+
 
 # listado de todos los turnos de un determinado paciente dados entre 2 fechas desde hasta
 @router.get("/paciente/historial", response_model=List[dict])

@@ -86,7 +86,7 @@ const AdminNewDoctor = ({ refresh }) => {
             return;
         }
 
-        setIsLoading(true); // Activar spinner
+        setIsLoading(true);
 
         try {
            const data = await createDoctor(doctorData);

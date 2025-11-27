@@ -86,6 +86,7 @@ export const createDoctor = async (body) => {
     telephone,
     specialtyId,
     email,
+    password, // 👈 Se agrega para control explícito de la contraseña inicial
     emailNotificationActive,
   } = body;
 
@@ -97,8 +98,11 @@ export const createDoctor = async (body) => {
     telefono: telephone,
     email: email,
     id_especialidad: specialtyId,
+    ...(password && { password: password }), 
     noti_cancel_email_act:
-      emailNotificationActive !== undefined ? emailNotificationActive : 1,
+      emailNotificationActive !== undefined
+        ? Number(emailNotificationActive)
+        : 1,
   };
 
   try {
@@ -106,8 +110,8 @@ export const createDoctor = async (body) => {
     const data = mapDoctorFromBackend(response.data);
     return data;
   } catch (error) {
-    console.error("Error al crear médico:", error);
-    throw error;
+    console.error("Error al crear médico:", error.response?.data || error.message);
+    throw error.response?.data || error;
   }
 };
 

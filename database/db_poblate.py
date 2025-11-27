@@ -120,10 +120,10 @@ INSERT INTO Paciente (id_usuario, dni, nombre, apellido, fecha_nacimiento, telef
 -- Horarios de Atención 
 -- (Simplificados para que todos trabajen de Lunes a Viernes un rato)
 INSERT INTO HorarioAtencion (id_medico, dia_semana, hora_inicio, hora_fin, duracion_turno_min) VALUES 
-(1, 0, '08:00', '16:00', 30), (1, 1, '08:00', '16:00', 30), (1, 2, '08:00', '16:00', 30), -- House
-(2, 0, '09:00', '15:00', 20), (2, 1, '09:00', '15:00', 20), (2, 2, '09:00', '15:00', 20), -- Meredith
-(3, 0, '10:00', '18:00', 30), (3, 1, '10:00', '18:00', 30), (3, 2, '10:00', '18:00', 30), -- Jeremias
-(4, 0, '08:00', '12:00', 15), (4, 1, '08:00', '12:00', 15), (4, 2, '08:00', '12:00', 15); -- Pimple
+(1, 0, '08:00', '16:00', 30), (1, 1, '08:00', '16:00', 30), (1, 2, '08:00', '16:00', 30), (1, 3, '08:00', '16:00', 30), (1, 4, '08:00', '16:00', 30), -- House
+(2, 0, '09:00', '15:00', 20), (2, 1, '09:00', '15:00', 20), (2, 2, '09:00', '15:00', 20), (2, 3, '09:00', '15:00', 20), (2, 4, '09:00', '15:00', 20), -- Meredith
+(3, 0, '10:00', '18:00', 30), (3, 1, '10:00', '18:00', 30), (3, 2, '10:00', '18:00', 30), (3, 3, '10:00', '18:00', 30), (3, 4, '10:00', '18:00', 30), -- Jeremias
+(4, 0, '08:00', '12:00', 15), (4, 1, '08:00', '12:00', 15), (4, 2, '08:00', '12:00', 15), (4, 3, '08:00', '12:00', 15), (4, 4, '08:00', '12:00', 15); -- Pimple
 
 -- =================================================================================================
 -- TURNOS (Distribuidos para generar estadísticas)
@@ -131,48 +131,44 @@ INSERT INTO HorarioAtencion (id_medico, dia_semana, hora_inicio, hora_fin, durac
 
 INSERT INTO Turno (id_paciente, id_medico, id_estado_turno, fecha_hora_inicio, fecha_hora_fin, motivo_consulta, recordatorio_notificado, reserva_notificada) VALUES
 
--- --- HACE 5 DÍAS ---
--- 2 de Cardio (House)
+-- --- HACE 5 DÍAS (Históricos) ---
 (1, 1, 2, '{d_minus_5} 09:00:00', '{d_minus_5} 09:30:00', 'Presión Alta', 1, 1),
 (2, 1, 2, '{d_minus_5} 09:30:00', '{d_minus_5} 10:00:00', 'Dolor pecho', 1, 1),
--- 1 de Dermatología (Lee)
 (3, 4, 2, '{d_minus_5} 08:00:00', '{d_minus_5} 08:15:00', 'Acné', 1, 1),
 
--- --- HACE 4 DÍAS ---
--- 3 de Clinica (Meredith)
+-- --- HACE 4 DÍAS (Históricos) ---
 (1, 2, 2, '{d_minus_4} 10:00:00', '{d_minus_4} 10:20:00', 'Gripe', 1, 1),
 (2, 2, 2, '{d_minus_4} 10:20:00', '{d_minus_4} 10:40:00', 'Fiebre', 1, 1),
 (3, 2, 3, '{d_minus_4} 10:40:00', '{d_minus_4} 11:00:00', 'Cancelado', 1, 1),
--- 1 de Pediatria (Jeremias)
 (1, 3, 2, '{d_minus_4} 15:00:00', '{d_minus_4} 15:30:00', 'Vacunación', 1, 1),
 
--- --- HACE 3 DÍAS (Día cargado) ---
--- 2 de Pediatría (Jeremias)
+-- --- HACE 3 DÍAS (Históricos) ---
 (2, 3, 2, '{d_minus_3} 16:00:00', '{d_minus_3} 16:30:00', 'Control niño', 1, 1),
 (3, 3, 4, '{d_minus_3} 16:30:00', '{d_minus_3} 17:00:00', 'Ausente', 1, 1),
--- 2 de Dermatología (Lee)
 (1, 4, 2, '{d_minus_3} 09:00:00', '{d_minus_3} 09:15:00', 'Lunar sospechoso', 1, 1),
 (2, 4, 2, '{d_minus_3} 09:15:00', '{d_minus_3} 09:30:00', 'Eczema', 1, 1),
--- 1 de Cardio
 (3, 1, 2, '{d_minus_3} 11:00:00', '{d_minus_3} 11:30:00', 'Arritmia', 1, 1),
 
--- --- HACE 2 DÍAS ---
--- Mix variado
+-- --- HACE 2 DÍAS (Históricos) ---
 (1, 2, 2, '{d_minus_2} 09:00:00', '{d_minus_2} 09:20:00', 'Clinica dolor', 1, 1),
 (2, 4, 2, '{d_minus_2} 10:00:00', '{d_minus_2} 10:15:00', 'Dermatitis', 1, 1),
 (3, 1, 2, '{d_minus_2} 14:00:00', '{d_minus_2} 14:30:00', 'Cardio chequeo', 1, 1),
 
--- --- HOY (Datos actuales) ---
+-- --- HOY (Se asumen pasados para prueba, si se ejecuta tarde) ---
 (1, 2, 2, '{hoy} 09:00:00', '{hoy} 09:20:00', 'Dolor garganta', 0, 1),
-(2, 3, 1, '{hoy} 17:00:00', '{hoy} 17:30:00', 'Fiebre niño (Pendiente)', 0, 1),
-(3, 1, 1, '{hoy} 15:00:00', '{hoy} 15:30:00', 'Consulta Tarde (Pendiente)', 0, 1);
+(2, 3, 2, '{hoy} 11:00:00', '{hoy} 11:30:00', 'Fiebre niño', 0, 1), 
+(3, 1, 2, '{hoy} 12:00:00', '{hoy} 12:30:00', 'Consulta Tarde', 0, 1), 
 
--- RESULTADO ESPERADO EN GRÁFICO (aprox en rango 5 dias):
--- Cardiología: ~5 turnos
--- Clínica: ~5 turnos
--- Dermatología: ~4 turnos
--- Pediatría: ~4 turnos
--- TOTAL: ~18 turnos bien distribuidos
+
+-- --- MAÑANA (Próximos) ---
+(1, 1, 1, '{manana} 08:30:00', '{manana} 09:00:00', 'Chequeo rutinario', 0, 1), -- Medico 1 (House)
+(2, 2, 1, '{manana} 11:00:00', '{manana} 11:20:00', 'Consulta general', 0, 1), -- Medico 2 (Meredith)
+(3, 3, 1, '{manana} 14:00:00', '{manana} 14:30:00', 'Control de peso', 0, 1), -- Medico 3 (Jeremias)
+(1, 4, 1, '{manana} 09:30:00', '{manana} 09:45:00', 'Control de verruga', 0, 1), -- Medico 4 (Lee)
+
+-- --- PASADO MAÑANA (Próximos) ---
+(3, 1, 1, '{pasado} 10:00:00', '{pasado} 10:30:00', 'Test de esfuerzo', 0, 1), -- Medico 1 (House)
+(1, 2, 1, '{pasado} 13:00:00', '{pasado} 13:20:00', 'Seguimiento', 0, 1); -- Medico 2 (Meredith)
 
 -- =================================================================================================
 -- Consultas (Para dar realismo)

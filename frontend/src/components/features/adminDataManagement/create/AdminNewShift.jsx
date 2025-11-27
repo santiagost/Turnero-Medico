@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { addDays, format } from "date-fns";
+import { format, addMinutes } from "date-fns";
 import { useToast } from "../../../../hooks/useToast";
+
+// Componentes UI (asumo que se mantienen igual)
 import Calendar from "../../../ui/Calendar";
 import WeeklySlots from "../../schedule/WeeklySlots";
 import Select from "../../../ui/Select";
@@ -12,23 +14,25 @@ import PrincipalCard from "../../../ui/PrincipalCard";
 import IconButton from "../../../ui/IconButton";
 import ToggleSwitch from "../../../ui/ToggleSwitch";
 
+// Iconos
 import { FaSearch } from "react-icons/fa";
 import { LiaUndoAltSolid } from "react-icons/lia";
 
-import {
-    getMockDoctorSchedule,
-    mockDoctorAvailability,
-    mockPatients,
-} from "../../../../utils/mockData";
-
+// Servicios de API (adaptados para consistencia)
 import { getSpecialtyOptions } from "../../../../../services/specialty.service";
 import { getSocialWorkOptions } from "../../../../../services/socialWork.service";
-import {
-    getDoctorById,
-    getDoctorOptions,
-} from "../../../../../services/doctor.service";
-import { getAllDoctorsWithFilters } from "../../../../../services/doctor.service";
+import { getAllDoctorsWithFilters, getDoctorOptions, getDoctorById } from "../../../../../services/doctor.service";
+import { getAvailabilitiesByDoctor } from "../../../../../services/availability.service";
+// **Consumo de Endpoints Consistente**
+import { getDoctorAgenda, createShift } from "../../../../../services/shift.service";
+// Servicios de Paciente (adaptados o simulados)
+import { getAllPatientsWithFilters, createPatient } from "../../../../../services/patient.service"; // Asumo un nuevo servicio
+
+
+// Esquemas de validación
 import { newAdminShiftSchema } from "../../../../validations/shiftSchemas";
+import { adminCreatePatientSchema } from "../../../../validations/adminSchemas";
+
 
 const sectionVariants = {
     hidden: { opacity: 0, height: 0, y: -20, transition: { duration: 0.3 } },
@@ -41,13 +45,17 @@ const sectionVariants = {
     exit: { opacity: 0, height: 0, y: -20, transition: { duration: 0.2 } },
 };
 
-const AdminNewShift = () => {
+const AdminNewShift = ({ onShiftCreated }) => { // Agregar onShiftCreated si se usa para refrescar
     const [isPatientManual, setIsPatientManual] = useState(false);
     const [isPatientFound, setIsPatientFound] = useState(false);
+    // Nuevo estado para guardar el ID del paciente si fue encontrado
+    const [existingPatientId, setExistingPatientId] = useState(null);
+
     const [isLoading, setIsLoading] = useState(false);
     const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
     const toast = useToast();
 
+    // Estructura de datos para paciente y turno
     const [formData, setFormData] = useState({
         patient: {
             dni: "",
@@ -92,6 +100,29 @@ const AdminNewShift = () => {
         ...filteredDoctorOptions,
     ];
 
+    const getParticularId = () => {
+        const particularOption = socialWorkOptions.find(opt => opt.label === "Particular");
+        return particularOption ? particularOption.value : null;
+    };
+
+
+    const isParticularSelected = () => {
+        const selectedId = formData.patient.socialWorkId;
+        return selectedId && selectedId == getParticularId();
+    };
+
+    // Función para calcular la hora de fin del turno (+30 minutos) - Copiada del componente de Paciente
+    const calculateEndTime = (date, time) => {
+        if (!date || !time) return null;
+
+        const startTimeStr = `${date}T${time}:00`;
+        const startDate = new Date(startTimeStr);
+
+        const endDate = addMinutes(startDate, 30);
+
+        return format(endDate, "yyyy-MM-dd HH:mm:ss");
+    };
+
     // --- CARGA INICIAL DE OPCIONES ---
     useEffect(() => {
         const fetchOptions = async () => {
@@ -100,8 +131,8 @@ const AdminNewShift = () => {
                 const socialWorkData = await getSocialWorkOptions();
                 const doctorData = await getDoctorOptions();
 
-                setSpecialtyOptions([{ value: "", label: "" }, ...specialtyData]);
-                setSocialWorkOptions([{ value: "", label: "" }, ...socialWorkData]);
+                setSpecialtyOptions([{ value: "", label: "Seleccione Especialidad..." }, ...specialtyData]);
+                setSocialWorkOptions([{ value: "", label: "Seleccione Obra Social..." }, ...socialWorkData]);
                 setAllDoctorOptions(doctorData);
                 setFilteredDoctorOptions(doctorData);
             } catch (error) {
@@ -112,7 +143,7 @@ const AdminNewShift = () => {
         fetchOptions();
     }, []);
 
-    // --- EFECTO: CUANDO CAMBIA EL DOCTOR SELECCIONADO (BUSCAR DETALLES) ---
+    // --- EFECTO: OBTENER DETALLES Y CONFIGURACIÓN DEL DOCTOR SELECCIONADO ---
     useEffect(() => {
         if (!formData.doctorId) {
             setSelectedDoctorDetails(null);
@@ -132,9 +163,14 @@ const AdminNewShift = () => {
                     }));
                 }
 
-                setDoctorScheduleConfig(mockDoctorAvailability);
+                // Usar el endpoint real si se tiene:
+                const scheduleData = await getAvailabilitiesByDoctor(formData.doctorId);
+                setDoctorScheduleConfig(scheduleData);
             } catch (error) {
                 console.error("Error buscando detalles del doctor", error);
+                setSelectedDoctorDetails(null);
+                setDoctorScheduleConfig([]);
+                toast.error("Error al cargar la disponibilidad del médico.");
             }
         };
 
@@ -162,6 +198,7 @@ const AdminNewShift = () => {
                 setFilteredDoctorOptions(mappedOptions);
             } catch (error) {
                 console.error("Error filtrando médicos:", error);
+                setFilteredDoctorOptions([]);
             } finally {
                 setIsLoading(false);
             }
@@ -170,14 +207,41 @@ const AdminNewShift = () => {
         filterDoctors();
     }, [formData.specialtyId, allDoctorOptions]);
 
-    // --- EFECTO: CARGAR TURNOS AL CAMBIAR SEMANA O DOCTOR ---
+    // --- EFECTO: CARGAR TURNOS OCUPADOS (currentWeekShifts) ---
+    // Mismo consumo que el componente de paciente
     useEffect(() => {
-        if (selectedWeek?.from && formData.doctorId) {
-            // Aquí iría la llamada real al back para buscar turnos ocupados
-            const mocks = getMockDoctorSchedule(addDays(selectedWeek.from, 1));
-            setCurrentWeekShifts(mocks);
+        const startDate = selectedWeek?.from;
+        const endDate = selectedWeek?.to;
+        const doctorId = formData.doctorId;
+
+        if (startDate && endDate && doctorId) {
+            const formattedStartDate = format(startDate, 'yyyy-MM-dd');
+            const formattedEndDate = format(endDate, 'yyyy-MM-dd');
+
+            const fetchDoctorAgenda = async () => {
+                try {
+                    // Endpoint: /api/shift/doctor/{doctorId}/agenda?startDate={date}&endDate={date}
+                    const occupiedShifts = await getDoctorAgenda(
+                        doctorId, // El ID del doctor debe ser el primer parámetro
+                        formattedStartDate,
+                        formattedEndDate
+                    );
+
+                    setCurrentWeekShifts(occupiedShifts);
+
+                } catch (error) {
+                    console.error("Error al cargar turnos ocupados:", error);
+                    toast.error("Error al cargar la agenda de turnos.");
+                    setCurrentWeekShifts([]);
+                }
+            };
+
+            fetchDoctorAgenda();
+        } else {
+            setCurrentWeekShifts([]);
         }
     }, [selectedWeek, formData.doctorId]);
+
 
     // --- EFECTO: SELECCIONAR UN TURNO (SLOT) ---
     useEffect(() => {
@@ -193,6 +257,10 @@ const AdminNewShift = () => {
         }
     }, [selectedShift]);
 
+    // =================================================================================
+    // --- MANEJADORES DE ESTADO Y LÓGICA DE NEGOCIO ---
+    // =================================================================================
+
     const handleChange = (e) => {
         const { name, value } = e.target;
         const patientFields = [
@@ -200,6 +268,8 @@ const AdminNewShift = () => {
             "firstName",
             "lastName",
             "telephone",
+            "birthDate",
+            "email",
             "membershipNumber",
             "socialWorkId",
         ];
@@ -210,13 +280,16 @@ const AdminNewShift = () => {
                 ...prev,
                 patient: { ...prev.patient, [name]: value },
             }));
-            if (name === "dni" && isPatientFound) setIsPatientFound(false);
+            // Si cambia el DNI, reseteamos el paciente encontrado
+            if (name === "dni" && isPatientFound) {
+                setIsPatientFound(false);
+                setExistingPatientId(null);
+            }
         } else if (name === "specialtyId") {
             // Si cambia la especialidad, reseteamos doctor y turno
             setSelectedShift(null);
             setFormData((prev) => ({ ...prev, specialtyId: value, doctorId: "" }));
         } else if (name === "doctorId") {
-            // Ojo: name en el Select debe ser "doctorId"
             // Si cambia el doctor, reseteamos el turno seleccionado
             setSelectedShift(null);
             setFormData((prev) => ({ ...prev, doctorId: value }));
@@ -228,45 +301,95 @@ const AdminNewShift = () => {
         if (errors[name]) setErrors((prev) => ({ ...prev, [name]: null }));
     };
 
-    // --- BUSQUEDA DE PACIENTE ---
-    const handleSearchPatient = () => {
-        const dniToSearch = formData.patient.dni;
-        if (!dniToSearch) {
-            toast.warning("Ingrese un DNI");
+    const handleBlur = (e) => {
+        const { name } = e.target;
+        const particularId = getParticularId();
+
+        // Obtener los dos schemas. Asumo que adminCreatePatientSchema es una función que se llama
+        const patientSchema = adminCreatePatientSchema(particularId);
+        // newAdminShiftSchema es el objeto de reglas
+
+        let rule;
+        let valueToValidate;
+
+        // 1. Priorizar la validación del PACIENTE si el campo existe en el schema de paciente.
+        if (patientSchema.hasOwnProperty(name)) {
+            rule = patientSchema[name];
+            // El valor a validar se toma del sub-objeto 'patient'
+            valueToValidate = formData.patient[name];
+
+            // 2. Si no es de paciente, buscar en los campos del TURNO/RAZÓN.
+        } else if (newAdminShiftSchema.hasOwnProperty(name)) {
+            rule = newAdminShiftSchema[name];
+            // El valor a validar se toma directamente del objeto raíz 'formData'
+            valueToValidate = formData[name];
+        } else {
+            // No hay regla para este campo (ej. un campo interno no validado)
             return;
         }
 
-        const foundPatient = mockPatients.find((p) => p.dni === dniToSearch);
+        if (rule) {
+            // Se pasa el objeto 'formData' completo a la regla, ya que 
+            // las reglas complejas de Obra Social/Afiliado lo necesitan para las condicionales.
+            const error = rule(valueToValidate, formData);
 
-        if (foundPatient) {
-            setFormData((prev) => ({
-                ...prev,
-                patient: {
-                    ...prev.patient,
-                    ...foundPatient,
-                    socialWorkId: foundPatient.socialWork?.socialWorkId || "",
-                },
-            }));
-            setIsPatientFound(true);
-            setErrors((prev) => ({ ...prev, dni: null }));
-            toast.info("Paciente encontrado.");
-        } else {
-            setIsPatientFound(false);
-            if (!isPatientManual) {
-                // Limpiar datos si no se encuentra y no es manual
+            // Se guardan los errores en el estado global 'errors'
+            setErrors((prev) => ({ ...prev, [name]: error }));
+        }
+    };
+
+    // --- BUSQUEDA DE PACIENTE ---
+    const handleSearchPatient = async () => {
+        const dniToSearch = formData.patient.dni;
+        if (!dniToSearch || String(dniToSearch).length < 7) {
+            toast.warning("Ingrese un DNI válido (mínimo 7 dígitos).");
+            return;
+        }
+
+        setIsLoading(true);
+        try {
+            const patientsList = await getAllPatientsWithFilters({
+                dni: dniToSearch,
+            });
+
+            const foundPatient = patientsList.length > 0 ? patientsList[0] : null;
+
+
+            if (foundPatient) {
+                // Paciente encontrado: Autocompletar y deshabilitar edición
+                const patientEmail = foundPatient?.user?.email || "";
+                const socialWorkId = foundPatient?.socialWork?.socialWorkId || "";
+
                 setFormData((prev) => ({
                     ...prev,
                     patient: {
                         ...prev.patient,
-                        firstName: "",
-                        lastName: "",
-                        telephone: "",
-                        membershipNumber: "",
-                        socialWorkId: "",
+                        dni: foundPatient.dni,
+                        firstName: foundPatient.firstName,
+                        lastName: foundPatient.lastName,
+                        telephone: foundPatient.telephone,
+                        birthDate: foundPatient.birthDate,
+                        email: patientEmail,
+                        membershipNumber: foundPatient.membershipNumber || "",
+                        socialWorkId: String(socialWorkId) || "",
                     },
                 }));
-                toast.warning("Paciente no encontrado.");
+                setExistingPatientId(foundPatient.patientId); // Guardar ID
+                setIsPatientFound(true);
+                setIsPatientManual(false); // Desactivar modo manual
+                setErrors((prev) => ({ ...prev, dni: null }));
+                toast.success("Paciente encontrado. Complete los detalles del turno.");
+            } else {
+                // Paciente NO encontrado: Activar modo manual
+                setExistingPatientId(null);
+                setIsPatientFound(false);
+                toast.warning("Paciente no encontrado. Active el modo 'Paciente sin usuario' para cargarlo manualmente.");
             }
+        } catch (error) {
+            console.error("Error buscando paciente:", error);
+            toast.error("Ocurrió un error en la búsqueda del paciente.");
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -274,54 +397,76 @@ const AdminNewShift = () => {
     const handleToggleChange = () => {
         const newState = !isPatientManual;
         setIsPatientManual(newState);
-        // Si apaga manual y no hay encontrado, limpiar
-        if (!newState && !isPatientFound) {
+
+        if (newState && !isPatientFound) {
+            // Modo manual ON, limpiar datos si no había paciente encontrado
             setFormData((prev) => ({
                 ...prev,
                 patient: {
-                    ...prev.patient,
+                    dni: prev.patient.dni, // Conservar el DNI
                     firstName: "",
                     lastName: "",
                     telephone: "",
+                    birthDate: "",
+                    email: "",
                     membershipNumber: "",
                     socialWorkId: "",
                 },
             }));
+            setExistingPatientId(null);
+        } else if (!newState && !isPatientFound) {
+            // Modo manual OFF, no hay paciente encontrado, limpiar todo el paciente
+            setFormData((prev) => ({
+                ...prev,
+                patient: {
+                    dni: "",
+                    firstName: "",
+                    lastName: "",
+                    telephone: "",
+                    birthDate: "",
+                    email: "",
+                    membershipNumber: "",
+                    socialWorkId: "",
+                },
+            }));
+            setExistingPatientId(null);
         }
     };
 
     const validateStep1 = () => {
-        let step1Fields = ["specialtyId", "doctorId", "date", "time"];
-        if (isPatientManual || isPatientFound) {
-            step1Fields = [
-                ...step1Fields,
-                "dni",
-                "firstName",
-                "lastName",
-                "telephone",
-                "socialWorkId",
-                "membershipNumber",
-            ];
-        }
+        const particularId = getParticularId();
+        const patientSchema = adminCreatePatientSchema(particularId);
 
-        const newErrors = {};
         let isValid = true;
+        const newErrors = {};
 
-        step1Fields.forEach((field) => {
-            // Nota: Debes asegurarte que 'newAdminShiftSchema' valide 'specialtyId' y 'doctorId'
-            // en lugar de objetos 'specialty' y 'doctor'.
-            // Si el schema espera objetos, necesitarás ajustarlo, o hacer un bypass temporal aquí.
-            const rule =
-                newAdminShiftSchema[field] ||
-                newAdminShiftSchema[field.replace("Id", "")];
+        // --- 1. VALIDACIÓN DE DATOS DEL PACIENTE ---
+        // Recorrer todos los campos definidos en el schema de paciente
+        Object.keys(patientSchema).forEach((field) => {
+            const rule = patientSchema[field];
+            // Los valores de paciente están en formData.patient
+            const value = formData.patient[field];
+
+            // Ejecutar la regla, pasando el formData completo.
+            const error = rule(value, formData);
+
+            if (error) {
+                newErrors[field] = error;
+                isValid = false;
+            }
+        });
+
+        // --- 2. VALIDACIÓN DE DATOS DEL TURNO Y MOTIVO ---
+        // Usamos solo los campos de turno y motivo que no son de paciente
+        const shiftFieldsToValidate = ["specialtyId", "doctorId", "date", "time"];
+
+        shiftFieldsToValidate.forEach((field) => {
+            const rule = newAdminShiftSchema[field];
+            // Los valores de turno están en la raíz de formData
+            const value = formData[field];
 
             if (rule) {
-                const valueToValidate =
-                    formData.patient?.[field] !== undefined
-                        ? formData.patient[field]
-                        : formData[field];
-
-                const error = rule(valueToValidate, formData);
+                const error = rule(value, formData);
                 if (error) {
                     newErrors[field] = error;
                     isValid = false;
@@ -329,38 +474,121 @@ const AdminNewShift = () => {
             }
         });
 
+        // --- 3. ACTUALIZAR ERRORES Y RETORNAR ---
+        // Reemplazamos todos los errores (de paciente y turno)
         setErrors(newErrors);
+
+        // Aquí podrías agregar la lógica de estado (ej: si el paciente fue buscado o se está cargando manualmente)
+        if (!existingPatientId && !isPatientManual) {
+            toast.error("Debe buscar un paciente o activar el modo de carga manual.");
+            return false;
+        }
+
         return isValid;
     };
+
 
     const handleOpenConfirmation = (e) => {
         e.preventDefault();
         if (validateStep1()) {
             setIsConfirmModalOpen(true);
         } else {
-            toast.warning("Por favor, completa todos los campos requeridos.");
-            console.log("Errores:", errors);
+            toast.warning("Por favor, complete correctamente todos los campos obligatorios del paciente y del turno.");
         }
     };
 
     const handleConfirmShift = async () => {
-        if (!formData.reason) {
-            setErrors((prev) => ({ ...prev, reason: "Motivo requerido" }));
+        // 1. Validar el motivo de consulta (Reason)
+        const reasonRule = newAdminShiftSchema.reason;
+        const reasonError = reasonRule ? reasonRule(formData.reason, formData) : null;
+
+        if (reasonError) {
+            setErrors((prev) => ({ ...prev, reason: reasonError }));
+            toast.error("El motivo de consulta es obligatorio.");
             return;
         }
 
-        setIsLoading(true);
-        try {
-            console.log("Enviando al Backend:", formData);
-            // await axios.post('/api/shifts', formData);
-            await new Promise((resolve) => setTimeout(resolve, 1000));
+        const startTimeFormatted = `${formData.date} ${formData.time}:00`;
+        const endTimeFormatted = calculateEndTime(formData.date, formData.time);
 
-            toast.success("Turno creado!");
+        // --- Preparación de datos de turno comunes ---
+        const baseShiftPayload = {
+            doctorId: formData.doctorId,
+            startTime: startTimeFormatted,
+            endTime: endTimeFormatted,
+            reason: formData.reason,
+        };
+
+        setIsLoading(true);
+
+        try {
+            let finalPatientId = existingPatientId;
+
+            // ==========================================================
+            // SCENARIO 1: Paciente NUEVO (isPatientManual = true)
+            // ==========================================================
+            if (isPatientManual) {
+
+                // 1.1. Preparar Payload para crear el Paciente
+                const patientCreationPayload = {
+                    dni: formData.patient.dni,
+                    firstName: formData.patient.firstName,
+                    lastName: formData.patient.lastName,
+                    telephone: formData.patient.telephone,
+                    email: formData.patient.email,
+                    birthDate: formData.patient.birthDate,
+                    socialWorkId: formData.patient.socialWorkId,
+                    membershipNumber: formData.patient.membershipNumber,
+                    // NOTA: Si el backend espera 'password', deberías simular una o pedirla.
+                    // Por simplicidad, asumimos que createPatient maneja la contraseña.
+                };
+
+                console.log("Payload para crear paciente:", patientCreationPayload);
+
+                // 1.2. API CALL: Crear el Paciente
+                // Endpoint: POST /pacientes/
+                const newPatient = await createPatient(patientCreationPayload, socialWorkOptions);
+
+                if (!newPatient || !newPatient.patientId) {
+                    throw new Error("La creación del paciente falló o no retornó un ID.");
+                }
+
+                finalPatientId = newPatient.patientId;
+                toast.success(`Paciente registrado con éxito.`);
+            }
+
+            // ==========================================================
+            // SCENARIO 2: Paciente EXISTENTE (isPatientFound = true) 
+            // O Paciente recién creado (finalPatientId != null)
+            // ==========================================================
+
+            if (!finalPatientId) {
+                throw new Error("Error: No se pudo obtener el ID del paciente para registrar el turno.");
+            }
+
+            // 2. Crear el Turno
+            const shiftPayload = {
+                ...baseShiftPayload,
+                patientId: finalPatientId, // Usamos el ID del paciente (existente o nuevo)
+            };
+
+            console.log("Payload para crear turno:", shiftPayload);
+            // Endpoint: POST /shift/
+            await createShift(shiftPayload);
+
+            // 3. Éxito y Reset
+            toast.success(`Turno reservado con éxito.`);
+
+            if (onShiftCreated) {
+                onShiftCreated();
+            }
             handleResetClick();
-            setIsConfirmModalOpen(false);
+
         } catch (error) {
-            toast.error("Error al crear turno");
+            console.error("Error al confirmar turno/crear paciente:", error.response?.data || error);
+            toast.error("Ocurrió un error al reservar el turno. Verifique los datos e intente nuevamente.");
         } finally {
+            setIsConfirmModalOpen(false);
             setIsLoading(false);
         }
     };
@@ -368,19 +596,9 @@ const AdminNewShift = () => {
     const closeConfirmModal = () => {
         if (!isLoading) {
             setIsConfirmModalOpen(false);
+            setErrors((prev) => ({ ...prev, reason: null }));
         }
     };
-
-    const handleBlur = (e) => {
-        const { name, value } = e.target;
-        const rule = newAdminShiftSchema[name];
-        if (rule) {
-            const error = rule(value, formData);
-            setErrors((prev) => ({ ...prev, [name]: error }));
-        }
-    };
-
-    const showPatientFields = isPatientManual || isPatientFound;
 
     const handleResetClick = () => {
         setFormData({
@@ -405,11 +623,22 @@ const AdminNewShift = () => {
         setSelectedWeek(undefined);
         setIsPatientFound(false);
         setIsPatientManual(false);
+        setExistingPatientId(null);
+        setErrors({});
     };
+
+    const showPatientFields = isPatientManual || isPatientFound;
 
     const getSelectedSpecialtyLabel = () => {
         const found = specialtyOptions.find(
             (opt) => String(opt.value) === String(formData.specialtyId)
+        );
+        return found ? found.label : "-";
+    };
+
+    const getSelectedSocialWorkLabel = () => {
+        const found = socialWorkOptions.find(
+            (opt) => String(opt.value) === String(formData.patient.socialWorkId)
         );
         return found ? found.label : "-";
     };
@@ -433,6 +662,7 @@ const AdminNewShift = () => {
                                 error={errors.dni}
                                 required
                                 className="w-full"
+                                disable={isLoading}
                             />
                         </div>
 
@@ -444,12 +674,15 @@ const AdminNewShift = () => {
                                 type={"button"}
                                 onClick={handleSearchPatient}
                                 size={"big"}
+                                isLoading={isLoading}
+                                disable={isLoading}
                             />
                             <motion.div whileTap={{ scale: 0.9, rotate: -180 }}>
                                 <IconButton
                                     icon={<LiaUndoAltSolid size={30} />}
                                     type={"button"}
                                     onClick={handleResetClick}
+                                    disable={isLoading}
                                 />
                             </motion.div>
                         </div>
@@ -457,10 +690,10 @@ const AdminNewShift = () => {
 
                     <div className="shrink-0 flex flex-col items-center justify-center gap-2">
                         <span className="text-custom-dark-blue font-regular text-center text-sm">
-                            Paciente sin <br /> usuario
+                            Paciente sin <br /> usuario (Nuevo)
                         </span>
-                        <div onClick={handleToggleChange} className="cursor-pointer">
-                            <ToggleSwitch isOn={isPatientManual} />
+                        <div onClick={isPatientFound ? null : handleToggleChange} className={isPatientFound ? "cursor-not-allowed opacity-50" : "cursor-pointer"}>
+                            <ToggleSwitch isOn={isPatientManual} disabled={isPatientFound} />
                         </div>
                     </div>
                 </div>
@@ -475,7 +708,7 @@ const AdminNewShift = () => {
                             exit={{ opacity: 0, height: 0 }}
                             transition={{ duration: 0.3 }}
                         >
-                            <div className="flex flex-row items-start justify-center gap-4 bg-custom-light-blue/50 py-4 px-4 rounded-2xl">
+                            <div className="grid grid-cols-4 items-start justify-center gap-4 bg-custom-light-blue/50 py-4 px-4 rounded-2xl">
                                 <Input
                                     tittle="Nombre"
                                     name="firstName"
@@ -506,6 +739,28 @@ const AdminNewShift = () => {
                                     onBlur={handleBlur}
                                     error={errors.telephone}
                                     size="small"
+                                    required
+                                    disable={isPatientFound && !isPatientManual}
+                                />
+                                <Input
+                                    tittle="Email"
+                                    name="email"
+                                    value={formData.patient.email}
+                                    onChange={handleChange}
+                                    onBlur={handleBlur}
+                                    error={errors.email}
+                                    size="small"
+                                    disable={isPatientFound && !isPatientManual}
+                                />
+                                <Input
+                                    tittle="Fecha de Nacimiento"
+                                    name="birthDate"
+                                    type="date"
+                                    value={formData.patient.birthDate}
+                                    onChange={handleChange}
+                                    onBlur={handleBlur}
+                                    error={errors.birthDate}
+                                    size="small"
                                     disable={isPatientFound && !isPatientManual}
                                 />
                                 <Input
@@ -516,7 +771,8 @@ const AdminNewShift = () => {
                                     onBlur={handleBlur}
                                     error={errors.membershipNumber}
                                     size="small"
-                                    disable={isPatientFound && !isPatientManual}
+                                    disable={isLoading || isParticularSelected()}
+                                    placeholder={isParticularSelected() ? "No requerido" : ""}
                                 />
                                 <Select
                                     tittle="Obra Social"
@@ -530,12 +786,14 @@ const AdminNewShift = () => {
                                     required
                                     disable={isPatientFound && !isPatientManual}
                                 />
+                                {/* Espacio en blanco para completar la grilla */}
+                                <div className="hidden sm:block"></div>
                             </div>
                         </motion.div>
                     )}
                 </AnimatePresence>
 
-                <div className="col-span-5 flex flex-row gap-4 mt-2">
+                <div className="col-span-5 grid grid-cols-4 gap-4 mt-2">
                     <Select
                         tittle="Especialidad"
                         name="specialtyId"
@@ -544,6 +802,7 @@ const AdminNewShift = () => {
                         options={specialtyOptions}
                         onBlur={handleBlur}
                         error={errors.specialtyId}
+                        disable={isLoading}
                     />
                     <Select
                         tittle="Médico"
@@ -553,6 +812,7 @@ const AdminNewShift = () => {
                         options={doctorOptionsWithEmpty}
                         onBlur={handleBlur}
                         error={errors.doctorId}
+                        disable={isLoading}
                     />
                     <Input
                         tittle="Fecha"
@@ -560,7 +820,7 @@ const AdminNewShift = () => {
                         name="date"
                         value={formData.date}
                         onChange={handleChange}
-                        disable={true}
+                        disable={true} // Se selecciona del WeeklySlots/Calendar
                         error={errors.date}
                     />
                     <Input
@@ -569,10 +829,11 @@ const AdminNewShift = () => {
                         name="time"
                         value={formData.time}
                         onChange={handleChange}
-                        disable={true}
+                        disable={true} // Se selecciona del WeeklySlots
                         error={errors.time}
                     />
                 </div>
+
                 <div className="col-span-5">
                     <AnimatePresence>
                         {selectedDoctorDetails && (
@@ -626,6 +887,7 @@ const AdminNewShift = () => {
                         variant={"primary"}
                         type={"submit"}
                         size={"big"}
+                        disable={isLoading || !showPatientFields || errors.dni || errors.firstName || errors.lastName || errors.socialWorkId}
                     />
                 </div>
             </form>
@@ -640,6 +902,12 @@ const AdminNewShift = () => {
                                     <span className="font-semibold text-gray-600">Paciente:</span>
                                     <span className="text-custom-dark-blue font-bold">
                                         {formData.patient.firstName} {formData.patient.lastName}
+                                    </span>
+                                </div>
+                                <div className="flex justify-between mb-2">
+                                    <span className="font-semibold text-gray-600">Obra Social:</span>
+                                    <span className="text-custom-dark-blue">
+                                        {getSelectedSocialWorkLabel()} (Afiliado: {formData.patient.membershipNumber || 'N/A'})
                                     </span>
                                 </div>
                                 <div className="flex justify-between mb-2">
@@ -700,6 +968,7 @@ const AdminNewShift = () => {
                                     onClick={handleConfirmShift}
                                     className="w-full"
                                     isLoading={isLoading}
+                                    disable={isLoading || errors.reason || !formData.reason}
                                 />
                             </div>
                         </div>

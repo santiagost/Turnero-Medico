@@ -126,10 +126,11 @@ const AdminNewPatient = ({ refresh }) => {
             return;
         }
 
-        setIsLoading(true); // Activar spinner
+        setIsLoading(true);
 
         try {
-            await createPatient(patientData); 
+            await createPatient(patientData, socialWorksOptions);
+
             console.log("Datos del nuevo paciente a guardar:", patientData);
             toast.success("Paciente registrado exitosamente.");
             if (refresh) {
@@ -140,10 +141,12 @@ const AdminNewPatient = ({ refresh }) => {
 
         } catch (error) {
             console.error("Error al crear paciente:", error);
-            const errorMessage = error.response?.data?.message || "Ocurrió un error al intentar registrar al paciente.";
+            const errorMessage = error.detail
+                ? error.detail
+                : "Ocurrió un error al intentar registrar al paciente.";
             toast.error(errorMessage);
         } finally {
-            setIsLoading(false); // Desactivar spinner
+            setIsLoading(false);
         }
     };
 

@@ -153,6 +153,25 @@ class TurnoService:
                 turnos.append(turno_completo)
         
         return turnos
+    
+    def get_proximos_turnos_medico(self, medico_id: int) -> List[TurnoResponse]:
+        """Obtiene los próximos turnos de un medico"""
+        self.cursor.execute("""
+            SELECT id_turno FROM turno
+            WHERE id_medico = ? AND datetime(fecha_hora_inicio) > datetime('now', 'localtime')
+            ORDER BY fecha_hora_inicio ASC
+        """, (medico_id,))
+        
+        rows = self.cursor.fetchall()
+        
+        turnos = []
+        for row in rows:
+            turno_id = dict(row)['id_turno']
+            turno_completo = self._get_turno_completo(turno_id)
+            if turno_completo:
+                turnos.append(turno_completo)
+        
+        return turnos
 
     def get_historial_desde_hasta(self, paciente_id: int, fecha_desde: str, fecha_hasta: str) -> List[TurnoResponse]:
         """Obtiene el historial de turnos de un paciente entre dos fechas"""
