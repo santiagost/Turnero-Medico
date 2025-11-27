@@ -1,210 +1,252 @@
 import os
 import sqlite3
 import datetime
+import random
 
+# --- CONFIGURACIÓN ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_FILE = os.path.join(BASE_DIR, "turnero_medico.db")
+PASSWORD_HASH = '$2b$12$JRWeXGGLnY6xixy8JmrazeomyJ0rhC9KCub./99DkEdLfiER690oa' # "123"
 
-# --- FECHAS DINÁMICAS ---
-today = datetime.date.today()
-d_minus_5 = (today - datetime.timedelta(days=5)).isoformat()
-d_minus_4 = (today - datetime.timedelta(days=4)).isoformat()
-d_minus_3 = (today - datetime.timedelta(days=3)).isoformat()
-d_minus_2 = (today - datetime.timedelta(days=2)).isoformat()
-d_minus_1 = (today - datetime.timedelta(days=1)).isoformat()
-hoy = today.isoformat()
-manana = (today + datetime.timedelta(days=1)).isoformat()
-pasado = (today + datetime.timedelta(days=2)).isoformat()
+# --- DATOS DE REFERENCIA ---
+ESPECIALIDADES = [
+    ("Cardiología", "Corazón y sistema circulatorio"),
+    ("Pediatría", "Atención médica de bebés, niños y adolescentes"),
+    ("Dermatología", "Piel, cabello y uñas"),
+    ("Clínica Médica", "Atención primaria general"),
+    ("Traumatología", "Lesiones óseas y musculares"),
+    ("Ginecología", "Salud integral de la mujer"),
+    ("Neurología", "Sistema nervioso"),
+    ("Oftalmología", "Salud visual"),
+    ("Psiquiatría", "Salud mental"),
+    ("Otorrinolaringología", "Oído, nariz y garganta")
+]
 
-# Construimos el Script SQL
-SQL_DATA = f"""
+OBRAS_SOCIALES = [
+    ("OSDE", "30-54678923-1", "Av. Madero 1020"),
+    ("Swiss Medical", "30-12345678-9", "Pueyrredón 1500"),
+    ("Particular", None, None),
+    ("Galeno", "30-55555555-5", "Av. Libertador 2000")
+]
 
--- 1. LIMPIEZA
-PRAGMA foreign_keys = OFF;
-DELETE FROM Receta;
-DELETE FROM Consulta;
-DELETE FROM Turno;
-DELETE FROM HorarioAtencion;
-DELETE FROM Medico;
-DELETE FROM Paciente;
-DELETE FROM UsuarioRol;
-DELETE FROM Usuario;
-DELETE FROM ObraSocial;
-DELETE FROM Especialidad;
-DELETE FROM EstadoTurno;
-DELETE FROM Rol;
-DELETE FROM sqlite_sequence;
-PRAGMA foreign_keys = ON;
+# (Nombre, Apellido, Especialidad_Index 0-9)
+MEDICOS_DATA = [
+    ("Gregory", "House", 3),      # Clinica
+    ("Meredith", "Grey", 9),      # Cirugia/Clinica -> Otorrino (simulado)
+    ("Derek", "Shepherd", 6),     # Neuro
+    ("Shaun", "Murphy", 9),       # Cirugia -> Pediatria (simulado index 1)
+    ("Stephen", "Strange", 6),    # Neuro
+    ("Sandra", "Lee", 2),         # Derma
+    ("Leonard", "McCoy", 0),      # Cardio
+    ("Michaela", "Quinn", 3),     # Clinica
+    ("Hannibal", "Lecter", 8),    # Psiquiatria
+    ("Julius", "Hibbert", 1),     # Pediatria
+]
 
--- =================================================================================================
--- Roles
-INSERT INTO Rol (nombre, descripcion) VALUES
-('Secretario', 'Acceso total al sistema'),
-('Medico', 'Profesional de la salud con agenda'),
-('Paciente', 'Usuario que solicita turnos');
+PACIENTES_NOMBRES = ["Lionel", "Cristiano", "Neymar", "Kylian", "Luka", "Kevin", "Erling", "Robert", "Karim", "Mohamed", "Harry", "Sergio", "Thibaut", "Vinicius", "Rodri", "Sadio", "Bernardo", "Ruben", "Phil", "Jude"]
+PACIENTES_APELLIDOS = ["Messi", "Ronaldo", "Junior", "Mbappe", "Modric", "DeBruyne", "Haaland", "Lewandowski", "Benzema", "Salah", "Kane", "Ramos", "Courtois", "Pele", "Hernandez", "Mane", "Silva", "Dias", "Foden", "Bellingham"]
 
--- =================================================================================================
--- Estados de Turno
-INSERT INTO EstadoTurno (nombre, descripcion) VALUES
-('Pendiente', 'Turno reservado'), -- ID 1
-('Atendido', 'Turno finalizado'), -- ID 2
-('Cancelado', 'Turno anulado'),   -- ID 3
-('Ausente', 'Paciente no vino');  -- ID 4
+DIAGNOSTICOS = [
+    "Gripe Estacional", "Hipertensión Arterial", "Dermatitis Atópica", "Migraña Crónica", 
+    "Esguince de Tobillo", "Control de Niño Sano", "Ansiedad Generalizada", "Conjuntivitis Bacteriana",
+    "Otitis Media", "Lumbalgia", "Gastritis Aguda", "Fractura de Radio", "Chequeo General",
+    "Acné Vulgar", "Insomnio"
+]
 
--- =================================================================================================
--- Especialidades (IDs: 1=Cardio, 2=Pediatria, 3=Derma, 4=Clinica)
-INSERT INTO Especialidad (nombre, descripcion) VALUES
-('Cardiología', 'Corazón'),
-('Pediatría', 'Niños'),
-('Dermatología', 'Piel'),
-('Clínica Médica', 'General');
+MEDICAMENTOS = [
+    ("Ibuprofeno 600mg", "1 comprimido cada 8hs"),
+    ("Paracetamol 1g", "1 comprimido cada 12hs si hay dolor"),
+    ("Amoxicilina 500mg", "1 comprimido cada 8hs por 7 días"),
+    ("Enalapril 10mg", "1 comprimido por la mañana"),
+    ("Clonazepam 0.5mg", "1 comprimido por la noche"),
+    ("Omeprazol 20mg", "1 cápsula en ayunas"),
+    ("Loratadina 10mg", "1 comprimido por día"),
+    ("Crema Betametasona", "Aplicar en zona afectada 2 veces al día"),
+    ("Salbutamol Aerosol", "2 disparos ante falta de aire"),
+    ("Diclofenac 75mg", "1 inyectable por única vez")
+]
 
--- =================================================================================================
--- Obras Sociales
-INSERT INTO ObraSocial (nombre, cuit, direccion, telefono, mail) VALUES
-('OSDE', '30-54678923-1', 'Av. Madero 1020', '0810-555-6733', 'contacto@osde.com.ar'),
-('Swiss Medical', '30-12345678-9', 'Pueyrredón 1500', '0810-444-7700', 'info@swiss.com'),
-('Particular', NULL, NULL, NULL, NULL);
+# --- FUNCIONES ---
 
--- =================================================================================================
--- USUARIOS  (La contraseña es: 123)
-INSERT INTO Usuario (email, password_hash, activo, recordatorios_activados) VALUES
-('admin@turnero.com', '$2b$12$JRWeXGGLnY6xixy8JmrazeomyJ0rhC9KCub./99DkEdLfiER690oa', 1, 1),      -- ID 1
-('house@hospital.com', '$2b$12$JRWeXGGLnY6xixy8JmrazeomyJ0rhC9KCub./99DkEdLfiER690oa', 1, 1),     -- ID 2 (Medico Cardio)
-('meredith@hospital.com', '$2b$12$JRWeXGGLnY6xixy8JmrazeomyJ0rhC9KCub./99DkEdLfiER690oa', 1, 1),  -- ID 3 (Medico Clinica)
-('leomessi@gmail.com', '$2b$12$JRWeXGGLnY6xixy8JmrazeomyJ0rhC9KCub./99DkEdLfiER690oa', 1, 1),     -- ID 4 (Paciente)
-('fitopaez@rock.com', '$2b$12$JRWeXGGLnY6xixy8JmrazeomyJ0rhC9KCub./99DkEdLfiER690oa', 1, 1),      -- ID 5 (Paciente)
-('facu.witt@gmail.com', '$2b$12$JRWeXGGLnY6xixy8JmrazeomyJ0rhC9KCub./99DkEdLfiER690oa', 1, 1),    -- ID 6 (Paciente)
-('jeremias@doc.com', '$2b$12$JRWeXGGLnY6xixy8JmrazeomyJ0rhC9KCub./99DkEdLfiER690oa', 1, 1),       -- ID 7 (Medico Pediatria)
-('pimple@doc.com', '$2b$12$JRWeXGGLnY6xixy8JmrazeomyJ0rhC9KCub./99DkEdLfiER690oa', 1, 1);         -- ID 8 (Medico Dermatologia - NUEVO)
+def get_db():
+    return sqlite3.connect(DB_FILE)
 
--- =================================================================================================
--- Asignar Roles
-INSERT INTO UsuarioRol (id_usuario, id_rol) VALUES 
-(1, 1), -- Admin
-(2, 2), -- House (Med)
-(3, 2), -- Meredith (Med)
-(4, 3), -- Messi (Pac)
-(5, 3), -- Fito (Pac)
-(6, 3), -- Facu (Pac)
-(7, 2), -- Jeremias (Med)
-(8, 2); -- Pimple (Med)
+def limpiar_base(cursor):
+    tables = ["Receta", "Consulta", "Turno", "HorarioAtencion", "Medico", "Paciente", "UsuarioRol", "Usuario", "ObraSocial", "Especialidad", "EstadoTurno", "Rol"]
+    cursor.execute("PRAGMA foreign_keys = OFF;")
+    for table in tables:
+        cursor.execute(f"DELETE FROM {table};")
+        cursor.execute(f"DELETE FROM sqlite_sequence WHERE name='{table}';")
+    cursor.execute("PRAGMA foreign_keys = ON;")
+    print("🧹 Base de datos limpiada.")
 
--- =================================================================================================
--- MÉDICOS (Aquí está la clave para tu gráfico: Diversidad de Especialidades)
+def poblar_catalogos(cursor):
+    # Roles
+    cursor.execute("INSERT INTO Rol (id_rol, nombre, descripcion) VALUES (1, 'Secretario', 'Total'), (2, 'Medico', 'Agenda'), (3, 'Paciente', 'Turnos')")
+    # Estados
+    cursor.execute("INSERT INTO EstadoTurno (id_estado_turno, nombre, descripcion) VALUES (1, 'Pendiente', 'Reservado'), (2, 'Atendido', 'Finalizado'), (3, 'Cancelado', 'Anulado'), (4, 'Ausente', 'No asistio')")
+    # Especialidades
+    cursor.executemany("INSERT INTO Especialidad (nombre, descripcion) VALUES (?, ?)", ESPECIALIDADES)
+    # Obras Sociales
+    cursor.executemany("INSERT INTO ObraSocial (nombre, cuit, direccion) VALUES (?, ?, ?)", OBRAS_SOCIALES)
+    print("📋 Catálogos cargados.")
 
--- Medico 1: House -> Especialidad 1 (Cardiología)
-INSERT INTO Medico (id_usuario, id_especialidad, matricula, dni, nombre, apellido, telefono, noti_cancel_email_act) VALUES 
-(2, 1, 'MN-555444', '20123456', 'Gregory', 'House', '11-4444-5555', 1);
+def poblar_usuarios_y_perfiles(cursor):
+    # 1. Admin
+    cursor.execute("INSERT INTO Usuario (email, password_hash, activo) VALUES (?, ?, 1)", ('admin@vitalis.com', PASSWORD_HASH))
+    id_admin = cursor.lastrowid
+    cursor.execute("INSERT INTO UsuarioRol (id_usuario, id_rol) VALUES (?, 1)", (id_admin,))
 
--- Medico 2: Meredith -> Especialidad 4 (Clínica Médica)
-INSERT INTO Medico (id_usuario, id_especialidad, matricula, dni, nombre, apellido, telefono, noti_cancel_email_act) VALUES 
-(3, 4, 'MN-111222', '28987654', 'Meredith', 'Grey', '11-9999-8888', 1);
+    # 2. Medicos
+    ids_medicos = []
+    for i, (nombre, apellido, esp_idx) in enumerate(MEDICOS_DATA):
+        email = f"{nombre.lower()}.{apellido.lower()}@vitalis.com"
+        cursor.execute("INSERT INTO Usuario (email, password_hash, activo) VALUES (?, ?, 1)", (email, PASSWORD_HASH))
+        uid = cursor.lastrowid
+        cursor.execute("INSERT INTO UsuarioRol (id_usuario, id_rol) VALUES (?, 2)", (uid,))
+        
+        # Crear perfil Medico
+        matricula = f"MN-{random.randint(1000,9999)}"
+        dni = str(random.randint(20000000, 40000000))
+        # Especialidad ID es esp_idx + 1 (porque SQLite empieza en 1)
+        cursor.execute("""
+            INSERT INTO Medico (id_usuario, id_especialidad, matricula, dni, nombre, apellido, telefono, noti_cancel_email_act)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 1)
+        """, (uid, esp_idx + 1, matricula, dni, nombre, apellido, f"11-{random.randint(1000,9999)}-{random.randint(1000,9999)}"))
+        ids_medicos.append(cursor.lastrowid) # Guardamos el ID de la tabla MEDICO, no Usuario
 
--- Medico 3: Jeremias -> Especialidad 2 (Pediatría) - CAMBIADO para dar variedad
-INSERT INTO Medico (id_usuario, id_especialidad, matricula, dni, nombre, apellido, telefono, noti_cancel_email_act) VALUES 
-(7, 2, 'MN-333444', '30765432', 'Jeremias', 'Springfield', '11-7777-6666', 1);
+    # 3. Pacientes
+    ids_pacientes = []
+    for _ in range(30):
+        nombre = random.choice(PACIENTES_NOMBRES)
+        apellido = random.choice(PACIENTES_APELLIDOS)
+        email = f"{nombre.lower()}.{apellido.lower()}{random.randint(1,99)}@gmail.com"
+        
+        cursor.execute("INSERT INTO Usuario (email, password_hash, activo) VALUES (?, ?, 1)", (email, PASSWORD_HASH))
+        uid = cursor.lastrowid
+        cursor.execute("INSERT INTO UsuarioRol (id_usuario, id_rol) VALUES (?, 3)", (uid,))
+        
+        dni = str(random.randint(10000000, 99999999))
+        id_os = random.randint(1, 4) # 4 Obras sociales
+        nro_afiliado = f"AF-{random.randint(10000,99999)}" if id_os != 3 else None
+        
+        cursor.execute("""
+            INSERT INTO Paciente (id_usuario, dni, nombre, apellido, fecha_nacimiento, telefono, id_obra_social, nro_afiliado, noti_reserva_email_act)
+            VALUES (?, ?, ?, ?, '1980-01-01', ?, ?, ?, 1)
+        """, (uid, dni, nombre, apellido, f"11-5555-{random.randint(1000,9999)}", id_os, nro_afiliado))
+        ids_pacientes.append(cursor.lastrowid)
 
--- Medico 4: Dra Pimple -> Especialidad 3 (Dermatología) - NUEVO
-INSERT INTO Medico (id_usuario, id_especialidad, matricula, dni, nombre, apellido, telefono, noti_cancel_email_act) VALUES 
-(8, 3, 'MN-999888', '22333444', 'Sandra', 'Lee', '11-1234-5678', 1);
+    print(f"👥 Usuarios creados: 1 Admin, {len(ids_medicos)} Médicos, {len(ids_pacientes)} Pacientes.")
+    return ids_medicos, ids_pacientes
 
--- =================================================================================================
--- Pacientes
-INSERT INTO Paciente (id_usuario, dni, nombre, apellido, fecha_nacimiento, telefono, id_obra_social, nro_afiliado, noti_reserva_email_act) VALUES
-(4, '30001002', 'Lionel', 'Messi', '1987-06-24', '11-1010-1010', 1, 'OSDE-999111', 1),
-(5, '14555666', 'Rodolfo', 'Paez', '1963-03-13', '11-2020-2020', 2, 'SM-777888', 1),
-(6, '44806336', 'Facundo', 'Witt', '2003-07-04', '11-3030-3030', 3, 'P-123456', 1);
+def generar_turnos_historia(cursor, ids_medicos, ids_pacientes):
+    today = datetime.date.today()
+    start_date = today - datetime.timedelta(days=30) # Un mes atrás
+    end_date = today + datetime.timedelta(days=15)   # 15 días adelante
+    
+    total_turnos = 0
+    total_consultas = 0
+    total_recetas = 0
 
--- =================================================================================================
--- Horarios de Atención 
--- (Simplificados para que todos trabajen de Lunes a Viernes un rato)
-INSERT INTO HorarioAtencion (id_medico, dia_semana, hora_inicio, hora_fin, duracion_turno_min) VALUES 
-(1, 0, '08:00', '16:00', 30), (1, 1, '08:00', '16:00', 30), (1, 2, '08:00', '16:00', 30), (1, 3, '08:00', '16:00', 30), (1, 4, '08:00', '16:00', 30), (1, 5, '08:00', '16:00', 30), -- House
-(2, 0, '09:00', '15:00', 20), (2, 1, '09:00', '15:00', 20), (2, 2, '09:00', '15:00', 20), (2, 3, '09:00', '15:00', 20), (2, 4, '09:00', '15:00', 20), -- Meredith
-(3, 0, '10:00', '18:00', 30), (3, 1, '10:00', '18:00', 30), (3, 2, '10:00', '18:00', 30), (3, 3, '10:00', '18:00', 30), (3, 4, '10:00', '18:00', 30), -- Jeremias
-(4, 0, '08:00', '12:00', 15), (4, 1, '08:00', '12:00', 15), (4, 2, '08:00', '12:00', 15), (4, 3, '08:00', '12:00', 15), (4, 4, '08:00', '12:00', 15); -- Pimple
+    # Días laborales (Lunes=0 a Viernes=4)
+    delta_days = (end_date - start_date).days
+    
+    for i in range(delta_days + 1):
+        current_date = start_date + datetime.timedelta(days=i)
+        
+        # Saltamos fines de semana para simplificar horarios
+        if current_date.weekday() >= 5: continue 
+        
+        es_pasado = current_date < today
+        
+        for id_medico in ids_medicos:
+            # Creamos Horario de Atencion para este médico (Simplificado: Todos de 9 a 17)
+            # Solo lo insertamos una vez por médico por día de la semana (0-4)
+            if i < 5: 
+                # Solo insertamos la definicion del horario una vez (asumimos lógica simple aquí)
+                cursor.execute("INSERT OR IGNORE INTO HorarioAtencion (id_medico, dia_semana, hora_inicio, hora_fin, duracion_turno_min) VALUES (?, ?, '09:00', '17:00', 30)", (id_medico, current_date.weekday()))
 
--- =================================================================================================
--- TURNOS (Distribuidos para generar estadísticas)
--- IDs Médicos: 1=Cardio, 2=Clinica, 3=Pediatria, 4=Dermatologia
+            # Generar entre 2 y 8 turnos por día por médico
+            cant_turnos = random.randint(2, 8)
+            horas_posibles = ["09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "12:00", "13:00", "13:30", "14:00", "14:30", "15:00", "15:30", "16:00"]
+            
+            random.shuffle(horas_posibles)
+            horas_seleccionadas = horas_posibles[:cant_turnos]
 
-INSERT INTO Turno (id_paciente, id_medico, id_estado_turno, fecha_hora_inicio, fecha_hora_fin, motivo_consulta, recordatorio_notificado, reserva_notificada) VALUES
+            for hora in horas_seleccionadas:
+                id_paciente = random.choice(ids_pacientes)
+                
+                # Definir estado del turno
+                if es_pasado:
+                    # Probabilidades: 70% Atendido, 15% Cancelado, 15% Ausente
+                    rand = random.random()
+                    if rand < 0.70: estado = 2 # Atendido
+                    elif rand < 0.85: estado = 3 # Cancelado
+                    else: estado = 4 # Ausente
+                else:
+                    # Futuro: 90% Pendiente, 10% Cancelado
+                    estado = 1 if random.random() < 0.9 else 3
 
+                fecha_inicio = f"{current_date.isoformat()} {hora}:00"
+                # Calculo fin (30 min despues)
+                dt_inicio = datetime.datetime.strptime(fecha_inicio, "%Y-%m-%d %H:%M:%S")
+                dt_fin = dt_inicio + datetime.timedelta(minutes=30)
+                fecha_fin = dt_fin.strftime("%Y-%m-%d %H:%M:%S")
 
--- --- HACE 5 DÍAS (Históricos) ---
-(1, 1, 1, '{d_minus_5} 09:00:00', '{d_minus_5} 09:30:00', 'Presión Alta', 1, 1),
-(2, 1, 1, '{d_minus_5} 09:30:00', '{d_minus_5} 10:00:00', 'Dolor pecho', 1, 1),
-(3, 4, 1, '{d_minus_5} 08:00:00', '{d_minus_5} 08:15:00', 'Acné', 1, 1),
+                cursor.execute("""
+                    INSERT INTO Turno (id_paciente, id_medico, id_estado_turno, fecha_hora_inicio, fecha_hora_fin, motivo_consulta, recordatorio_notificado, reserva_notificada)
+                    VALUES (?, ?, ?, ?, ?, ?, 1, 1)
+                """, (id_paciente, id_medico, estado, fecha_inicio, fecha_fin, "Consulta General"))
+                
+                id_turno = cursor.lastrowid
+                total_turnos += 1
 
--- --- HACE 4 DÍAS (Históricos) ---
-(1, 2, 2, '{d_minus_4} 10:00:00', '{d_minus_4} 10:20:00', 'Gripe', 1, 1),
-(2, 2, 2, '{d_minus_4} 10:20:00', '{d_minus_4} 10:40:00', 'Fiebre', 1, 1),
-(3, 2, 3, '{d_minus_4} 10:40:00', '{d_minus_4} 11:00:00', 'Cancelado', 1, 1),
-(1, 3, 2, '{d_minus_4} 15:00:00', '{d_minus_4} 15:30:00', 'Vacunación', 1, 1),
+                # SI FUE ATENDIDO -> GENERAR CONSULTA
+                if estado == 2:
+                    diagnostico = random.choice(DIAGNOSTICOS)
+                    notas = f"Paciente {random.choice(['estable', 'con dolor', 'mejora', 'empeora'])}. Se indica tratamiento."
+                    tratamiento = "Reposo y medicación"
+                    
+                    cursor.execute("""
+                        INSERT INTO Consulta (id_turno, diagnostico, notas_privadas_medico, tratamiento, fecha_consulta)
+                        VALUES (?, ?, ?, ?, ?)
+                    """, (id_turno, diagnostico, notas, tratamiento, fecha_inicio))
+                    id_consulta = cursor.lastrowid
+                    total_consultas += 1
 
--- --- HACE 3 DÍAS (Históricos) ---
-(2, 3, 2, '{d_minus_3} 16:00:00', '{d_minus_3} 16:30:00', 'Control niño', 1, 1),
-(3, 3, 4, '{d_minus_3} 16:30:00', '{d_minus_3} 17:00:00', 'Ausente', 1, 1),
-(1, 4, 2, '{d_minus_3} 09:00:00', '{d_minus_3} 09:15:00', 'Lunar sospechoso', 1, 1),
-(2, 4, 2, '{d_minus_3} 09:15:00', '{d_minus_3} 09:30:00', 'Eczema', 1, 1),
-(3, 1, 2, '{d_minus_3} 11:00:00', '{d_minus_3} 11:30:00', 'Arritmia', 1, 1),
+                    # POSIBLEMENTE GENERAR RECETAS (0, 1 o 2)
+                    cant_recetas = random.choices([0, 1, 2], weights=[20, 50, 30], k=1)[0]
+                    for _ in range(cant_recetas):
+                        med, instr = random.choice(MEDICAMENTOS)
+                        cursor.execute("""
+                            INSERT INTO Receta (id_consulta, medicamento, fecha_emision, dosis, instrucciones)
+                            VALUES (?, ?, ?, ?, ?)
+                        """, (id_consulta, med.split()[0], fecha_inicio, med.split()[1] if len(med.split())>1 else "1 comp", instr))
+                        total_recetas += 1
 
--- --- HACE 2 DÍAS (Históricos) ---
-(1, 2, 2, '{d_minus_2} 09:00:00', '{d_minus_2} 09:20:00', 'Clinica dolor', 1, 1),
-(2, 4, 2, '{d_minus_2} 10:00:00', '{d_minus_2} 10:15:00', 'Dermatitis', 1, 1),
-(3, 1, 2, '{d_minus_2} 14:00:00', '{d_minus_2} 14:30:00', 'Cardio chequeo', 1, 1),
+    print(f"📅 Agenda generada: {total_turnos} Turnos, {total_consultas} Consultas, {total_recetas} Recetas.")
 
--- --- HOY (Se asumen pasados para prueba, si se ejecuta tarde) ---
-(1, 2, 2, '{hoy} 09:00:00', '{hoy} 09:20:00', 'Dolor garganta', 0, 1),
-(2, 3, 2, '{hoy} 11:00:00', '{hoy} 11:30:00', 'Fiebre niño', 0, 1), 
-(3, 1, 2, '{hoy} 12:00:00', '{hoy} 12:30:00', 'Consulta Tarde', 0, 1), 
-
-
--- --- MAÑANA (Próximos) ---
-(1, 1, 1, '{manana} 08:30:00', '{manana} 09:00:00', 'Chequeo rutinario', 0, 1), -- Medico 1 (House)
-(2, 2, 1, '{manana} 11:00:00', '{manana} 11:20:00', 'Consulta general', 0, 1), -- Medico 2 (Meredith)
-(3, 3, 1, '{manana} 14:00:00', '{manana} 14:30:00', 'Control de peso', 0, 1), -- Medico 3 (Jeremias)
-(1, 4, 1, '{manana} 09:30:00', '{manana} 09:45:00', 'Control de verruga', 0, 1), -- Medico 4 (Lee)
-
--- --- PASADO MAÑANA (Próximos) ---
-(3, 1, 1, '{pasado} 10:00:00', '{pasado} 10:30:00', 'Test de esfuerzo', 0, 1), -- Medico 1 (House)
-(1, 2, 1, '{pasado} 13:00:00', '{pasado} 13:20:00', 'Seguimiento', 0, 1); -- Medico 2 (Meredith)
-
--- =================================================================================================
--- Consultas (Para dar realismo)
-INSERT INTO Consulta (id_turno, diagnostico, notas_privadas_medico, tratamiento, fecha_consulta) VALUES
-(1, 'Hipertensión', 'Ok', 'Dieta', '{d_minus_5} 09:20:00'),
-(3, 'Acné Vulgar', 'Adolescencia', 'Cremas', '{d_minus_5} 08:10:00');
-
-
--- =================================================================================================
--- Recetas (Para dar realismo)
-INSERT INTO Receta (id_consulta, medicamento, fecha_emision, dosis, instrucciones) VALUES
-(1, 'Hipertensión', '{d_minus_5} 09:20:00', 'Dieta', 'Tomar una vez al día'),
-(1, 'Acné Vulgar', '{d_minus_5} 08:10:00', 'Cremas', 'Aplicar dos veces al día'),
-(1, 'Atorvastatina', '{d_minus_5} 09:20:00', '10mg', 'Tomar una vez al día por la noche');
-
-
-
-
-
-"""
-
-def poblar_db():
+def main():
     try:
-        conn = sqlite3.connect(DB_FILE)
+        conn = get_db()
         cursor = conn.cursor()
-        print("Iniciando población de base de datos...")
-        cursor.executescript(SQL_DATA)
+        
+        print("🚀 Iniciando script de población masiva...")
+        
+        limpiar_base(cursor)
+        poblar_catalogos(cursor)
+        ids_medicos, ids_pacientes = poblar_usuarios_y_perfiles(cursor)
+        generar_turnos_historia(cursor, ids_medicos, ids_pacientes)
+        
         conn.commit()
-        print("✅ Base de datos poblada con éxito.")
-        print("📊 Se generaron médicos de 4 especialidades diferentes para probar los gráficos.")
-    except sqlite3.Error as e:
-        print(f"❌ Error: {e}")
+        print("\n✅ EXITO: Base de datos 'turnero_medico.db' poblada completamente.")
+        print(f"   Ubicación: {DB_FILE}")
+        
+    except Exception as e:
+        print(f"\n❌ ERROR CRÍTICO: {e}")
         if conn: conn.rollback()
     finally:
         if conn: conn.close()
 
 if __name__ == "__main__":
-    poblar_db()
+    main()

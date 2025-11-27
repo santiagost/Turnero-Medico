@@ -1,0 +1,31 @@
+Documento para manejar las cuentas de los usuarios populados
+
+
+- Administrador / Secretario:
+
+admin@vitalis.com | 123 
+
+- Médico / Doctor:
+
+gregory.house@vitalis.com	    123         Dr. Gregory House	    Clínica Médica
+meredith.grey@vitalis.com	    123         Dra. Meredith Grey	    Otorrinolaringología
+derek.shepherd@vitalis.com	    123         Dr. Derek Shepherd	    Neurología
+shaun.murphy@vitalis.com	    123         Dr. Shaun Murphy	    Pediatría
+stephen.strange@vitalis.com	    123         Dr. Stephen Strange	    Neurología
+sandra.lee@vitalis.com	        123         Dra. Sandra Lee	        Dermatología
+leonard.mccoy@vitalis.com	    123         Dr. Leonard McCoy	    Cardiología
+michaela.quinn@vitalis.com	    123         Dra. Michaela Quinn	    Clínica Médica
+hannibal.lecter@vitalis.com	    123         Dr. Hannibal Lecter	    Psiquiatría
+julius.hibbert@vitalis.com	    123         Dr. Julius Hibbert	    Pediatría
+
+
+- Pacientes
+
+Los pacientes se generan aleatoriamente cada vez que se corre el script (se crean 30 en total). Usan combinaciones de nombres de futbolistas.
+
+Formato del email: nombre.apellidoXX@gmail.com (donde XX es un número al azar).
+
+Ejemplos posibles:
+    lionel.messi10@gmail.com
+    cristiano.ronaldo07@gmail.com
+    kylian.mbappe99@gmail.com

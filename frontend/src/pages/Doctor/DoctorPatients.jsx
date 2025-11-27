@@ -14,26 +14,30 @@ import PatientFilterPanel from '../../components/features/filterPanel/PatientFil
 import IconButton from '../../components/ui/IconButton';
 import Spinner from '../../components/ui/Spinner';
 import { IoMdArrowBack } from "react-icons/io";
+import { MdNavigateNext, MdNavigateBefore } from "react-icons/md";
 
 // Services
 import { getMyPatients } from '../../../services/doctor.service';
 import { getPatientById } from '../../../services/patient.service';
 import { getConsultationsByPatient, getPatientIdsByDate } from '../../../services/consultation.service';
 
+const ITEMS_PER_PAGE = 5;
+
 const DoctorPatients = () => {
   const { profile } = useAuth();
   const navigate = useNavigate();
   const { patientId } = useParams();
   const toast = useToast();
+  const [currentPage, setCurrentPage] = useState(1);
 
   // --- ESTADOS ---
   const [myPatients, setMyPatients] = useState([]);
   const [searchResults, setSearchResults] = useState([]);
-  const [patient, setPatient] = useState(null); 
+  const [patient, setPatient] = useState(null);
   const [consultations, setConsultations] = useState([]);
 
 
-  const [isInitializing, setIsInitializing] = useState(true); 
+  const [isInitializing, setIsInitializing] = useState(true);
   const [isLoadingPatient, setIsLoadingDetail] = useState(false);
 
   const [searchMessage, setSearchMessage] = useState("Cargando...");
@@ -66,12 +70,13 @@ const DoctorPatients = () => {
 
 
   const handleSelectPatient = async (selectedBasicData) => {
-    setPatient(selectedBasicData); 
+    setPatient(selectedBasicData);
     setIsLoadingDetail(true);
-    
+    setCurrentPage(1);
+
     try {
       const id = selectedBasicData.patientId;
-      
+
       const [fullData, history] = await Promise.all([
         getPatientById(id),
         getConsultationsByPatient(id)
@@ -91,6 +96,7 @@ const DoctorPatients = () => {
   const handleGoBackToSearch = () => {
     setPatient(null);
     setConsultations([]);
+    setCurrentPage(1);
   };
 
 
@@ -100,14 +106,14 @@ const DoctorPatients = () => {
     if (filters.attentionDate) {
       try {
         const patientsWithConsultationsIds = await getPatientIdsByDate(filters.attentionDate);
-        results = results.filter(p => 
+        results = results.filter(p =>
           patientsWithConsultationsIds.includes(p.patientId)
         );
 
       } catch (error) {
         console.error("Error filtrando por fecha:", error);
         toast.error("Error al buscar por fecha.");
-        results = []; 
+        results = [];
       }
     }
 
@@ -116,31 +122,39 @@ const DoctorPatients = () => {
     }
     if (filters.name) {
       const term = filters.name.toLowerCase();
-      results = results.filter(p => 
-        p.firstName.toLowerCase().includes(term) || 
+      results = results.filter(p =>
+        p.firstName.toLowerCase().includes(term) ||
         p.lastName.toLowerCase().includes(term)
       );
     }
-    
+
     const sortOrder = filters.order || 'alpha_asc';
     results.sort((a, b) => {
-        const nameA = `${a.lastName}, ${a.firstName}`;
-        const nameB = `${b.lastName}, ${b.firstName}`;
-        return sortOrder === 'alpha_desc' ? nameB.localeCompare(nameA) : nameA.localeCompare(nameB);
+      const nameA = `${a.lastName}, ${a.firstName}`;
+      const nameB = `${b.lastName}, ${b.firstName}`;
+      return sortOrder === 'alpha_desc' ? nameB.localeCompare(nameA) : nameA.localeCompare(nameB);
     });
 
     setSearchResults(results);
-    
+
     if (results.length === 0) {
       toast.warning("Búsqueda sin resultados.")
       setSearchMessage("No se encontraron resultados.");
     }
   };
 
+  // --- LÓGICA DE PAGINACIÓN ---
+  const indexOfLastItem = currentPage * ITEMS_PER_PAGE;
+  const indexOfFirstItem = indexOfLastItem - ITEMS_PER_PAGE;
+  const currentConsultations = consultations.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(consultations.length / ITEMS_PER_PAGE);
+
+  const paginate = (pageNumber) => setCurrentPage(pageNumber);
+
 
   return (
     <AnimatedPage>
-      <div className="px-8">
+      <div className="px-8 pb-10">
         <h1 className="text-2xl font-bold text-custom-dark-blue mb-6">
           Historial Clínico de Pacientes
         </h1>
@@ -151,11 +165,11 @@ const DoctorPatients = () => {
         />
 
         {/* CONTENIDO PRINCIPAL */}
-        
+
         {isInitializing ? (
-           <div className="flex justify-center py-20 text-custom-blue"><Spinner /></div>
+          <div className="flex justify-center py-20 text-custom-blue"><Spinner /></div>
         ) : patient ? (
-          
+
           // CASO 2: VISTA DETALLE (Se muestra instantáneamente)
           <>
             <div className='flex flex-row items-center justify-between mt-5 text-custom-dark-blue'>
@@ -194,22 +208,59 @@ const DoctorPatients = () => {
 
                   <hr className="my-2 border-gray-200" />
 
-                  {/* Historial de Consultas */}
+                  {/* Historial de Consultas PAGINADO */}
                   <div className="w-full px-5 py-2">
-                    <p className="font-bold text-xl text-start mb-4">Ultimas Consultas</p>
-                    <div className="mx-2 my-1 flex flex-col gap-3">
-                      
-                      {/* Aquí usamos isLoadingPatient para mostrar spinner SOLO en las consultas */}
+                    <div className="flex justify-between items-center mb-4">
+                      <p className="font-bold text-xl">Ultimas Consultas</p>
+                      {/* Indicador de items totales */}
+                      {!isLoadingPatient && consultations.length > 0 && (
+                        <span className="text-sm text-gray-500">
+                          Total: {consultations.length} | Mostrando {indexOfFirstItem + 1}-{Math.min(indexOfLastItem, consultations.length)}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="mx-2 my-1 flex flex-col">
+
                       {isLoadingPatient ? (
-                         <div className="flex justify-center text-custom-blue"><Spinner /></div>
+                        <div className="flex justify-center text-custom-blue py-10"><Spinner /></div>
                       ) : consultations.length > 0 ? (
-                        consultations.map(consultation => (
-                          <ConsultationCard
-                            key={consultation.consultationId}
-                            consultation={consultation}
-                            type="Doctor"
-                          />
-                        ))
+                        <>
+                          {currentConsultations.map(consultation => (
+                            <ConsultationCard
+                              key={consultation.consultationId}
+                              consultation={consultation}
+                              type="Doctor"
+                            />
+                          ))}
+
+                          {/* --- CONTROLES DE PAGINACIÓN --- */}
+                          {totalPages > 1 && (
+                            <div className="flex justify-between items-center gap-4 mt-6 pt-4 border-t border-gray-100">
+                              <div className='flex flex-row items-center gap-x-2'>
+                                <button
+                                  onClick={() => paginate(currentPage - 1)}
+                                  disabled={currentPage === 1}
+                                  className={`p-2 rounded-full transition-colors ${currentPage === 1 ? 'text-gray-300 cursor-not-allowed' : 'text-custom-blue hover:bg-custom-light-blue transition-all ease-in-out duration-200'}`}
+                                >
+                                  <MdNavigateBefore size={24} />
+                                </button>
+
+                                <span className="text-sm font-medium text-gray-600">
+                                  Página {currentPage} de {totalPages}
+                                </span>
+                              </div>
+
+                              <button
+                                onClick={() => paginate(currentPage + 1)}
+                                disabled={currentPage === totalPages}
+                                className={`p-2 rounded-full transition-colors ${currentPage === totalPages ? 'text-gray-300 cursor-not-allowed' : 'text-custom-blue hover:bg-custom-light-blue transition-all ease-in-out duration-200'}`}
+                              >
+                                <MdNavigateNext size={24} /> {/* O usa texto ">" */}
+                              </button>
+                            </div>
+                          )}
+                        </>
                       ) : (
                         <p className="text-center text-gray-500 p-6 bg-gray-50 rounded-lg">
                           Este paciente no tiene consultas registradas.
@@ -228,7 +279,7 @@ const DoctorPatients = () => {
             tittle={"Resultados de la Búsqueda"}
             content={
               searchResults.length > 0 ? (
-                <div className="flex flex-col gap-2 p-4">
+                <div className="mt-2 flex flex-col gap-2 p-4 overflow-y-scroll custom-scrollbar h-[45vh]">
                   {searchResults.map(p => (
                     <div
                       key={p.patientId}

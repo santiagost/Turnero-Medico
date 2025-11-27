@@ -13,6 +13,9 @@ import ConsultationFilterPanel, {
 import { useParams } from "react-router-dom";
 import Spinner from "../../components/ui/Spinner";
 
+import { MdNavigateNext, MdNavigateBefore } from "react-icons/md";
+const ITEMS_PER_PAGE = 5;
+
 const PatientHistory = () => {
   const { profile } = useAuth();
   const { consultationId } = useParams();
@@ -25,6 +28,8 @@ const PatientHistory = () => {
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
 
   const [forceOpenId, setForceOpenId] = useState(null);
+
+  const [currentPage, setCurrentPage] = useState(1);
 
   const [activeFilters, setActiveFilters] = useState({
     ...initialFiltersState,
@@ -107,6 +112,7 @@ const PatientHistory = () => {
   const handleFilteredSearch = async (filtersFromPanel) => {
     setForceOpenId(null);
     setDetailedConsultation(null);
+    setCurrentPage(1);
     let results = [...allPatientConsultations];
 
     if (filtersFromPanel.attentionDate) {
@@ -173,6 +179,15 @@ const PatientHistory = () => {
     }
   };
 
+  // --- LÓGICA DE PAGINACIÓN ---
+  const indexOfLastItem = currentPage * ITEMS_PER_PAGE;
+  const indexOfFirstItem = indexOfLastItem - ITEMS_PER_PAGE;
+  // Ojo: Paginamos sobre 'filteredConsultations', no sobre 'all'
+  const currentConsultations = filteredConsultations.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredConsultations.length / ITEMS_PER_PAGE);
+
+  const paginate = (pageNumber) => setCurrentPage(pageNumber);
+
   return (
     <AnimatedPage>
       <div className="px-8">
@@ -211,21 +226,51 @@ const PatientHistory = () => {
                   </p>
                 )
               ) : (
-                filteredConsultations.map((consultation) => {
-                  const isForcedOpen = consultation.consultationId === forceOpenId;
-                  let consultationData = consultation;
-                  if (isForcedOpen && detailedConsultation && detailedConsultation.consultationId === consultation.consultationId) {
-                    consultationData = detailedConsultation;
-                  }
-                  return (
-                    <ConsultationCard
-                      key={consultation.consultationId}
-                      consultation={consultationData} // Pasamos la versión detallada si aplica
-                      type="Patient"
-                      forceOpen={isForcedOpen}
-                    />
-                  );
-                })
+                <>
+                  {/* Lista Paginada */}
+                  {currentConsultations.map((consultation) => {
+                    const isForcedOpen = consultation.consultationId === forceOpenId;
+                    let consultationData = consultation;
+                    if (isForcedOpen && detailedConsultation && detailedConsultation.consultationId === consultation.consultationId) {
+                      consultationData = detailedConsultation;
+                    }
+                    return (
+                      <ConsultationCard
+                        key={consultation.consultationId}
+                        consultation={consultationData}
+                        type="Patient"
+                        forceOpen={isForcedOpen}
+                      />
+                    );
+                  })}
+
+                  {/* Controles de Paginación */}
+                  {totalPages > 1 && (
+                    <div className="flex justify-between items-center gap-4 mt-6 pt-4 border-t border-gray-100">
+                      <div className='flex flex-row items-center gap-x-2'>
+                        <button
+                          onClick={() => paginate(currentPage - 1)}
+                          disabled={currentPage === 1}
+                          className={`p-2 rounded-full transition-colors ${currentPage === 1 ? 'text-gray-300 cursor-not-allowed' : 'text-custom-blue hover:bg-custom-light-blue transition-all ease-in-out duration-200'}`}
+                        >
+                          <MdNavigateBefore size={24} />
+                        </button>
+
+                        <span className="text-sm font-medium text-gray-600">
+                          Página {currentPage} de {totalPages}
+                        </span>
+                      </div>
+
+                      <button
+                        onClick={() => paginate(currentPage + 1)}
+                        disabled={currentPage === totalPages}
+                        className={`p-2 rounded-full transition-colors ${currentPage === totalPages ? 'text-gray-300 cursor-not-allowed' : 'text-custom-blue hover:bg-custom-light-blue transition-all ease-in-out duration-200'}`}
+                      >
+                        <MdNavigateNext size={24} />
+                      </button>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           }
