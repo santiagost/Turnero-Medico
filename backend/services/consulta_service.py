@@ -196,6 +196,8 @@ class ConsultaService:
                 consultas.append(consulta_completa)
         
         return consultas
+    
+    
 
 
         

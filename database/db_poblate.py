@@ -120,7 +120,7 @@ INSERT INTO Paciente (id_usuario, dni, nombre, apellido, fecha_nacimiento, telef
 -- Horarios de Atención 
 -- (Simplificados para que todos trabajen de Lunes a Viernes un rato)
 INSERT INTO HorarioAtencion (id_medico, dia_semana, hora_inicio, hora_fin, duracion_turno_min) VALUES 
-(1, 0, '08:00', '16:00', 30), (1, 1, '08:00', '16:00', 30), (1, 2, '08:00', '16:00', 30), (1, 3, '08:00', '16:00', 30), (1, 4, '08:00', '16:00', 30), -- House
+(1, 0, '08:00', '16:00', 30), (1, 1, '08:00', '16:00', 30), (1, 2, '08:00', '16:00', 30), (1, 3, '08:00', '16:00', 30), (1, 4, '08:00', '16:00', 30), (1, 5, '08:00', '16:00', 30), -- House
 (2, 0, '09:00', '15:00', 20), (2, 1, '09:00', '15:00', 20), (2, 2, '09:00', '15:00', 20), (2, 3, '09:00', '15:00', 20), (2, 4, '09:00', '15:00', 20), -- Meredith
 (3, 0, '10:00', '18:00', 30), (3, 1, '10:00', '18:00', 30), (3, 2, '10:00', '18:00', 30), (3, 3, '10:00', '18:00', 30), (3, 4, '10:00', '18:00', 30), -- Jeremias
 (4, 0, '08:00', '12:00', 15), (4, 1, '08:00', '12:00', 15), (4, 2, '08:00', '12:00', 15), (4, 3, '08:00', '12:00', 15), (4, 4, '08:00', '12:00', 15); -- Pimple
@@ -131,10 +131,11 @@ INSERT INTO HorarioAtencion (id_medico, dia_semana, hora_inicio, hora_fin, durac
 
 INSERT INTO Turno (id_paciente, id_medico, id_estado_turno, fecha_hora_inicio, fecha_hora_fin, motivo_consulta, recordatorio_notificado, reserva_notificada) VALUES
 
+
 -- --- HACE 5 DÍAS (Históricos) ---
-(1, 1, 2, '{d_minus_5} 09:00:00', '{d_minus_5} 09:30:00', 'Presión Alta', 1, 1),
-(2, 1, 2, '{d_minus_5} 09:30:00', '{d_minus_5} 10:00:00', 'Dolor pecho', 1, 1),
-(3, 4, 2, '{d_minus_5} 08:00:00', '{d_minus_5} 08:15:00', 'Acné', 1, 1),
+(1, 1, 1, '{d_minus_5} 09:00:00', '{d_minus_5} 09:30:00', 'Presión Alta', 1, 1),
+(2, 1, 1, '{d_minus_5} 09:30:00', '{d_minus_5} 10:00:00', 'Dolor pecho', 1, 1),
+(3, 4, 1, '{d_minus_5} 08:00:00', '{d_minus_5} 08:15:00', 'Acné', 1, 1),
 
 -- --- HACE 4 DÍAS (Históricos) ---
 (1, 2, 2, '{d_minus_4} 10:00:00', '{d_minus_4} 10:20:00', 'Gripe', 1, 1),
@@ -175,6 +176,18 @@ INSERT INTO Turno (id_paciente, id_medico, id_estado_turno, fecha_hora_inicio, f
 INSERT INTO Consulta (id_turno, diagnostico, notas_privadas_medico, tratamiento, fecha_consulta) VALUES
 (1, 'Hipertensión', 'Ok', 'Dieta', '{d_minus_5} 09:20:00'),
 (3, 'Acné Vulgar', 'Adolescencia', 'Cremas', '{d_minus_5} 08:10:00');
+
+
+-- =================================================================================================
+-- Recetas (Para dar realismo)
+INSERT INTO Receta (id_consulta, medicamento, fecha_emision, dosis, instrucciones) VALUES
+(1, 'Hipertensión', '{d_minus_5} 09:20:00', 'Dieta', 'Tomar una vez al día'),
+(1, 'Acné Vulgar', '{d_minus_5} 08:10:00', 'Cremas', 'Aplicar dos veces al día'),
+(1, 'Atorvastatina', '{d_minus_5} 09:20:00', '10mg', 'Tomar una vez al día por la noche');
+
+
+
+
 
 """
 

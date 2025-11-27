@@ -53,8 +53,8 @@ def marcar_turnos_ausentes_background():
         # 3. Ejecutar la lógica de marcar ausentes
         cantidad = service.marcar_turnos_ausentes()
 
-        if cantidad > 0:
-            print(f"[AUSENTES] Se marcaron {cantidad} turnos como ausentes.")
+        # if cantidad > 0:
+        print(f"[AUSENTES] Se marcaron {cantidad} turnos como ausentes.")
             
     except Exception as e:
         print(f"[AUSENTES] Error: {e}")
@@ -71,7 +71,7 @@ async def lifespan(app: FastAPI):
     scheduler = BackgroundScheduler()
     
     # Configuramos para que corra cada 10 o 30 segundos
-    scheduler.add_job(chequear_recordatorios_background, 'interval', seconds=3600)
+    scheduler.add_job(chequear_recordatorios_background, 'interval', seconds=50)
     scheduler.add_job(marcar_turnos_ausentes_background, 'interval', seconds=15)
     scheduler.start()
 

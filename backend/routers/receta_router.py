@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, status, HTTPException
 from fastapi.encoders import jsonable_encoder
+from fastapi.responses import Response
 from typing import List
 import sqlite3
 from database import get_db
@@ -33,6 +34,32 @@ async def get_receta_by_id(receta_id: int, service: RecetaService = Depends(get_
     if not receta:
         raise HTTPException(status_code=404, detail="Receta no encontrada")
     return jsonable_encoder(receta)
+
+
+@router.get("/pdf/{consulta_id}")
+async def get_recetas_pdf_by_consulta(
+    consulta_id: int, 
+    service: RecetaService = Depends(get_receta_service)
+):
+    """
+    Descarga el PDF de recetas para una consulta.
+    """
+    try:
+        # Obtenemos los bytes del PDF
+        pdf_bytes = service.generar_pdf_recetas_by_consulta(consulta_id)
+        
+        # Configuramos para descarga
+        headers = {
+            "Content-Disposition": f"attachment; filename=recetas_consulta_{consulta_id}.pdf"
+        }
+
+        # Retornamos el archivo directo
+        return Response(content=pdf_bytes, media_type="application/pdf", headers=headers)
+
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error generando PDF: {str(e)}")
 
 
 @router.get("/consulta/{consulta_id}", response_model=List[dict])

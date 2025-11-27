@@ -151,3 +151,46 @@ class RecetaService:
         except sqlite3.IntegrityError as e:
             self.db.rollback()
             raise ValueError("Error al eliminar la receta: " + str(e))
+        
+    def generar_pdf_recetas_by_consulta(self, consulta_id: int) -> bytes:
+        from utils.pdf_downloader import generar_pdf_recetas
+        from services.consulta_service import ConsultaService
+
+        # 1. Obtener Consulta
+        consulta = ConsultaService(self.db).get_by_id(consulta_id)
+        if not consulta:
+            raise ValueError(f"No existe una consulta con ID {consulta_id}")
+
+        # 2. Obtener Recetas
+        recetas = self.get_by_consulta_id(consulta_id)
+        if not recetas:
+            # Opcional: lanzar error o permitir generar PDF vacío
+            raise ValueError(f"No hay recetas para la consulta {consulta_id}")
+
+        # 3. Preparar Datos (Manejo de nulos seguro)
+        paciente_nombre = "Desconocido"
+        medico_nombre = "Desconocido"
+
+        # Navegamos con cuidado por los objetos anidados para no romper si algo es None
+        if consulta.turno:
+            if consulta.turno.paciente:
+                paciente_nombre = f"{consulta.turno.paciente.apellido}, {consulta.turno.paciente.nombre}"
+            if consulta.turno.medico:
+                medico_nombre = f"{consulta.turno.medico.apellido}, {consulta.turno.medico.nombre}"
+
+        datos_pdf = {
+            "paciente": paciente_nombre,
+            "medico": medico_nombre,
+            "fecha_consulta": str(consulta.fecha_consulta).split(" ")[0], # Solo la fecha
+            "recetas": [
+                {
+                    "medicamento": r.medicamento,
+                    "dosis": r.dosis if r.dosis else "",
+                    "instrucciones": r.instrucciones if r.instrucciones else ""
+                }
+                for r in recetas
+            ]
+        }
+        
+        return generar_pdf_recetas(datos_pdf)
+        

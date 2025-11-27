@@ -83,3 +83,80 @@ def generar_pdf_rendimiento(datos: list, fecha_desde: str, fecha_hasta: str, inf
         pdf.ln() 
 
     return pdf.output()
+
+
+def generar_pdf_recetas(datos: dict) -> bytes:
+    """
+    Genera un PDF simple con encabezado de consulta y lista de medicamentos.
+    """
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_auto_page_break(auto=True, margin=15)
+
+    # --- Función auxiliar de limpieza (Evita errores de codificación) ---
+    def clean(text):
+        if text is None: return ""
+        # Reemplazamos caracteres problemáticos para Helvetica
+        texto_str = str(text).replace("•", "-").replace("…", "...")
+        # Codificamos a Latin-1
+        return texto_str.encode('latin-1', 'replace').decode('latin-1')
+
+    # --- TÍTULO ---
+    pdf.set_font('Arial', 'B', 16) # Arial es más seguro que Helvetica
+    pdf.cell(0, 10, clean('Receta Médica'), align='C', ln=True)
+    pdf.ln(5)
+
+    # --- DATOS GENERALES ---
+    pdf.set_font("Arial", size=11)
+    pdf.cell(0, 8, f"Paciente: {clean(datos.get('paciente', '-'))}", ln=True)
+    pdf.cell(0, 8, f"Médico: {clean(datos.get('medico', '-'))}", ln=True)
+    pdf.cell(0, 8, f"Fecha: {clean(datos.get('fecha_consulta', '-'))}", ln=True)
+    
+    # Línea separadora
+    pdf.line(10, pdf.get_y() + 2, 200, pdf.get_y() + 2)
+    pdf.ln(10)
+
+    # --- LISTA DE MEDICAMENTOS (Rp/) ---
+    pdf.set_font("Arial", 'B', 14)
+    pdf.cell(0, 10, "Rp/", ln=True)
+    
+    pdf.set_font("Arial", size=12)
+    
+    # Recorremos la lista de recetas
+    recetas = datos.get('recetas', [])
+    if not recetas:
+        pdf.cell(0, 10, clean("(Sin medicamentos prescritos)"), ln=True)
+    
+    for receta in recetas:
+        medicamento = clean(receta.get('medicamento', ''))
+        dosis = clean(receta.get('dosis', ''))
+        instrucciones = clean(receta.get('instrucciones', ''))
+        
+        # Nombre del medicamento en Negrita
+        pdf.set_font("Arial", 'B', 12)
+        # Usamos guion '-' para evitar error de fuente
+        pdf.cell(0, 8, f"- {medicamento} ({dosis})", ln=True)
+        
+        # Instrucciones en cursiva debajo
+        if instrucciones:
+            pdf.set_font("Arial", 'I', 11)
+            pdf.multi_cell(0, 6, f"  Indicaciones: {instrucciones}")
+        
+        pdf.ln(2) # Espacio pequeño entre items
+
+    # --- PIE DE PÁGINA (FIRMA) ---
+    pdf.set_y(-40) # 4 cm desde el final
+    pdf.set_font("Arial", size=10)
+    pdf.cell(0, 5, "_"*30, align='C', ln=True)
+    pdf.cell(0, 5, clean("Firma y Sello"), align='C', ln=True)
+
+    # --- RETORNO SEGURO DE BYTES ---
+    try:
+        salida = pdf.output()
+        # FPDF puede devolver string o bytearray según versión
+        if isinstance(salida, str):
+            return salida.encode('latin-1')
+        return bytes(salida)
+    except Exception as e:
+        print(f"Error generando bytes PDF: {e}")
+        return b"Error"
