@@ -25,7 +25,7 @@ const AdminDoctorFilterPanel = ({ doctorToDelete, doctorToEdit, viewMode = "deta
     const toast = useToast();
     const [localFilters, setLocalFilters] = useState(initialFiltersState);
     const [searchResults, setSearchResults] = useState([]);
-    const [hasSearched, setHasSearched] = useState(false);
+    const [hasSearched, setHasSearched] = useState(true);
     const [isLoadingSearch, setIsLoadingSearch] = useState(false);
 
 
@@ -110,15 +110,13 @@ const AdminDoctorFilterPanel = ({ doctorToDelete, doctorToEdit, viewMode = "deta
     };
 
     useEffect(() => {
-        if (hasSearched) {
-            performSearch();
-        }
+        performSearch();
     }, [refreshTrigger]);
 
     const handleResetClick = () => {
         setLocalFilters(initialFiltersState);
         setSearchResults([]);
-        setHasSearched(false);
+        setHasSearched(true);
     };
 
     const handleViewDetails = (doctorId) => {
@@ -143,7 +141,7 @@ const AdminDoctorFilterPanel = ({ doctorToDelete, doctorToEdit, viewMode = "deta
                     placeholder={"Todos"}
                 />
                 <Input
-                    tittle="Nombre y Apellido"
+                    tittle="Apellido"
                     name="name"
                     type="text"
                     value={localFilters.name}

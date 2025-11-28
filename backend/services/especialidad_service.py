@@ -34,8 +34,8 @@ class EspecialidadService:
             filters.append("id_especialidad = ?")
             params.append(id_especialidad)
         if nombre is not None:
-            filters.append("nombre LIKE ?")
-            params.append(f"%{nombre}%")
+            filters.append("LOWER(nombre) LIKE ?")
+            params.append(f"%{nombre.lower()}%")
         if filters:
             sql += " WHERE " + " AND ".join(filters)
         

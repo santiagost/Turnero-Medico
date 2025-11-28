@@ -21,7 +21,7 @@ const AdminSocialWorkFilterPanel = ({ socialWorkToDelete, socialWorkToEdit, refr
     const toast = useToast();
     const [localFilters, setLocalFilters] = useState(initialFiltersState);
     const [searchResults, setSearchResults] = useState([]);
-    const [hasSearched, setHasSearched] = useState(false);
+    const [hasSearched, setHasSearched] = useState(true);
     const [isLoadingSearch, setIsLoadingSearch] = useState(false);
 
     const handleChange = (e) => {
@@ -58,15 +58,13 @@ const AdminSocialWorkFilterPanel = ({ socialWorkToDelete, socialWorkToEdit, refr
         };
     
         useEffect(() => {
-            if (hasSearched) {
-                performSearch();
-            }
+            performSearch();
         }, [refreshTrigger]);
 
     const handleResetClick = () => {
         setLocalFilters(initialFiltersState);
         setSearchResults([]);
-        setHasSearched(false);
+        setHasSearched(true);
     };
 
 

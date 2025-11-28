@@ -73,12 +73,12 @@ class MedicoService:
             valores.append(dni)
 
         if nombre:
-            condiciones.append("nombre = ?")
-            valores.append(nombre)
+            condiciones.append("LOWER(nombre) LIKE ?")
+            valores.append(f"%{nombre.lower()}%")
         
         if apellido:
-            condiciones.append("apellido = ?")
-            valores.append(apellido)
+            condiciones.append("LOWER(apellido) LIKE ?")
+            valores.append(f"%{apellido.lower()}%")
             
         if id_medico:
             condiciones.append("id_medico = ?")
@@ -151,7 +151,7 @@ class MedicoService:
             if not usuario:
                 usuario = usuario_service.create(
                     email=medico_data['email'],
-                    password=medico_data.get('password', 'defaultpassword123')
+                    password=medico_data.get('password', 'Defaultpassword123')
                 )
 
             roles = usuario_rol_service.get_by_usuario_id(usuario.id_usuario) if usuario else []

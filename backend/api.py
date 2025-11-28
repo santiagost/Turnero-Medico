@@ -53,8 +53,8 @@ def marcar_turnos_ausentes_background():
         # 3. Ejecutar la lógica de marcar ausentes
         cantidad = service.marcar_turnos_ausentes()
 
-        # if cantidad > 0:
-        print(f"[AUSENTES] Se marcaron {cantidad} turnos como ausentes.")
+        if cantidad > 0:
+            print(f"[AUSENTES] Se marcaron {cantidad} turnos como ausentes.")
             
     except Exception as e:
         print(f"[AUSENTES] Error: {e}")

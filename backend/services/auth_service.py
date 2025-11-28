@@ -2,7 +2,7 @@ from http.client import HTTPException
 import sqlite3
 from models.usuario import UsuarioUpdate
 from models.usuarioRol import UsuarioRolResponse
-from utils.security import verify_password, hash_password
+from utils.security import verify_password, hash_password, validar_contraseña
 from services.usuario_service import UsuarioService
 from services.rol_service import RolService
 from utils.email_sender import EmailSender
@@ -76,6 +76,8 @@ class AuthService:
 
         if not verify_password(current_password, password_hash):
             raise ValueError("La contraseña actual es incorrecta")
+        
+        validar_contraseña(new_password)
 
         new_hash = hash_password(new_password)
 

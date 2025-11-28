@@ -51,8 +51,8 @@ class ObraSocialService:
             conditions.append("id_obra_social = ?")
             params.append(id_obra_social)
         if nombre is not None:
-            conditions.append("nombre LIKE ?")
-            params.append(f"%{nombre}%")
+            conditions.append("LOWER(nombre) LIKE ?")
+            params.append(f"%{nombre.lower()}%")
         if cuit is not None:
             conditions.append("cuit = ?")
             params.append(cuit)

@@ -28,7 +28,7 @@ const AdminPatientFilterPanel = ({ patientToDelete, patientToEdit, viewMode = "d
     const [localFilters, setLocalFilters] = useState(initialFiltersState);
     const [searchResults, setSearchResults] = useState([]);
     const [searchMessage, setSearchMessage] = useState("Busca un paciente para ver en detalle.");
-    const [hasSearched, setHasSearched] = useState(false);
+    const [hasSearched, setHasSearched] = useState(true);
     const [isLoadingSearch, setIsLoadingSearch] = useState(false);
 
     const orderOptions = [
@@ -111,15 +111,13 @@ const AdminPatientFilterPanel = ({ patientToDelete, patientToEdit, viewMode = "d
     };
 
     useEffect(() => {
-        if (hasSearched) {
-            performSearch();
-        }
+        performSearch();
     }, [refreshTrigger]);
 
     const handleResetClick = () => {
         setLocalFilters(initialFiltersState);
         setSearchResults([]);
-        setHasSearched(false);
+        setHasSearched(true);
     };
 
     const handleViewDetails = (patientId) => {
@@ -143,7 +141,7 @@ const AdminPatientFilterPanel = ({ patientToDelete, patientToEdit, viewMode = "d
                     placeholder={"Todos"}
                 />
                 <Input
-                    tittle="Nombre y Apellido"
+                    tittle="Apellido"
                     name="name"
                     type="text"
                     value={localFilters.name}

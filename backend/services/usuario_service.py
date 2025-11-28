@@ -3,7 +3,7 @@ from typing import List, Optional
 from models.usuario import UsuarioCreate, UsuarioUpdate, UsuarioResponse
 from models.paciente import PacienteCreate, PacienteUpdate
 from models.medico import MedicoUpdate
-from utils.security import hash_password
+from utils.security import hash_password, validar_contraseña
 from models.usuarioRol import UsuarioRolCreate
 
 
@@ -48,6 +48,10 @@ class UsuarioService:
 
     def create(self, email: str, password: str) -> UsuarioResponse:
         """Crea un nuevo usuario con email y contraseña"""
+
+        # validar contraseña Mín. 8 caracteres, 1 mayús., 1 minús. y 1 número
+        validar_contraseña(password)
+
         password_hash = hash_password(password)
         try:
             self.cursor.execute("""

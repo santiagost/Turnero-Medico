@@ -51,6 +51,31 @@ const ConsultationCard = ({ consultation, type, forceOpen = false }) => {
         visible: { opacity: 1, height: "auto", y: 0, transition: { duration: 0.3, delay: 0.1 } }
     };
 
+    const handleDownloadReceta = async () => {
+        if (isLoadingRecetas || isDownloading) {
+            toast.warning("Por favor espera, la operación anterior está en curso.");
+            return;
+        }
+
+        if (!consultationId) {
+            toast.error("No se pudo obtener el detalle de la consulta.");
+            return;
+        }
+
+        setIsDownloading(true);
+        toast.info("Preparando descarga del PDF...");
+
+        try {
+            await getRecetasPdfByConsultaId(consultationId);
+            toast.success("Descarga iniciada. Revisa tus archivos.");
+        } catch (error) {
+            console.error("Error al descargar el PDF de recetas:", error);
+            toast.error("Fallo al generar o descargar el PDF de recetas.");
+        } finally {
+            setIsDownloading(false);
+        }
+    };
+
     const renderPatientCompactView = () => (
         <motion.div
             key="compact-patient"
@@ -75,31 +100,6 @@ const ConsultationCard = ({ consultation, type, forceOpen = false }) => {
 
 
     const renderPatientExpandedView = () => {
-        const handleDownloadReceta = async () => {
-            if (isLoadingRecetas || isDownloading) {
-                toast.warning("Por favor espera, la operación anterior está en curso.");
-                return;
-            }
-
-            if (!consultationId) {
-                toast.error("No se pudo obtener el detalle de la consulta.");
-                return;
-            }
-
-            setIsDownloading(true);
-            toast.info("Preparando descarga del PDF...");
-
-            try {
-                await getRecetasPdfByConsultaId(consultationId);
-                toast.success("Descarga iniciada. Revisa tus archivos.");
-            } catch (error) {
-                console.error("Error al descargar el PDF de recetas:", error);
-                toast.error("Fallo al generar o descargar el PDF de recetas.");
-            } finally {
-                setIsDownloading(false);
-            }
-        };
-
         return (
             <motion.div
                 key="expanded-patient"
@@ -127,7 +127,6 @@ const ConsultationCard = ({ consultation, type, forceOpen = false }) => {
                         <p><span className="font-semibold">Tratamiento:</span> {consultation?.treatment}</p>
                     </div>
                     <div>
-
                         {recetas.length > 0 && (
                             <div className='flex flex-row items-center justify-between'>
                                 <h3 className="font-bold text-lg mb-2">Recetas:</h3>
@@ -138,7 +137,7 @@ const ConsultationCard = ({ consultation, type, forceOpen = false }) => {
                                         e.stopPropagation();
                                         handleDownloadReceta();
                                     }}
-                                    type={"button"} /> { /* BOTON PARA DESCARGAR, ACA FALTA LA LOGICA DEL DOCUMENTO GENERADO */}
+                                    type={"button"} />
                             </div>
                         )}
                         {isLoadingRecetas ? (
@@ -190,7 +189,19 @@ const ConsultationCard = ({ consultation, type, forceOpen = false }) => {
                     <p className="mt-4"><span className="font-semibold">Notas del médico:</span> {consultation?.personalNotes}</p>
                 </div>
                 <div>
-                    <h3 className="font-bold text-lg mb-2">Recetas:</h3>
+                    {recetas.length > 0 && (
+                        <div className='flex flex-row items-center justify-between'>
+                            <h3 className="font-bold text-lg mb-2">Recetas:</h3>
+                            <Button
+                                text={"Descargar Receta Digital"}
+                                size={"small"}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDownloadReceta();
+                                }}
+                                type={"button"} />
+                        </div>
+                    )}
                     {isLoadingRecetas ? (
                         <p className="text-sm text-custom-gray animate-pulse">Cargando recetas...</p>
                     ) : recetas.length > 0 ? (

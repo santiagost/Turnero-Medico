@@ -67,11 +67,11 @@ class PacienteService:
             conditions.append("dni = ?")
             params.append(dni)
         if nombre is not None:
-            conditions.append("nombre LIKE ?")
-            params.append(f"%{nombre}%")
+            conditions.append("LOWER(nombre) LIKE ?")
+            params.append(f"%{nombre.lower()}%")
         if apellido is not None:
-            conditions.append("apellido LIKE ?")
-            params.append(f"%{apellido}%")
+            conditions.append("LOWER(apellido) LIKE ?")
+            params.append(f"%{apellido.lower()}%")
         if id_obra_social is not None:
             conditions.append("id_obra_social = ?")
             params.append(id_obra_social)
@@ -308,7 +308,7 @@ class PacienteService:
                 print("entro aca")
                 usuario = usuario_service.create(
                     email=usuario_data["email"],
-                    password=usuario_data.get("password", "defaultpassword123")
+                    password=usuario_data.get("password", "Defaultpassword123")
                 )
                 id_usuario = usuario.id_usuario
 
